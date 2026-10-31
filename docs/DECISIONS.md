@@ -1,0 +1,30 @@
+# ZeroState — decision log
+
+| Date | Decision | Options considered | Why | Approved by |
+|---|---|---|---|---|
+| Oct 27 | Use GRFICSv3 simulator, no hardware | buy hardware; video datasets | free, real PLC + Modbus, built-in faults | Bhargavi |
+| Oct 31 | Product scope: plan + live + process checks; read-only; "second check" positioning | monitor-only; agent that operates plant | incidents are mostly plan/point errors; CISA AI-in-OT guidance; HSG253 ¶115 | Bhargavi ("done") |
+| Oct 31 | Build as a real product, multi-plant | single-plant demo | standing instruction | Bhargavi |
+| Oct 31 | Stack: pydantic, networkx, pymodbus, asyncua, ioos_qc, sqlite, FastAPI | AAS/BaSyx, PLC4X, Node-RED, ML detectors, rules engines | maturity, licence, determinism | Bhargavi |
+| Oct 31 | Manual mode = PLC manual_mode coil, not stopping the PLC / e-stop | stop PLC; e-stop | review: stopping PLC breaks S6; e-stop forces purge/product open | Bhargavi (delegated, Oct 31 16:01) |
+| Oct 31 | Camera on P1 labelled idealised; headline numbers data-only | drop camera; keep as independent | review: 3D view renders truth | Bhargavi (delegated, Oct 31 16:01) |
+| Oct 31 | P1 = live-evidence testbed with declared upstream assumption | add block valves to GRFICS | GRFICS has only control valves | Bhargavi (delegated, Oct 31 16:01) |
+| Oct 31 | P2 go/no-go Nov 1 night | always build P2 | scope safety | Bhargavi (delegated, Oct 31 16:01) |
+| Oct 31 | GRFICS time ×10, 5 eps/scenario, overnight Nov 2 | real time, 10 eps | real-time ≈ 16–20 h of runs | Bhargavi (delegated, Oct 31 16:01) |
+| Oct 31 | Read P1 from DMZ via router; read-only shown by no write path + Suricata write-alert rule = 0 alerts | direct on b-ics-net; function-code firewall (router can't do it) | stronger, testable read-only claim | Bhargavi (delegated, Oct 31 16:01) |
+| Oct 31 | pyDEXPI deferred (AGPL) | use now | licence decision not needed for Nov 4 | Claude |
+| Oct 31 | Muse Spark importer moved to MUST | keep as should | Meta tooling 25% of score; strongest demo moment | Bhargavi (delegated) |
+| Oct 31 | No practitioner-review line unless one is found | keep line | avoid unbacked claim | Bhargavi (delegated) |
+| Oct 31 | Licence Apache-2.0 (patch GPL-3.0) | MIT, AGPL | patent grant, permissive, GRFICS patch keeps GPL | Bhargavi (delegated) |
+| Oct 31 | Freshness from ~0.1%-span transmitter noise added by the patch (decision 13) | heartbeat read from a remote I/O device; heartbeat via PLC program change | an I/O-device heartbeat bypasses the PLC, so a frozen PLC looks fresh; noise must survive the whole path; matches loss-of-noise transmitter diagnostics; cost: results depend on our noise model, stated | Bhargavi |
+| Oct 31 | No internet for ZeroState; later Meta calls via egress proxy on an internal network (decision 14) | bridge network with internet | a bridge reaches Windows-published truth :80 and OpenPLC :8080 via host.docker.internal; CISA brokered pattern | Bhargavi |
+| Oct 31 | Operator container at .70; Suricata rule for .60 (must be 0) and .70 (must fire every episode) (decision 15) | scratch writes as positive control | positive control with no extra plant writes; also settles where operator.py runs | Bhargavi |
+| Oct 31 | ZeroState reaches only PLC:502: router rule + egress allowlist (decision 16) | router rule only | router never sees same-subnet DMZ traffic or traffic to itself | Bhargavi (router rule); allowlist added by Claude after finding the same-subnet gap |
+| Oct 31 | Allowlist lives in a helper container `zerostate-net`; ZeroState joins its namespace with cap_drop ALL; IPv6 off + ip6tables DROP | set rules in ZeroState's entrypoint, then drop privileges | `docker exec` defaults to root with NET_ADMIN, so the drop was a procedure ("remember -u"), not a control; fewer lines too | Bhargavi |
+| Oct 31 | `constant_ok_raw: any \| [raw values]` replaces `may_be_constant` | bool flag | a bool can't say "flows may sit still only at the cutoff"; valves become `[0, 65535]` once feedback is noisy (Phase 1) | Bhargavi |
+| Oct 31 | python:3.13-slim in the container, matching the 3.13 venv; pymodbus 3.9.2 like GRFICS | 3.11-slim | same Python and library in tests both places | Bhargavi |
+| Oct 31 | Thresholds name their clock: process-seconds vs wall-clock (decision 17) | single clock | ×10 time scale makes them differ | Bhargavi |
+| Oct 31 | IsolationPlan hashed + frozen; SessionState separate (decision 18) | one hashed envelope | signatures and statuses change during the job | Bhargavi |
+| Oct 31 | ×10 stability test first in Phase 1; fallback ×5, then real time with 3 eps/scenario + 10 clean (decision 19) | assume ×10 works | PLC loops tuned for real time | Bhargavi |
+| Oct 31 | Phase 1 = one live episode end to end; plan/process checks + importer → Phase 2; claims tooling → Phase 3 morning (decision 20) | keep Phase 1 as written | Phase 1 too big for one day | Bhargavi |
+| Oct 31 | One naming scheme: file = rule ID suffix, version separate; detectors.py, reprove.py, shared_points.py removed | keep mixed names | one name per rule across docs, code, tests, claims | Bhargavi |
