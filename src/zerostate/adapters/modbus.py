@@ -53,7 +53,7 @@ class ModbusReadOnly:
         self.freshness = FreshnessTracker(self.map.tags)
 
     def read(self, tags: list[str] | None = None) -> dict[str, Signal]:
-        entries = [self.entries[t] for t in tags] if tags else list(self.entries.values())
+        entries = [self.entries[t] for t in tags] if tags is not None else list(self.entries.values())
         now = datetime.now(UTC)
         out: dict[str, Signal] = {}
         key = attrgetter("host", "port", "table")

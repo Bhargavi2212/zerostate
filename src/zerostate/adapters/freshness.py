@@ -18,6 +18,7 @@ class FreshnessTracker:
         self.entries = {e.tag: e for e in entries}
         self.clock = clock
         self._last: dict[str, tuple[int, float]] = {}  # tag -> (raw, wall time it last changed)
+        self._seen_change: set[str] = set()  # a tag must be seen changing before it can be GOOD
 
     def static_for_s(self, tag: str) -> float | None:
         last = self._last.get(tag)
@@ -34,6 +35,8 @@ class FreshnessTracker:
             last = self._last.get(tag)
             if last is None or last[0] != s.raw:
                 self._last[tag] = (s.raw, now)
+                if last is not None:
+                    self._seen_change.add(tag)
             if s.raw in e.placeholder_raw:
                 out[tag] = s.model_copy(update={"quality": Quality.UNKNOWN})
                 continue
@@ -43,6 +46,9 @@ class FreshnessTracker:
             noisy_static[e.source_group].append(static)
             if static:
                 out[tag] = s.model_copy(update={"quality": Quality.STALE})
+            elif tag not in self._seen_change:
+                # Not yet seen alive: frozen data would look fresh until the window ran out.
+                out[tag] = s.model_copy(update={"quality": Quality.UNKNOWN})
         # A group is dead only if it has noise-carrying tags and every one of them stopped changing.
         dead = {g for g, flags in noisy_static.items() if flags and all(flags)}
         for tag, s in out.items():

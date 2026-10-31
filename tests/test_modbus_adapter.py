@@ -63,7 +63,7 @@ def server():
 def write_map(tmp_path, port):
     base = {"host": "127.0.0.1", "port": port, "unit": "x", "source_group": "g", "max_static_wall_s": 10}
     tags = [
-        dict(base, tag="f1_valve_pos", table="ir", address=100, scale_min=0, scale_max=100),
+        dict(base, tag="f1_valve_pos", table="ir", address=100, scale_min=0, scale_max=100, constant_ok_raw="any"),
         dict(base, tag="f1_flow", table="ir", address=101, scale_min=0, scale_max=1000),
         dict(base, tag="pressure", table="ir", address=108, scale_min=0, scale_max=3200),
         dict(base, tag="f1_cmd", table="hr", address=100, scale_min=0, scale_max=100),
@@ -79,7 +79,9 @@ def test_reads_and_scales(server, tmp_path):
     a = ModbusReadOnly(write_map(tmp_path, port))
     s = a.read()
     a.close()
-    assert all(v.quality == Quality.GOOD for v in s.values())
+    # First sight of a noise-carrying tag is UNKNOWN until it is seen changing (freshness).
+    assert s["pressure"].quality == Quality.UNKNOWN and s["f1_valve_pos"].quality == Quality.GOOD
+    assert a.read([]) == {}
     assert s["f1_valve_pos"].value == pytest.approx(50, abs=0.01)
     assert s["f1_flow"].value == pytest.approx(1000)
     assert s["pressure"].value == pytest.approx(2700, abs=0.1)

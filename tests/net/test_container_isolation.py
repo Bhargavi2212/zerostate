@@ -7,6 +7,7 @@ import os
 import shutil
 import socket
 import subprocess
+import time
 
 import pytest
 
@@ -40,8 +41,14 @@ def connects(host: str, port: int) -> bool:
 def test_plc_modbus_reachable_and_readable():
     assert connects(*PLC)
     adapter = ModbusReadOnly(os.environ["ZS_MAP"])
-    s = adapter.read(["pressure"])["pressure"]
+    first = adapter.read(["pressure"])["pressure"]
+    for _ in range(5):  # a live reading must be seen changing before it is GOOD
+        time.sleep(1)
+        s = adapter.read(["pressure"])["pressure"]
+        if s.quality == Quality.GOOD:
+            break
     adapter.close()
+    assert first.quality == Quality.UNKNOWN
     assert s.quality == Quality.GOOD and 0 < s.value < 3200
 
 

@@ -39,6 +39,15 @@ def test_placeholder_is_unknown():
     assert run(tr, c, 0, pressure=309) == {"pressure": Quality.UNKNOWN}
 
 
+def test_unknown_until_seen_changing():
+    # Fresh tracker on a PLC that has been frozen for an hour: never GOOD.
+    tr, c = setup(entry("pressure"), entry("valve", ok="any"))
+    assert run(tr, c, 0, pressure=100, valve=7) == {"pressure": Quality.UNKNOWN, "valve": Quality.GOOD}
+    assert run(tr, c, 5, pressure=100, valve=7)["pressure"] == Quality.UNKNOWN
+    assert run(tr, c, 11, pressure=100, valve=7)["pressure"] == Quality.STALE
+    assert run(tr, c, 12, pressure=101, valve=7)["pressure"] == Quality.GOOD
+
+
 def test_change_resets_and_static_goes_stale():
     tr, c = setup(entry("pressure"), entry("level"))
     run(tr, c, 0, pressure=100, level=5)
@@ -58,7 +67,8 @@ def test_any_constant_stays_good_with_static_for():
 
 def test_flow_only_constant_at_cutoff():
     tr, c = setup(entry("flow", group="feed1", ok=[0]), entry("flow2", group="feed2", ok=[0]))
-    run(tr, c, 0, flow=26000, flow2=0)
+    run(tr, c, 0, flow=25000, flow2=0)
+    run(tr, c, 1, flow=26000, flow2=0)
     assert run(tr, c, 30, flow=26000, flow2=0) == {"flow": Quality.STALE, "flow2": Quality.GOOD}
 
 
