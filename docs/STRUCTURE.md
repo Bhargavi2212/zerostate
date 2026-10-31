@@ -131,6 +131,7 @@ zerostate/
 │   ├── test_modbus_adapter.py     # in-process Modbus server: scaled values; server down → BAD
 │   ├── test_freshness.py          # placeholder, STALE, constant_ok_raw, dead group (injectable clock)
 │   ├── test_plant_map.py          # map loads; every plan tag exists in the map
+│   ├── test_modbus_scan.py        # scan script offset check
 │   ├── test_gate.py               # verdict enum has no SAFE; judge can't remove a block; 3 refusals → ESCALATED
 │   ├── test_audit_chain.py  test_replay.py  test_importer_gate.py  test_plants_only_diff.py
 │   ├── net/test_container_isolation.py   # run inside container: only PLC:502 reachable; truth, host ports, DMZ, router, internet not; app can't change net config

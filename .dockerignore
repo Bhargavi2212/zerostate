@@ -1,0 +1,9 @@
+.venv
+.git
+.env
+runs
+frames
+eval/sealed
+**/__pycache__
+.pytest_cache
+.ruff_cache
