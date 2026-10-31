@@ -1,4 +1,4 @@
-﻿repos:
+repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.3
     hooks:
@@ -12,7 +12,7 @@
     hooks:
       - id: pytest
         name: pytest (fast, not net)
-        entry: python -m pytest -q
+        entry: .venv/Scripts/python.exe -m pytest -q
         language: system
         pass_filenames: false
         always_run: true

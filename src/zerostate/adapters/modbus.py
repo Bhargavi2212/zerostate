@@ -41,7 +41,7 @@ class PlantMap(BaseModel):
 
 
 def load_map(path: str | Path) -> PlantMap:
-    return PlantMap.model_validate(yaml.safe_load(Path(path).read_text()))
+    return PlantMap.model_validate(yaml.safe_load(Path(path).read_text(encoding="utf-8-sig")))
 
 
 class ModbusReadOnly:

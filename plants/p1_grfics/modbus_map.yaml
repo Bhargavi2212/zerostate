@@ -1,0 +1,29 @@
+# P1 GRFICS: PLC 192.168.95.2 (OpenPLC, program 326339.st). ZeroState only reads these.
+# Addresses are source-derived until the Phase 0 live scan sets confirmed: true.
+# constant_ok_raw: raw values a tag may sit still at without going STALE ("any" = always).
+process_time_scale: 1
+tags:
+  # %IW100-112 measured / position inputs
+  - {tag: f1_valve_pos,      host: 192.168.95.2, table: ir, address: 100, scale_min: 0, scale_max: 100,  unit: "%",   source_group: feed1,    max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: f1_flow,           host: 192.168.95.2, table: ir, address: 101, scale_min: 0, scale_max: 1000, unit: flow,   source_group: feed1,  max_static_wall_s: 10, constant_ok_raw: [0]}
+  - {tag: f2_valve_pos,      host: 192.168.95.2, table: ir, address: 102, scale_min: 0, scale_max: 100,  unit: "%",   source_group: feed2,    max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: f2_flow,           host: 192.168.95.2, table: ir, address: 103, scale_min: 0, scale_max: 500,  unit: flow,   source_group: feed2,  max_static_wall_s: 10, constant_ok_raw: [0]}
+  - {tag: purge_valve_pos,   host: 192.168.95.2, table: ir, address: 104, scale_min: 0, scale_max: 100,  unit: "%",   source_group: purge,    max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: purge_flow,        host: 192.168.95.2, table: ir, address: 105, scale_min: 0, scale_max: 2000, unit: flow,   source_group: purge,  max_static_wall_s: 10, constant_ok_raw: [0]}
+  - {tag: product_valve_pos, host: 192.168.95.2, table: ir, address: 106, scale_min: 0, scale_max: 100,  unit: "%",   source_group: product,  max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: product_flow,      host: 192.168.95.2, table: ir, address: 107, scale_min: 0, scale_max: 500,  unit: flow,   source_group: product, max_static_wall_s: 10, constant_ok_raw: [0]}
+  - {tag: pressure,          host: 192.168.95.2, table: ir, address: 108, scale_min: 0, scale_max: 3200, unit: kPa,   source_group: tank,     max_static_wall_s: 10}
+  - {tag: level,             host: 192.168.95.2, table: ir, address: 109, scale_min: 0, scale_max: 100,  unit: "%",   source_group: tank,     max_static_wall_s: 10}
+  - {tag: a_in_purge,        host: 192.168.95.2, table: ir, address: 110, scale_min: 0, scale_max: 1,    unit: frac,  source_group: analyzer, max_static_wall_s: 10}
+  - {tag: b_in_purge,        host: 192.168.95.2, table: ir, address: 111, scale_min: 0, scale_max: 1,    unit: frac,  source_group: analyzer, max_static_wall_s: 10}
+  - {tag: c_in_purge,        host: 192.168.95.2, table: ir, address: 112, scale_min: 0, scale_max: 1,    unit: frac,  source_group: analyzer, max_static_wall_s: 10}
+  # %QW100-103 valve commands, %QX0.0 manual mode, %QW10-13 manual setpoints
+  - {tag: f1_cmd,            host: 192.168.95.2, table: hr, address: 100, scale_min: 0, scale_max: 100,  unit: "%",   source_group: plc_cmd,  max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: f2_cmd,            host: 192.168.95.2, table: hr, address: 101, scale_min: 0, scale_max: 100,  unit: "%",   source_group: plc_cmd,  max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: purge_cmd,         host: 192.168.95.2, table: hr, address: 102, scale_min: 0, scale_max: 100,  unit: "%",   source_group: plc_cmd,  max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: product_cmd,       host: 192.168.95.2, table: hr, address: 103, scale_min: 0, scale_max: 100,  unit: "%",   source_group: plc_cmd,  max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: manual_mode,       host: 192.168.95.2, table: coil, address: 0, scale_min: 0, scale_max: 1,    unit: bool,  source_group: plc_cmd,  max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: f1_manual_sp,      host: 192.168.95.2, table: hr, address: 10,  scale_min: 0, scale_max: 100,  unit: "%",   source_group: plc_cmd,  max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: f2_manual_sp,      host: 192.168.95.2, table: hr, address: 11,  scale_min: 0, scale_max: 100,  unit: "%",   source_group: plc_cmd,  max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: purge_manual_sp,   host: 192.168.95.2, table: hr, address: 12,  scale_min: 0, scale_max: 100,  unit: "%",   source_group: plc_cmd,  max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: product_manual_sp, host: 192.168.95.2, table: hr, address: 13,  scale_min: 0, scale_max: 100,  unit: "%",   source_group: plc_cmd,  max_static_wall_s: 10, constant_ok_raw: any}
