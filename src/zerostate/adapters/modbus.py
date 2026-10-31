@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict
 from pymodbus.client import ModbusTcpClient
 from pymodbus.exceptions import ModbusException
 
+from zerostate.adapters.freshness import FreshnessTracker
 from zerostate.models.signal import Quality, Signal
 
 
@@ -49,6 +50,7 @@ class ModbusReadOnly:
         self.entries = {e.tag: e for e in self.map.tags}
         self.timeout = timeout
         self._clients: dict[tuple[str, int], ModbusTcpClient] = {}
+        self.freshness = FreshnessTracker(self.map.tags)
 
     def read(self, tags: list[str] | None = None) -> dict[str, Signal]:
         entries = [self.entries[t] for t in tags] if tags else list(self.entries.values())
@@ -69,7 +71,7 @@ class ModbusReadOnly:
                         source_ts=None,  # Modbus carries no source timestamp
                         recv_ts=now,
                     )
-        return out
+        return self.freshness.apply(out)
 
     def close(self) -> None:
         for c in self._clients.values():
