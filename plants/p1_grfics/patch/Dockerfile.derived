@@ -1,0 +1,18 @@
+# Derived image of fortiphyd/grfics-simulation with the ZeroState p1-1 patch (GPL-3.0, see README.md).
+# Build context is prepared by build.ps1: patched simulation sources under ./simulation.
+
+# Stage 1: same build base as GRFICS's own Dockerfile
+FROM python:3.11-slim@sha256:7a3ed1226224bcc1fe5443262363d42f48cf832a540c1836ba8ccbeaadf8637c AS build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libjsoncpp-dev liblapacke-dev \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /build/simulation
+COPY simulation/main.cc simulation/TE_process.cc simulation/TE_process.h simulation/makefile ./
+RUN make
+
+# Stage 2: the pulled GRFICS image (web files, Unity build, supervisor config unchanged)
+FROM fortiphyd/grfics-simulation@sha256:ed3517811da2c4a542bf28b5f19f939ade8aa4d7ab1ac2de63c16087b34dd756
+COPY --from=build /build/simulation/simulation /app/simulation/simulation
+COPY simulation/remote_io/modbus/feed1.py simulation/remote_io/modbus/feed2.py \
+     simulation/remote_io/modbus/purge.py simulation/remote_io/modbus/product.py /app/modbus/
+LABEL org.zerostate.patch="p1-1"

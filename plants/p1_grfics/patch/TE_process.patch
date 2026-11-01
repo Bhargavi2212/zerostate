@@ -1,0 +1,266 @@
+diff --git a/simulation/TE_process.cc b/simulation/TE_process.cc
+index aeda962..b3f77c1 100644
+--- a/simulation/TE_process.cc
++++ b/simulation/TE_process.cc
+@@ -85,6 +85,46 @@ void apply_sensor_fault(double true_value, double *measured, double *bias,
+     }
+ }
+ 
++// ZeroState patch p1-1: transmitter noise of +/-0.1 % of span, applied on top of
++// healthy, drift, and the non-dropped phase of dropout; never on frozen or the
++// existing noise fault mode.
++static const double ZS_NOISE_FRAC = 0.001;
++void zs_add_noise(double *measured, double span, int mode, double severity, double now_seconds) {
++    if (mode == SENSOR_FAULT_FROZEN || mode == SENSOR_FAULT_NOISE) {
++        return;
++    }
++    if (mode == SENSOR_FAULT_DROPOUT && in_dropout_phase(now_seconds, severity)) {
++        return;
++    }
++    *measured += uniform_noise(ZS_NOISE_FRAC * span);
++}
++
++// clamp to the physical range; flows below 1 % of span read 0 (low-flow cutoff)
++void zs_clamp(double *measured, double lo, double hi, bool flow_cutoff) {
++    if (flow_cutoff && *measured < 0.01 * hi) {
++        *measured = 0.0;
++    }
++    *measured = std::max(std::min(*measured, hi), lo);
++}
++
++// valve position feedback: 0 true+noise, 1 frozen, 2 true+offset+noise, 3 fixed value
++void zs_position_feedback(double true_pos, double *measured, int mode, double severity, int noise) {
++    switch (mode) {
++        case 1:
++            return;
++        case 3:
++            *measured = severity;
++            break;
++        case 2:
++            *measured = true_pos + severity + (noise ? uniform_noise(ZS_NOISE_FRAC * 100.0) : 0.0);
++            break;
++        default:
++            *measured = true_pos + (noise ? uniform_noise(ZS_NOISE_FRAC * 100.0) : 0.0);
++            break;
++    }
++    *measured = std::max(std::min(*measured, 100.0), 0.0);
++}
++
+ TE::TE() {
+     gettimeofday(&current, NULL);
+     last_update = current;
+@@ -139,7 +179,26 @@ TE::TE() {
+     yb1 = 0.005;
+     kpar = 0.00117;
+     ncpar = 0.4;
+-    time_scale = 1.0;
++    const char *zs_ts = getenv("ZS_TIME_SCALE");
++    time_scale = zs_ts ? atof(zs_ts) : 1.0;
++    if (time_scale <= 0.0) {
++        time_scale = 1.0;
++    }
++    const char *zs_n = getenv("ZS_NOISE");
++    zs_noise = zs_n ? atoi(zs_n) : 1;
++    printf("ZS patch p1-1: time_scale=%g noise=%d\n", time_scale, zs_noise);
++    f1_pos_fault_mode = 0;
++    f1_pos_fault_severity = 0.0;
++    f1_leak_pct = 0.0;
++    f2_pos_fault_mode = 0;
++    f2_pos_fault_severity = 0.0;
++    f2_leak_pct = 0.0;
++    purge_pos_fault_mode = 0;
++    purge_pos_fault_severity = 0.0;
++    purge_leak_pct = 0.0;
++    product_pos_fault_mode = 0;
++    product_pos_fault_severity = 0.0;
++    product_leak_pct = 0.0;
+     sampling_delay = 0.1;
+     sampling_delay = sampling_delay/time_scale;
+     steady_state();
+@@ -149,6 +208,10 @@ TE::TE() {
+     ymeas[0] = ylast[0];
+     ymeas[1] = ylast[1];
+     ymeas[2] = ylast[2];
++    measured_f1_valve_pos = f1_valve_pos;
++    measured_f2_valve_pos = f2_valve_pos;
++    measured_purge_valve_pos = purge_valve_pos;
++    measured_product_valve_pos = product_valve_pos;
+     tpurge = current.tv_sec*1000000 +current.tv_usec + int(sampling_delay*60*60*1000000);
+     
+ }
+@@ -341,6 +404,43 @@ void TE::update(Json::Value inputs) {
+         analyzer_fault_severity = inputs["inputs"]["analyzer_fault_severity"].asDouble();
+     }
+ 
++    if (inputs["inputs"].isMember("f1_pos_fault_mode")) {
++        f1_pos_fault_mode = std::max(std::min(inputs["inputs"]["f1_pos_fault_mode"].asInt(), 3), 0);
++    }
++    if (inputs["inputs"].isMember("f1_pos_fault_severity")) {
++        f1_pos_fault_severity = inputs["inputs"]["f1_pos_fault_severity"].asDouble();
++    }
++    if (inputs["inputs"].isMember("f1_leak_pct")) {
++        f1_leak_pct = std::max(std::min(inputs["inputs"]["f1_leak_pct"].asDouble(), 100.0), 0.0);
++    }
++    if (inputs["inputs"].isMember("f2_pos_fault_mode")) {
++        f2_pos_fault_mode = std::max(std::min(inputs["inputs"]["f2_pos_fault_mode"].asInt(), 3), 0);
++    }
++    if (inputs["inputs"].isMember("f2_pos_fault_severity")) {
++        f2_pos_fault_severity = inputs["inputs"]["f2_pos_fault_severity"].asDouble();
++    }
++    if (inputs["inputs"].isMember("f2_leak_pct")) {
++        f2_leak_pct = std::max(std::min(inputs["inputs"]["f2_leak_pct"].asDouble(), 100.0), 0.0);
++    }
++    if (inputs["inputs"].isMember("purge_pos_fault_mode")) {
++        purge_pos_fault_mode = std::max(std::min(inputs["inputs"]["purge_pos_fault_mode"].asInt(), 3), 0);
++    }
++    if (inputs["inputs"].isMember("purge_pos_fault_severity")) {
++        purge_pos_fault_severity = inputs["inputs"]["purge_pos_fault_severity"].asDouble();
++    }
++    if (inputs["inputs"].isMember("purge_leak_pct")) {
++        purge_leak_pct = std::max(std::min(inputs["inputs"]["purge_leak_pct"].asDouble(), 100.0), 0.0);
++    }
++    if (inputs["inputs"].isMember("product_pos_fault_mode")) {
++        product_pos_fault_mode = std::max(std::min(inputs["inputs"]["product_pos_fault_mode"].asInt(), 3), 0);
++    }
++    if (inputs["inputs"].isMember("product_pos_fault_severity")) {
++        product_pos_fault_severity = inputs["inputs"]["product_pos_fault_severity"].asDouble();
++    }
++    if (inputs["inputs"].isMember("product_leak_pct")) {
++        product_leak_pct = std::max(std::min(inputs["inputs"]["product_leak_pct"].asDouble(), 100.0), 0.0);
++    }
++
+     last_update = current;
+     gettimeofday(&current, NULL);
+     double dt = ((current.tv_sec - last_update.tv_sec) + (current.tv_usec - last_update.tv_usec)/1000000.0)/60/60; //measurements are in hours
+@@ -369,17 +469,22 @@ void TE::update(Json::Value inputs) {
+     liquid_level = VL * 100.0 / VLmax;          // liquid volume as percentage of capacity
+     
+     //flow rates
+-    f1_flow = cv[0] * f1_cv_scale * f1_valve_pos;
+-    f2_flow = cv[1] * f2_cv_scale * f2_valve_pos;
++    // ZS patch p1-1: a passing valve flows as if open at least leak_pct
++    double f1_open = std::max(f1_valve_pos, f1_leak_pct);
++    double f2_open = std::max(f2_valve_pos, f2_leak_pct);
++    double purge_open = std::max(purge_valve_pos, purge_leak_pct);
++    double product_open = std::max(product_valve_pos, product_leak_pct);
++    f1_flow = cv[0] * f1_cv_scale * f1_open;
++    f2_flow = cv[1] * f2_cv_scale * f2_open;
+     if (pressure >= 100.0) {
+-        purge_flow = cv[2] * purge_cv_scale * purge_valve_pos * sqrt(pressure-100.0);
+-        product_flow = cv[3] * product_cv_scale * product_valve_pos * sqrt(pressure-100.0);
++        purge_flow = cv[2] * purge_cv_scale * purge_open * sqrt(pressure-100.0);
++        product_flow = cv[3] * product_cv_scale * product_open * sqrt(pressure-100.0);
+     } else {
+         purge_flow = 0.0;
+         product_flow = 0.0;
+     }
+     
+-    if (product_valve_pos <= 0.0) {
++    if (product_open <= 0.0) {
+         product_flow = 0.0;
+     }
+     // if liquid level is 0 then product flow must be 0
+@@ -492,6 +597,27 @@ void TE::update(Json::Value inputs) {
+                         purge_flow_fault_mode, purge_flow_fault_severity, dt, now_seconds);
+     apply_sensor_fault(product_flow, &measured_product_flow, &product_flow_bias,
+                         product_flow_fault_mode, product_flow_fault_severity, dt, now_seconds);
++    // ZS patch p1-1: transmitter noise, flow cutoff, physical clamps
++    if (zs_noise) {
++        zs_add_noise(&measured_pressure, 3200.0, tank_pressure_fault_mode, tank_pressure_fault_severity, now_seconds);
++        zs_add_noise(&measured_liquid_level, 100.0, tank_level_fault_mode, tank_level_fault_severity, now_seconds);
++        zs_add_noise(&measured_f1_flow, 1000.0, f1_flow_fault_mode, f1_flow_fault_severity, now_seconds);
++        zs_add_noise(&measured_f2_flow, 500.0, f2_flow_fault_mode, f2_flow_fault_severity, now_seconds);
++        zs_add_noise(&measured_purge_flow, 2000.0, purge_flow_fault_mode, purge_flow_fault_severity, now_seconds);
++        zs_add_noise(&measured_product_flow, 500.0, product_flow_fault_mode, product_flow_fault_severity, now_seconds);
++    }
++    if (tank_pressure_fault_mode != SENSOR_FAULT_FROZEN) zs_clamp(&measured_pressure, 0.0, 3200.0, false);
++    if (tank_level_fault_mode != SENSOR_FAULT_FROZEN) zs_clamp(&measured_liquid_level, 0.0, 100.0, false);
++    if (f1_flow_fault_mode != SENSOR_FAULT_FROZEN) zs_clamp(&measured_f1_flow, 0.0, 1000.0, true);
++    if (f2_flow_fault_mode != SENSOR_FAULT_FROZEN) zs_clamp(&measured_f2_flow, 0.0, 500.0, true);
++    if (purge_flow_fault_mode != SENSOR_FAULT_FROZEN) zs_clamp(&measured_purge_flow, 0.0, 2000.0, true);
++    if (product_flow_fault_mode != SENSOR_FAULT_FROZEN) zs_clamp(&measured_product_flow, 0.0, 500.0, true);
++    // ZS patch p1-1: valve position feedback
++    zs_position_feedback(f1_valve_pos, &measured_f1_valve_pos, f1_pos_fault_mode, f1_pos_fault_severity, zs_noise);
++    zs_position_feedback(f2_valve_pos, &measured_f2_valve_pos, f2_pos_fault_mode, f2_pos_fault_severity, zs_noise);
++    zs_position_feedback(purge_valve_pos, &measured_purge_valve_pos, purge_pos_fault_mode, purge_pos_fault_severity, zs_noise);
++    zs_position_feedback(product_valve_pos, &measured_product_valve_pos, product_pos_fault_mode, product_pos_fault_severity, zs_noise);
++
+     // analyzer is a single instrument: a real GC samples A/B/C together, so
+     // they share one mode and one drift bias/dropout phase, not three
+     // independent ones
+@@ -527,6 +653,18 @@ void TE::update(Json::Value inputs) {
+             break;
+     }
+ 
++    // ZS patch p1-1: analyzer transmitter noise + clamp 0-1
++    if (zs_noise) {
++        zs_add_noise(&measured_A_in_purge, 1.0, analyzer_fault_mode, analyzer_fault_severity, now_seconds);
++        zs_add_noise(&measured_B_in_purge, 1.0, analyzer_fault_mode, analyzer_fault_severity, now_seconds);
++        zs_add_noise(&measured_C_in_purge, 1.0, analyzer_fault_mode, analyzer_fault_severity, now_seconds);
++    }
++    if (analyzer_fault_mode != SENSOR_FAULT_FROZEN) {
++        zs_clamp(&measured_A_in_purge, 0.0, 1.0, false);
++        zs_clamp(&measured_B_in_purge, 0.0, 1.0, false);
++        zs_clamp(&measured_C_in_purge, 0.0, 1.0, false);
++    }
++
+     if (product_flow <= 0.0) {
+         //hold at last cost
+         cost = cost;
+@@ -621,6 +759,27 @@ Json::Value TE::get_state_json() {
+     state["measured"]["B_in_purge"] = measured_B_in_purge;
+     state["measured"]["C_in_purge"] = measured_C_in_purge;
+ 
++    // ZS patch p1-1 (truth side only; Modbus devices read measured.*)
++    state["state"]["zs_patch_version"] = "p1-1";
++    state["state"]["zs_time_scale"] = time_scale;
++    state["state"]["zs_noise"] = zs_noise;
++    state["measured"]["f1_valve_pos"] = measured_f1_valve_pos;
++    state["state"]["f1_pos_fault_mode"] = f1_pos_fault_mode;
++    state["state"]["f1_pos_fault_severity"] = f1_pos_fault_severity;
++    state["state"]["f1_leak_pct"] = f1_leak_pct;
++    state["measured"]["f2_valve_pos"] = measured_f2_valve_pos;
++    state["state"]["f2_pos_fault_mode"] = f2_pos_fault_mode;
++    state["state"]["f2_pos_fault_severity"] = f2_pos_fault_severity;
++    state["state"]["f2_leak_pct"] = f2_leak_pct;
++    state["measured"]["purge_valve_pos"] = measured_purge_valve_pos;
++    state["state"]["purge_pos_fault_mode"] = purge_pos_fault_mode;
++    state["state"]["purge_pos_fault_severity"] = purge_pos_fault_severity;
++    state["state"]["purge_leak_pct"] = purge_leak_pct;
++    state["measured"]["product_valve_pos"] = measured_product_valve_pos;
++    state["state"]["product_pos_fault_mode"] = product_pos_fault_mode;
++    state["state"]["product_pos_fault_severity"] = product_pos_fault_severity;
++    state["state"]["product_leak_pct"] = product_leak_pct;
++
+     return state;
+ 
+ }
+diff --git a/simulation/TE_process.h b/simulation/TE_process.h
+index b4eb02d..ce13db1 100644
+--- a/simulation/TE_process.h
++++ b/simulation/TE_process.h
+@@ -98,6 +98,24 @@ class TE {
+         double measured_A_in_purge;
+         double measured_B_in_purge;
+         double measured_C_in_purge;
++        // ZeroState patch p1-1 (GPL-3.0, see plants/p1_grfics/patch/README.md)
++        int zs_noise;                       // ZS_NOISE: transmitter noise on (1) / off (0)
++        double measured_f1_valve_pos;     // position feedback (true + noise, or faulted)
++        int f1_pos_fault_mode;            // 0 none, 1 frozen, 2 offset, 3 fixed value
++        double f1_pos_fault_severity;     // offset or fixed value, in %
++        double f1_leak_pct;               // passing valve: minimum effective opening, %
++        double measured_f2_valve_pos;     // position feedback (true + noise, or faulted)
++        int f2_pos_fault_mode;            // 0 none, 1 frozen, 2 offset, 3 fixed value
++        double f2_pos_fault_severity;     // offset or fixed value, in %
++        double f2_leak_pct;               // passing valve: minimum effective opening, %
++        double measured_purge_valve_pos;     // position feedback (true + noise, or faulted)
++        int purge_pos_fault_mode;            // 0 none, 1 frozen, 2 offset, 3 fixed value
++        double purge_pos_fault_severity;     // offset or fixed value, in %
++        double purge_leak_pct;               // passing valve: minimum effective opening, %
++        double measured_product_valve_pos;     // position feedback (true + noise, or faulted)
++        int product_pos_fault_mode;            // 0 none, 1 frozen, 2 offset, 3 fixed value
++        double product_pos_fault_severity;     // offset or fixed value, in %
++        double product_leak_pct;               // passing valve: minimum effective opening, %
+ 
+         //state var derivatives
+         double dxdt_molar_A;             //NA        kmol

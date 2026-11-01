@@ -1,0 +1,52 @@
+diff --git a/simulation/remote_io/modbus/feed1.py b/simulation/remote_io/modbus/feed1.py
+index 5111e17..b8df7a3 100644
+--- a/simulation/remote_io/modbus/feed1.py
++++ b/simulation/remote_io/modbus/feed1.py
+@@ -9,7 +9,7 @@ async def handlefeed1(context, reader, writer, interval):
+         data = await modbusdevice.readData(reader, writer, interval)
+ 
+         try:
+-            valve_pos = int(data["state"]["f1_valve_pos"] / 100.0 * 65535)
++            valve_pos = int(data["measured"]["f1_valve_pos"] / 100.0 * 65535)  # ZS patch p1-1: feedback, not truth
+             flow = int(data["measured"]["f1_flow"] / 1000.0 * 65535)
+ 
+             # Clamp to valid range
+diff --git a/simulation/remote_io/modbus/feed2.py b/simulation/remote_io/modbus/feed2.py
+index 7fd764b..14f02ab 100644
+--- a/simulation/remote_io/modbus/feed2.py
++++ b/simulation/remote_io/modbus/feed2.py
+@@ -9,7 +9,7 @@ async def handlefeed2(context, reader, writer, interval):
+         data = await modbusdevice.readData(reader, writer, interval)
+ 
+         try:
+-            valve_pos = int(data["state"]["f2_valve_pos"] / 100.0 * 65535)
++            valve_pos = int(data["measured"]["f2_valve_pos"] / 100.0 * 65535)  # ZS patch p1-1: feedback, not truth
+             flow = int(data["measured"]["f2_flow"] / 500.0 * 65535)
+ 
+             # Clamp to valid range
+diff --git a/simulation/remote_io/modbus/product.py b/simulation/remote_io/modbus/product.py
+index be7712e..065c50c 100644
+--- a/simulation/remote_io/modbus/product.py
++++ b/simulation/remote_io/modbus/product.py
+@@ -9,7 +9,7 @@ async def handleproduct(context, reader, writer, interval):
+         data = await modbusdevice.readData(reader, writer, interval)
+ 
+         try:
+-            valve_pos = int(data["state"]["product_valve_pos"] / 100.0 * 65535)
++            valve_pos = int(data["measured"]["product_valve_pos"] / 100.0 * 65535)  # ZS patch p1-1: feedback, not truth
+             flow = int(data["measured"]["product_flow"] / 500.0 * 65535)
+ 
+             # Clamp to valid range
+diff --git a/simulation/remote_io/modbus/purge.py b/simulation/remote_io/modbus/purge.py
+index 77daf5f..33c0625 100644
+--- a/simulation/remote_io/modbus/purge.py
++++ b/simulation/remote_io/modbus/purge.py
+@@ -10,7 +10,7 @@ async def handlepurge(context, reader, writer, interval):
+         data = await modbusdevice.readData(reader, writer, interval)
+ 
+         try:
+-            valve_pos = int(data["state"]["purge_valve_pos"] / 100.0 * 65535)
++            valve_pos = int(data["measured"]["purge_valve_pos"] / 100.0 * 65535)  # ZS patch p1-1: feedback, not truth
+             flow = int(data["measured"]["purge_flow"] / 2000.0 * 65535)
+ 
+             # Clamp to valid range

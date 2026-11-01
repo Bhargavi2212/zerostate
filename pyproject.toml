@@ -22,8 +22,11 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["net: runs inside the zerostate container against the live lab"]
-addopts = "-m 'not net'"
+markers = [
+    "net: runs inside the zerostate container against the live lab",
+    "live: runs on the host against the running lab (docker exec, localhost:80)",
+]
+addopts = "-m 'not net and not live'"
 
 [tool.ruff]
 line-length = 100
