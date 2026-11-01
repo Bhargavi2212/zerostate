@@ -15,6 +15,8 @@ def test_draw_is_reproducible_by_seed_and_keeps_fixed_values():
     a, b = runner.draw(f, random.Random(7)), runner.draw(f, random.Random(7))
     assert a == b and a["at_step"] in (5, 6, 7) and 0 <= a["after_process_s"] <= 30
     assert a["set"]["tank_pressure_fault_mode"] == 4 and 0.3 <= a["set"]["sev"] <= 0.7
+    kinds = ["vent_open", "vent_close", "hold"]
+    assert runner.draw({"at_step": kinds}, random.Random(3))["at_step"] in kinds
 
 
 def chain(*lines):

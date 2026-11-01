@@ -1,10 +1,10 @@
-from checks.synth import PARAMS, PLAN, STEP, steady, window
+from checks.synth import HOLD, PARAMS, PLAN, STEP, steady, window
 from zerostate.checks.live import hold
 from zerostate.models.verdict import FindingStatus as S
 
 
 def run(w):
-    return hold.check(PLAN, STEP[7], w, PARAMS)
+    return hold.check(PLAN, STEP[HOLD], w, PARAMS)
 
 
 def test_pass_flat_hold():
@@ -45,4 +45,4 @@ def test_threshold_can_tighten_but_not_loosen_the_plan():
     plan_limit = PLAN.hold_test.max_rise_kpa
     assert plan_limit < 6
     # a loose threshold cannot override the plan's limit
-    assert hold.check(PLAN, STEP[7], net_6, PARAMS | {"hold_max_rise_kpa": 50}).status == S.FAIL
+    assert hold.check(PLAN, STEP[HOLD], net_6, PARAMS | {"hold_max_rise_kpa": 50}).status == S.FAIL

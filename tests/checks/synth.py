@@ -16,6 +16,8 @@ PARAMS = load_thresholds(P1 / "thresholds.yaml")
 MAP = load_map(P1 / "modbus_map.yaml")
 SPANS = {e.tag: (e.scale_min, e.scale_max) for e in MAP.tags}
 STEP = {s.k: s for s in PLAN.steps}
+KIND = {s.kind: s.k for s in reversed(PLAN.steps)}  # first step of each kind
+MODE, ISOLATE_F1, VENT, VENT_CLOSE, HOLD = KIND["mode"], 2, KIND["vent_open"], KIND["vent_close"], KIND["hold"]
 
 
 def vented_pressure(ps: float, p0: float = 2700.0) -> float:

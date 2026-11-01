@@ -41,13 +41,15 @@ assumptions:
   - {text: positive isolation upstream assumed, scope: out_of_scope}
 vent_target_kpa_abs: 102
 p_depressurised_kpa_abs: 105
-hold_test: {hold_process_s: 600, window_process_s: 60, max_rise_kpa: 5}  # max_rise provisional
+hold_test: {hold_process_s: 600, window_process_s: 60, max_rise_kpa: 1.0}  # from clean-hold data (DECISIONS Nov 1)
 steps:
   - {k: 1, kind: mode, target: manual_mode, required_state: 1, checks: [LIVE-QUALITY, LIVE-VALVE], settle_process_s: 10}
   - {k: 2, kind: isolate, target: f1, required_state: 0, checks: [LIVE-QUALITY, LIVE-VALVE], settle_process_s: 60}
   - {k: 3, kind: isolate, target: f2, required_state: 0, checks: [LIVE-QUALITY, LIVE-VALVE], settle_process_s: 60}
   - {k: 4, kind: isolate, target: product, required_state: 0, checks: [LIVE-QUALITY, LIVE-VALVE], settle_process_s: 60}
-  - {k: 5, kind: vent_open, target: purge, required_state: 100, checks: [LIVE-QUALITY, LIVE-ALIVE, LIVE-RELATION, LIVE-VALVE], settle_process_s: 60}
-  - {k: 6, kind: vent_close, target: purge, required_state: 0, checks: [LIVE-QUALITY, LIVE-VALVE], settle_process_s: 60}
-  - {k: 7, kind: hold, checks: [LIVE-QUALITY, LIVE-HOLD, LIVE-VALVE]}
-  - {k: 8, kind: final}
+  # purge is also a process outlet: close it with the other lines, then vent through it from full pressure
+  - {k: 5, kind: isolate, target: purge, required_state: 0, checks: [LIVE-QUALITY, LIVE-VALVE], settle_process_s: 60}
+  - {k: 6, kind: vent_open, target: purge, required_state: 100, checks: [LIVE-QUALITY, LIVE-ALIVE, LIVE-RELATION, LIVE-VALVE], settle_process_s: 60}
+  - {k: 7, kind: vent_close, target: purge, required_state: 0, checks: [LIVE-QUALITY, LIVE-VALVE], settle_process_s: 60}
+  - {k: 8, kind: hold, checks: [LIVE-QUALITY, LIVE-HOLD, LIVE-VALVE]}
+  - {k: 9, kind: final}

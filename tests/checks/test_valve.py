@@ -1,9 +1,9 @@
-from checks.synth import PARAMS, PLAN, STEP, steady, window
+from checks.synth import ISOLATE_F1, MODE, PARAMS, PLAN, STEP, steady, window
 from zerostate.checks.live import valve
 from zerostate.models.verdict import FindingStatus as S
 
 
-def run(w, k=2):
+def run(w, k=ISOLATE_F1):
     return valve.check(PLAN, STEP[k], w, PARAMS)
 
 
@@ -34,8 +34,8 @@ def test_transient_before_settle_is_ignored():
 
 
 def test_mode_step_needs_manual_mode():
-    assert run(window(lambda ps: steady(), 20), k=1).status == S.PASS
-    assert run(window(lambda ps: steady(manual_mode=0.0), 20), k=1).status == S.FAIL
+    assert run(window(lambda ps: steady(), 20), k=MODE).status == S.PASS
+    assert run(window(lambda ps: steady(manual_mode=0.0), 20), k=MODE).status == S.FAIL
 
 
 def test_unknown_without_samples_after_settle():

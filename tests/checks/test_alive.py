@@ -1,10 +1,10 @@
-from checks.synth import PARAMS, PLAN, STEP, steady, vent, window
+from checks.synth import PARAMS, PLAN, STEP, VENT, steady, vent, window
 from zerostate.checks.live import alive
 from zerostate.models.verdict import FindingStatus as S
 
 
 def run(w):
-    return alive.check(PLAN, STEP[5], w, PARAMS)
+    return alive.check(PLAN, STEP[VENT], w, PARAMS)
 
 
 def test_pass_gauge_tracks_the_vent():

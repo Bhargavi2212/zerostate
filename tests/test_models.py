@@ -57,6 +57,7 @@ def test_session_edits_do_not_touch_plan_hash():
 
 def test_plan_steps_name_their_checks():
     plan = load_stub()
-    assert [st.k for st in plan.steps] == list(range(1, 9))
+    assert [st.k for st in plan.steps] == list(range(1, len(plan.steps) + 1))
+    assert plan.steps[-1].kind == "final"
     assert all(c.startswith("LIVE-") for st in plan.steps for c in st.checks)
     assert plan.vent_target_kpa_abs < plan.p_depressurised_kpa_abs

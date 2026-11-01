@@ -1,0 +1,40 @@
+{
+ "scenario": "S1",
+ "seed": 11,
+ "expected": [
+  "BLOCKED",
+  "ESCALATED"
+ ],
+ "verdict": "BLOCKED",
+ "match": true,
+ "valid": true,
+ "problems": [],
+ "stamp": {
+  "assumptions": [
+   "positive isolation upstream assumed"
+  ],
+  "package_version": "0.1.0",
+  "plan_hash": "318917d29c6d22fd23d0ccf52b221ec5fede5daf8a64da2c646393eb418ce23c",
+  "reasons": [
+   "LIVE-QUALITY: instrument data not usable: pressure: STALE",
+   "LIVE-RELATION: pressure 1806 kPa vs 1552 kPa from purge_flow and purge_valve_pos (residual +18 %): instrument wrong, or valve fouled / feedback wrong"
+  ],
+  "rules": {
+   "LIVE-ALIVE": "1",
+   "LIVE-HOLD": "1",
+   "LIVE-QUALITY": "1",
+   "LIVE-RELATION": "1",
+   "LIVE-VALVE": "1"
+  },
+  "source": "step",
+  "thresholds_version": "1+p1-1",
+  "verdict": "BLOCKED"
+ },
+ "steps": {
+  "1": "PASS",
+  "2": "PASS",
+  "3": "PASS",
+  "4": "PASS",
+  "5": "FAIL"
+ }
+}

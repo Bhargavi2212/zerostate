@@ -1,0 +1,19 @@
+{
+ "scenario": {
+  "id": "S0",
+  "title": "clean isolation, healthy instruments",
+  "expected": [
+   "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+  ]
+ },
+ "seed": 1,
+ "faults": [],
+ "process_time_scale": 10,
+ "images": {
+  "simulation": "sha256:8dbbdb286c047ad6d2920dc6cc8b6a0d84d6d14efad69498ff4836ad650b61a9",
+  "zerostate": "sha256:93254ca3d736a269312e92534d006b3b69a7f1b57d72f51a5c7415d38ef81129",
+  "zs-operator": "sha256:e575cc26f154c0bc8a6865ce740ec4fc6f48dd07ece7fc924e55cfdf599150e5",
+  "plc": "sha256:7397c8440578dd8e9ff01133445ed264f1166beb5f00fc72d476d738b9797987"
+ },
+ "plan_hash": "318917d29c6d22fd23d0ccf52b221ec5fede5daf8a64da2c646393eb418ce23c"
+}

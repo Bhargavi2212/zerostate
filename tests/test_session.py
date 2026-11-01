@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 
 import pytest
-from checks.synth import PARAMS, PLAN, SPANS, steady, vent
+from checks.synth import HOLD, PARAMS, PLAN, SPANS, VENT, VENT_CLOSE, steady, vent
 
 from zerostate.audit.log import AuditLog
 from zerostate.audit.replay import replay
@@ -48,16 +48,16 @@ def until_evaluated(d, k, limit_wall_s=120):
 
 def clean_run(d):
     d.run(2)
-    for k in (1, 2, 3, 4):
+    for k in range(1, VENT):  # mode, then close f1, f2, product, purge
         d.mark(k, lambda ps: steady(pressure=2700.0))
         until_evaluated(d, k)
-    d.mark(5, vent)
-    until_evaluated(d, 5)
+    d.mark(VENT, vent)
+    until_evaluated(d, VENT)
     d.run(25)  # like the runner: keep venting until the vent target (~366 process-s from 2700 kPa)
-    d.mark(6, lambda ps: steady(pressure=100.0))
-    until_evaluated(d, 6)
-    d.mark(7, lambda ps: steady(pressure=100.0))
-    until_evaluated(d, 7)
+    d.mark(VENT_CLOSE, lambda ps: steady(pressure=100.0))
+    until_evaluated(d, VENT_CLOSE)
+    d.mark(HOLD, lambda ps: steady(pressure=100.0))
+    until_evaluated(d, HOLD)
 
 
 def test_wrong_plan_hash_refused(tmp_path):
@@ -70,7 +70,7 @@ def test_clean_session_reaches_no_discrepancy_and_replays(tmp_path):
     clean_run(d)
     st = d.status()
     assert st["verdict"] == "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
-    assert all(v == "PASS" for v in st["steps"].values()) and 8 in st["steps"]
+    assert all(v == "PASS" for v in st["steps"].values()) and len(PLAN.steps) in st["steps"]
     assert st["stamp"]["assumptions"] == ["positive isolation upstream assumed"]
     assert replay(d.log, "s1", PARAMS) == []
     assert d.log.verify() == (True, None)

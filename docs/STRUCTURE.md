@@ -130,6 +130,7 @@ zerostate/
 │   ├── score.py                   # opens seal, compares to truth, Wilson CIs
 │   ├── claims_audit.py            # reads claims.yaml: tests exist + pass, result keys exist, README sentence matches
 │   └── results/                   # committed outputs (json + md) with commit hash: timescale_<date>.json, smoke_p1_<date>.md, …
+│       └── episodes/<episode>/    # per-episode audit_export, verdict, meta, ids, events, truth.jsonl.gz: anyone can replay and re-score
 ├── tests/
 │   ├── test_readonly.py           # no plant-protocol write call anywhere; only adapters/ import pymodbus/asyncua; no write*/set* methods in adapters
 │   ├── test_firewall.py           # AST scan: src/zerostate imports nothing from plants/ or eval/, no GRFICS web URL

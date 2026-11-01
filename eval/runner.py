@@ -82,6 +82,8 @@ def draw(spec, rng: random.Random):
     if isinstance(spec, list) and len(spec) == 2 and all(isinstance(x, (int, float)) for x in spec):
         lo, hi = spec
         return rng.randint(lo, hi) if all(isinstance(x, int) for x in spec) else rng.uniform(lo, hi)
+    if isinstance(spec, list) and spec and all(isinstance(x, str) for x in spec):
+        return rng.choice(spec)  # e.g. a step kind drawn from [vent_open, vent_close, hold]
     if isinstance(spec, dict):
         return {k: draw(v, rng) for k, v in spec.items()}
     return spec
@@ -114,6 +116,25 @@ def ids_counts(offset: tuple[int, str]) -> dict:
                f"tail -c +{start} /var/log/suricata/eve.json | grep -c '\"signature_id\":{sid}' || true")
         out[sid] = int(n.strip() or 0)
     return out
+
+
+PUBLISH = ("audit_export.json", "verdict.json", "meta.json", "ids.json", "events.jsonl")
+
+
+def publish(run: Path) -> Path:
+    """Copy what anyone needs to replay and score an episode into eval/results/episodes/ (committed);
+    truth is gzipped. signals.jsonl stays in runs/ (it is the same data the audit windows carry)."""
+    import gzip
+    import shutil
+    dest = ROOT / "eval" / "results" / "episodes" / run.name
+    dest.mkdir(parents=True, exist_ok=True)
+    for name in PUBLISH:
+        if (run / name).exists():
+            shutil.copyfile(run / name, dest / name)
+    if (run / "truth.jsonl").exists():
+        with open(run / "truth.jsonl", "rb") as src, gzip.open(dest / "truth.jsonl.gz", "wb") as dst:
+            shutil.copyfileobj(src, dst)
+    return dest
 
 
 def preflight() -> dict:
@@ -163,8 +184,9 @@ class Episode:
 
     # faults ------------------------------------------------------------
     def schedule(self, k: int, t_mark: float | None) -> None:
+        kind = next(s.kind for s in self.plan.steps if s.k == k)
         for f in self.faults:
-            if f.get("at_step") == k and (f.get("before_mark") if t_mark is None else not f.get("before_mark")):
+            if f.get("at_step") in (k, kind) and (f.get("before_mark") if t_mark is None else not f.get("before_mark")):
                 delay = 0.0 if t_mark is None else draw(f.get("after_process_s", [0, 0]), self.rng) / self.scale
                 self.due.append(((t_mark or time.time()) + delay, f))
         self.fire_due()
@@ -326,6 +348,7 @@ def main() -> int:
         ep.cleanup()
         raise
         (out / "verdict.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
+    publish(out)
     print(json.dumps(result, indent=1))
     return 0 if result.get("valid") and result.get("match") else 1
 

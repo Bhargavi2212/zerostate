@@ -3,4 +3,4 @@ title: "comms loss: remote I/O stopped during the hold (PLC serves last values)"
 real_case: Modbus last-value behaviour (seen live Oct 31)
 expected: [ESCALATED]
 faults:
-  - {at_step: 7, after_process_s: [60, 300], action: stop_modbus}
+  - {at_step: hold, after_process_s: [60, 300], action: stop_modbus}
