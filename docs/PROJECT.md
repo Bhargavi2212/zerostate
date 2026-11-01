@@ -53,7 +53,7 @@ P3 water network; DEXPI import (pyDEXPI is AGPL); replay spoof via Modbus relay 
 ## Decisions
 Approved Oct 31:
 1. Patch GRFICS: measured valve-position feedback with faults, and a passing-valve leak term at zero position (separate labelled file, derived image, GPL-3.0).
-2. Hold window: one fixed value per plant, set before sealing (P1 90 process-seconds, stated as compressed; real ≥ 10 min, PetroSA).
+2. Hold window: one fixed value per plant, set before sealing. P1: `hold_process_s: 600`, the real 10-minute practice value (PetroSA); only the clock is compressed (`process_time_scale`).
 3. ZeroState is read-only; only `plants/*/operator.py` and `faults.py` write, and they live outside the product.
 Revised (replaces the earlier "stop the PLC / e-stop" decision — the review showed stopping the PLC breaks scenario S6 and e-stop forces purge/product fully open, so no hold test is possible):
 4. **Manual mode = the PLC's own manual mode** (coil %QX0.0, manual setpoints %QW10–13 in the active program 326339.st), driven by the operator script. S6 runs with the PLC in AUTO. E-stop is not used in episodes.

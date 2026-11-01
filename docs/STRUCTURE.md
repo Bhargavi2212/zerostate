@@ -67,7 +67,8 @@ zerostate/
 │   │   ├── plan/   paths.py liveside.py boxedin.py software.py type.py proving.py mapping.py
 │   │   ├── live/   quality.py alive.py relation.py upstream.py hold.py valve.py camera.py   # CUSUM lives in relation.py
 │   │   └── process/ sequence.py independence.py reset.py
-│   ├── thresholds/                # versioned YAML per plant class; loaded by config.py
+│   ├── thresholds/default.yaml    # versioned generic thresholds; plant thresholds live with the plant (plants/<p>/thresholds.yaml → /app/config/<p>/), never in src/
+│   ├── cli.py                     # `zs` console script: session start/stop, status, step done, sign, audit verify/export, replay
 │   ├── camera/
 │   │   ├── client.py              # receives frames from the frame service (no truth)
 │   │   ├── locate.py              # SAM 3.1 boxes
@@ -80,8 +81,8 @@ zerostate/
 │   │   ├── prompts/               # one .md per prompt, versioned
 │   │   ├── explain.py             # plain-language reason per finding
 │   │   └── judge.py               # optional second judge: may add a block, never remove one
-│   ├── session.py                 # isolation state machine: planned→approved→applied→verified→proved→work→removed
-│   ├── gate.py                    # runs plan→live→process checks, judge; returns Verdict + EvidenceTree
+│   ├── session.py                 # session lifecycle: warm-in → ready → steps (pending → evaluated) → verdict; continuous monitor; inbox/audit I/O
+│   ├── gate.py                    # pure verdict policy: findings → verdict, monotonic, signature closes, verdict stamping (Phase 1); judge (Phase 2)
 │   ├── audit/
 │   │   ├── log.py                 # SQLite append-only, hash-chained rows
 │   │   ├── sign.py                # Ed25519 verdict signatures
@@ -99,8 +100,10 @@ zerostate/
 │   │   ├── scan_<date>.json       # Phase 0 live scan output (addresses, offset, placeholder values)
 │   │   ├── operator.py            # performs steps via PLC manual mode (coil %QX0.0, %QW10–13) — NOT ZeroState
 │   │   ├── Dockerfile.operator    # operator container, DMZ 192.168.90.70, router-allowed only PLC:502
-│   │   ├── faults.py              # injects scenario faults via GRFICS web API (runs on host)
-│   │   ├── truth.py               # reads ground truth (web API, runs on host) — eval only
+│   │   ├── thresholds.yaml        # P1 plant thresholds (copied to /app/config/p1_grfics/)
+│   │   ├── sim_socket.py          # ~20 lines piped into the simulation container: read/write the simulator socket (eval only)
+│   │   ├── faults.py              # builds fault dicts, sends them via sim_socket.py (never the web API: it delays new faults 3 s)
+│   │   ├── truth.py               # reads ground truth (GET localhost/data/index.php, runs on host) — eval only
 │   │   └── patch/                 # GPL-3.0: transmitter noise (~0.1% span) + low-flow cutoff (realism; GRFICS already clamps), valve-feedback faults,
 │   │                              # zero-position leak term, time scale; Dockerfile.derived, LICENSE, README listing every change
 │   ├── p2_gasline/
@@ -113,7 +116,8 @@ zerostate/
 │   │   └── validation/            # analytic blowdown comparison → overlay PNG + error %
 │   └── p3_wntr/                   # stretch
 ├── eval/
-│   ├── scenarios/                 # S0–S12, PC0–PC6 as YAML (plant, fault, onset range, severity range)
+│   ├── scenarios/                 # S0–S12, PC0–PC6 as YAML (plant, fault, onset range, severity range, expected verdicts)
+│   ├── tools/timescale_test.py    # Phase 1: time-scale stability runs (×1 / ×10 / ×5) → results/timescale_<date>.json
 │   ├── seal.py                    # draws tune/score seed ranges; writes manifest OUTSIDE repo; commits SHA-256(salt+manifest)
 │   ├── sealed_hash.txt            # committed hash only
 │   ├── claims.yaml                # claim id → tests → result key → exact README sentence
@@ -123,7 +127,7 @@ zerostate/
 │   ├── plan_benchmark.py  run_benchmark.py  read_accuracy.py  p2_validation.py  importer_accuracy.py
 │   ├── score.py                   # opens seal, compares to truth, Wilson CIs
 │   ├── claims_audit.py            # reads claims.yaml: tests exist + pass, result keys exist, README sentence matches
-│   └── results/                   # committed outputs (json + md) with commit hash
+│   └── results/                   # committed outputs (json + md) with commit hash: timescale_<date>.json, smoke_p1_<date>.md, …
 ├── tests/
 │   ├── test_readonly.py           # no plant-protocol write call anywhere; only adapters/ import pymodbus/asyncua; no write*/set* methods in adapters
 │   ├── test_firewall.py           # AST scan: src/zerostate imports nothing from plants/ or eval/, no GRFICS web URL
@@ -132,10 +136,13 @@ zerostate/
 │   ├── test_freshness.py          # placeholder, STALE, constant_ok_raw, dead group (injectable clock)
 │   ├── test_plant_map.py          # map loads; every plan tag exists in the map
 │   ├── test_modbus_scan.py        # scan script offset check
-│   ├── test_gate.py               # verdict enum has no SAFE; judge can't remove a block; 3 refusals → ESCALATED
+│   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words (judge + refusals: Phase 2)
+│   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, settle before monitoring, UNKNOWN grace, stop
+│   ├── test_operator.py           # operator: setpoints before coil, readback mismatch aborts, manual off restores defaults
 │   ├── test_audit_chain.py  test_replay.py  test_importer_gate.py  test_plants_only_diff.py
 │   ├── net/test_container_isolation.py   # run inside container: only PLC:502 reachable; truth, host ports, DMZ, router, internet not; app can't change net config
-│   ├── checks/                    # test_<rule>.py per rule (test_paths.py … test_reset.py), a passing and a failing case each
+│   ├── checks/                    # test_<rule>.py per rule (test_paths.py … test_reset.py), a passing and a failing case each; test_timescale_invariance.py
+│   ├── live/                      # marker `live`, run from the host against the lab: test_patch.py, test_operator_net.py
 │   └── fixtures/                  # small recorded episodes for offline tests
 └── scripts/
     ├── modbus_scan.py             # Phase 0: map GRFICS registers (read-only)
