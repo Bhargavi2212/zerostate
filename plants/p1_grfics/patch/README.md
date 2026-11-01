@@ -22,14 +22,15 @@ ZeroState repository is Apache-2.0. Fortiphyd's compose file and web files are n
 | E | `measured.<v>_valve_pos` for f1, f2, purge, product: true position ± 0.1 %, clamped 0–100. New inputs `<v>_pos_fault_mode` (0 none, 1 frozen, 2 offset +severity %, 3 fixed value = severity %) and `<v>_pos_fault_severity`; truth `state.<v>_pos_fault_*`. | `TE_process.cc/.h` |
 | F | New input `<v>_leak_pct` (0–100): flow uses `max(true_pos, leak_pct)` as the opening, including the product "opening ≤ 0 → no flow" line. True position and feedback unchanged. Truth `state.<v>_leak_pct`. | `TE_process.cc/.h` |
 | G | Remote I/O IR1 on the four valve devices serves `measured.<v>_valve_pos` instead of the true position. | `remote_io/modbus/{feed1,feed2,purge,product}.py` |
+| H | `index.php` reads simulator replies with `fgets($fp, 65536)` (was 1500). The stock state JSON is already 1,473–1,477 bytes, so G's four feedback fields alone pushed it over and cut off every truth read and the web/3D view. Two lines plus a comment; approved Nov 1 as a deviation from "web files unchanged". (`fgets(…, 4096)` reads elsewhere are left; the patched JSON is ~1,950 bytes.) | `web_visualization/data/index.php` (`web.patch`) |
 
-Unchanged: e-stop, all existing faults, the noise-floor scheduler, web files, the PLC.
+Unchanged: e-stop, all existing faults, the noise-floor scheduler, the PLC, and every web file except the two read sizes in H.
 Known upstream quirk left as is: the analyzer's sampling-delay copy loop never runs, so the measured
 analyzer tracks the live composition.
 
 ## Build
 `.\build.ps1` (PowerShell): checks the clone is at the commit above, copies the simulation sources to
-`%TEMP%\zs-grfics-build`, normalises them to LF, applies `TE_process.patch` and `remote_io.patch`
+`%TEMP%\zs-grfics-build`, normalises them to LF, applies `TE_process.patch`, `remote_io.patch` and `web.patch`
 (checks they applied), and builds `zerostate/grfics-simulation:p1-1` from `Dockerfile.derived`
 (stage 1: GRFICS's own build base digest; stage 2: the pulled image above).
 `deploy/docker-compose.zerostate.yml` runs it as `simulation` (`pull_policy: never`, no build context).

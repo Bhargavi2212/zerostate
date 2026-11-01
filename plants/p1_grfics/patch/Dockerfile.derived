@@ -15,4 +15,5 @@ FROM fortiphyd/grfics-simulation@sha256:ed3517811da2c4a542bf28b5f19f939ade8aa4d7
 COPY --from=build /build/simulation/simulation /app/simulation/simulation
 COPY simulation/remote_io/modbus/feed1.py simulation/remote_io/modbus/feed2.py \
      simulation/remote_io/modbus/purge.py simulation/remote_io/modbus/product.py /app/modbus/
+COPY --chown=www-data:www-data web_visualization/data/index.php /var/www/html/data/index.php
 LABEL org.zerostate.patch="p1-1"

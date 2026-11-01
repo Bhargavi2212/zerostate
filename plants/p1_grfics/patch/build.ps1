@@ -11,21 +11,23 @@ $tmp = Join-Path $env:TEMP 'zs-grfics-build'
 if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp -Confirm:$false }
 New-Item -ItemType Directory $tmp | Out-Null
 Copy-Item -Recurse "$Vendor\simulation\simulation" "$tmp\simulation"
+New-Item -ItemType Directory "$tmp\web_visualization\data" | Out-Null
+Copy-Item "$Vendor\simulation\web_visualization\data\index.php" "$tmp\web_visualization\data\index.php"
 
 # The Windows checkout has CRLF; the patches (like upstream) are LF.
 $utf8 = New-Object System.Text.UTF8Encoding($false)
-Get-ChildItem -Recurse -File "$tmp\simulation" | ForEach-Object {
+Get-ChildItem -Recurse -File "$tmp\simulation", "$tmp\web_visualization" | ForEach-Object {
     $text = [IO.File]::ReadAllText($_.FullName)
     [IO.File]::WriteAllText($_.FullName, $text.Replace("`r`n", "`n"), $utf8)
 }
 
 # Own repo for the temp dir: inside a parent repo, git apply silently skips paths outside the cwd.
 git -C $tmp init -q
-foreach ($p in 'TE_process.patch', 'remote_io.patch') {
+foreach ($p in 'TE_process.patch', 'remote_io.patch', 'web.patch') {
     git -C $tmp apply --whitespace=nowarn "$PSScriptRoot\$p"
     if ($LASTEXITCODE -ne 0) { Write-Error "patch $p failed"; exit 1 }
 }
-foreach ($f in 'simulation\TE_process.cc', 'simulation\remote_io\modbus\feed1.py') {
+foreach ($f in 'simulation\TE_process.cc', 'simulation\remote_io\modbus\feed1.py', 'web_visualization\data\index.php') {
     if (-not (Select-String -Quiet -Pattern 'ZS patch p1-1' -Path "$tmp\$f")) { Write-Error "patch not applied to $f"; exit 1 }
 }
 
