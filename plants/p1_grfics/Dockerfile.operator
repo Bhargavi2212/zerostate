@@ -1,0 +1,9 @@
+# Eval only: the P1 operator (DMZ 192.168.90.70). Router rules limit it to PLC:502.
+FROM python:3.13-slim
+RUN apt-get update && apt-get install -y --no-install-recommends iproute2 \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir pymodbus==3.9.2
+WORKDIR /app
+COPY plants/p1_grfics/operator.py ./operator.py
+# Like the HMI: reach the ICS net through the GRFICS router (needs NET_ADMIN for the route).
+CMD ["sh", "-c", "ip route replace 192.168.95.0/24 via 192.168.90.200 && exec sleep infinity"]

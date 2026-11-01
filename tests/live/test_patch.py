@@ -81,3 +81,27 @@ def test_position_fault_reads_closed_while_open_and_persists():
     assert t["state"]["f1_valve_pos"] > 50
     s = scan(2)[-1]
     assert s["ir"][str(IR["f1_valve_pos"])] / 65535 * 100 <= 0.3
+
+
+def operator(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["docker", "exec", "zs-operator", "python", "operator.py", *args],
+                          capture_output=True, text=True, timeout=300, check=False)
+
+
+def test_leak_flows_through_a_valve_reading_closed():
+    """Needs the operator (P1-3) to close f1 through manual mode; restores AUTO afterwards."""
+    scale = str(truth.read()["state"]["zs_time_scale"])
+    try:
+        assert operator("manual", "on").returncode == 0
+        assert operator("set", "f1", "0").returncode == 0
+        assert operator("wait-valve", "f1", "0", "--timeout-process-s", "60", "--process-time-scale", scale).returncode == 0
+        faults.set_inputs(f1_leak_pct=2)
+        time.sleep(3)
+        s = scan(3)[-1]
+        flow = s["ir"][str(IR["f1_flow"])] / 65535 * 1000
+        feedback = s["ir"][str(IR["f1_valve_pos"])] / 65535 * 100
+        assert abs(flow - 12.8) <= 3, flow  # 6.4046 x 2 % opening
+        assert feedback <= 0.3, feedback
+    finally:
+        faults.clear()
+        operator("manual", "off")

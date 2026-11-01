@@ -1,31 +1,36 @@
 # Installs ZeroState's router rules and IDS rules into the running GRFICS router container.
 # Idempotent. Re-run after any router restart or rule apply in the router web UI (both wipe these rules).
-$ZS = '192.168.90.60'
+# .60 = ZeroState (via zerostate-net), .70 = the eval operator: each may reach only PLC:502.
+$Sources = '192.168.90.60', '192.168.90.70'
 $PLC = '192.168.95.2'
-$allow = @('-s', $ZS, '-d', $PLC, '-p', 'tcp', '--dport', '502', '-j', 'ACCEPT')
-$drop = @('-s', $ZS, '-j', 'DROP')
 
 function Has($rule) {
     docker exec router iptables -C FORWARD @rule 2>$null | Out-Null
     return $LASTEXITCODE -eq 0
 }
 
-# Allow must sit directly above drop, and both above the router's allow-all: reinsert as a pair.
-if (-not ((Has $allow) -and (Has $drop))) {
-    while (Has $allow) { docker exec router iptables -D FORWARD @allow }
-    while (Has $drop) { docker exec router iptables -D FORWARD @drop }
-    docker exec router iptables -I FORWARD 1 @allow
-    docker exec router iptables -I FORWARD 2 @drop
+foreach ($src in $Sources) {
+    $allow = @('-s', $src, '-d', $PLC, '-p', 'tcp', '--dport', '502', '-j', 'ACCEPT')
+    $drop = @('-s', $src, '-j', 'DROP')
+    # Allow must sit directly above drop, and both above the router's allow-all: reinsert as a pair.
+    if (-not ((Has $allow) -and (Has $drop))) {
+        while (Has $allow) { docker exec router iptables -D FORWARD @allow }
+        while (Has $drop) { docker exec router iptables -D FORWARD @drop }
+        docker exec router iptables -I FORWARD 1 @allow
+        docker exec router iptables -I FORWARD 2 @drop
+    }
 }
 
 $chain = @(docker exec router iptables -S FORWARD)
 $chain | ForEach-Object { Write-Output $_ }
-$iAllow = [array]::IndexOf($chain, "-A FORWARD -s $ZS/32 -d $PLC/32 -p tcp -m tcp --dport 502 -j ACCEPT")
-$iDrop = [array]::IndexOf($chain, "-A FORWARD -s $ZS/32 -j DROP")
 $iAll = [array]::IndexOf($chain, '-A FORWARD -j ACCEPT')
-if ($iAllow -lt 0 -or $iDrop -ne $iAllow + 1 -or ($iAll -ge 0 -and $iAll -lt $iDrop)) {
-    Write-Error "FORWARD order wrong: allow=$iAllow drop=$iDrop allow-all=$iAll"
-    exit 1
+foreach ($src in $Sources) {
+    $iAllow = [array]::IndexOf($chain, "-A FORWARD -s $src/32 -d $PLC/32 -p tcp -m tcp --dport 502 -j ACCEPT")
+    $iDrop = [array]::IndexOf($chain, "-A FORWARD -s $src/32 -j DROP")
+    if ($iAllow -lt 0 -or $iDrop -ne $iAllow + 1 -or ($iAll -ge 0 -and $iAll -lt $iDrop)) {
+        Write-Error "FORWARD order wrong for ${src}: allow=$iAllow drop=$iDrop allow-all=$iAll"
+        exit 1
+    }
 }
 
 # IDS: alert on Modbus writes from ZeroState (must stay 0) and the operator (positive control).

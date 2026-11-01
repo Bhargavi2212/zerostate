@@ -35,3 +35,13 @@ services:
     cap_drop: [ALL]
     depends_on:
       zerostate-net: {condition: service_healthy}
+
+  # Eval tooling, not the product: performs isolation steps through the PLC's manual mode.
+  zs-operator:
+    build: {context: ./zerostate, dockerfile: plants/p1_grfics/Dockerfile.operator}
+    image: zs-operator:local
+    container_name: zs-operator
+    cap_add: [NET_ADMIN]
+    networks:
+      c-dmz-net:
+        ipv4_address: 192.168.90.70
