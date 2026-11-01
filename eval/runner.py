@@ -31,6 +31,7 @@ COMPOSE = ["docker", "compose", "-f", "docker-compose.yml", "-f", str(ROOT / "de
 SOURCES = ("192.168.90.60", "192.168.90.70")
 PLC = "192.168.95.2"
 TERMINAL = ("BLOCKED", "ESCALATED")
+IO_DEVICES = "python (feed1|feed2|purge|product|tank|analyzer).py"  # GRFICS remote I/O device scripts
 
 
 def _load(name):
@@ -58,9 +59,22 @@ def zs(*args, check=True) -> str:
     return sh("docker", "exec", "-u", "zs", "zerostate", "zs", *args, check=check)
 
 
+def act(*args) -> None:
+    """An operator action the episode depends on: a failed write makes the episode invalid,
+    never a ZeroState result (wait-pressure-below's timeout, exit 2, is allowed)."""
+    rc = operator(*args)
+    if rc not in (0, 2) or (rc == 2 and args[0] != "wait-pressure-below"):
+        raise EpisodeInvalid(f"operator {' '.join(args)} failed (exit {rc})")
+
+
 def operator(*args) -> int:
     return subprocess.run(["docker", "exec", "zs-operator", "python", "operator.py", *args],
                           check=False, capture_output=True, text=True, timeout=1800).returncode
+
+
+def evaluated(status: dict, k: int) -> bool:
+    """True once step k has a result. Status comes back as JSON, so step numbers are string keys."""
+    return status["steps"].get(str(k)) not in (None, "pending")
 
 
 def draw(spec, rng: random.Random):
@@ -118,7 +132,7 @@ def preflight() -> dict:
 
 def postflight(offset, scenario) -> dict:
     if scenario.get("stopped_modbus"):
-        sh("docker", "exec", "simulation", "supervisorctl", "start", "modbus", check=False)
+        sh("docker", "exec", "simulation", "supervisorctl", "start", "modbus", check=False)  # fresh device set
     faults.clear()
     operator("manual", "off")
     ids = ids_counts(offset)
@@ -145,6 +159,7 @@ class Episode:
         self.due: list[tuple[float, dict]] = []
         self.stop_truth = threading.Event()
         self.last_truth_t = None  # Docker VM clock, same as ZeroState's audit timestamps
+        self.session_started = False
 
     # faults ------------------------------------------------------------
     def schedule(self, k: int, t_mark: float | None) -> None:
@@ -160,10 +175,19 @@ class Episode:
             self.due.remove(item)
             f = item[1]
             if f.get("action") == "stop_modbus":
+                # run_all.sh backgrounds the device scripts and supervisor has no stopasgroup, so
+                # "stop modbus" alone leaves them serving (seen in the first S12): kill them too.
                 sh("docker", "exec", "simulation", "supervisorctl", "stop", "modbus")
+                sh("docker", "exec", "simulation", "pkill", "-f", IO_DEVICES, check=False)
                 self.sc["stopped_modbus"] = True
+                time.sleep(1)
+                if sh("docker", "exec", "simulation", "pgrep", "-f", IO_DEVICES, check=False).strip():
+                    raise EpisodeInvalid("comms-loss fault did not take: I/O device processes still running")
             else:
-                faults.set_inputs(**f["set"])
+                state = faults.set_inputs(**f["set"])["state"]
+                wrong = {k: state.get(k) for k, v in f["set"].items() if k in state and float(state[k]) != float(v)}
+                if wrong:
+                    raise EpisodeInvalid(f"fault did not take: {wrong}")
             self.log_event("fault", {**f, "t_vm": self.last_truth_t})
 
     # status ------------------------------------------------------------
@@ -182,7 +206,7 @@ class Episode:
     def mark_and_evaluate(self, k: int) -> dict:
         zs("step", "done", self.sid, str(k), "--by", "eval-operator")
         self.schedule(k, time.time())
-        return self.wait(lambda st: st["steps"].get(k) not in (None, "pending"), 900 / self.scale + 120)
+        return self.wait(lambda st: evaluated(st, k), 900 / self.scale + 120)
 
     def log_event(self, kind, data):
         with open(self.out / "events.jsonl", "a", encoding="utf-8") as fh:
@@ -210,6 +234,7 @@ class Episode:
         self.warm_up()
         threading.Thread(target=self.truth_logger, daemon=True).start()
         plan_hash = self.plan.content_hash()
+        self.session_started = True
         sh("docker", "exec", "-d", "-u", "zs", "zerostate", "zs", "session", "start",
            "--plan", "/app/config/p1_grfics/envelope.yaml", "--plan-hash", plan_hash, "--session", self.sid)
         time.sleep(1)
@@ -222,16 +247,16 @@ class Episode:
             self.schedule(k, None)  # faults tied to "before step k"
             if step.kind == "mode":
                 if variant != "no_manual_mode":
-                    operator("manual", "on")
+                    act("manual", "on")
             elif step.kind in ("isolate", "vent_close"):
                 target = "f2" if (variant == "wrong_valve_step2" and k == 2) else step.target
-                operator("set", target, str(step.required_state))
+                act("set", target, str(step.required_state))
             elif step.kind == "vent_open":
-                operator("set", step.target, str(step.required_state))
+                act("set", step.target, str(step.required_state))
             st = self.mark_and_evaluate(k)
             if step.kind == "vent_open" and st["verdict"] not in TERMINAL:
                 # keep venting until the plan's vent target (rolling mean); mark on regardless, like a hurried human
-                operator("wait-pressure-below", str(self.plan.vent_target_kpa_abs), "--mean-of", "8",
+                act("wait-pressure-below", str(self.plan.vent_target_kpa_abs), "--mean-of", "8",
                          "--timeout-process-s", "900", "--process-time-scale", s)
                 self.fire_due()
         if st["verdict"] not in TERMINAL:
@@ -250,6 +275,19 @@ class Episode:
         (self.out / "verdict.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
         (self.out / "ids.json").write_text(json.dumps(post["ids"], indent=1), encoding="utf-8")
         return result
+
+    def cleanup(self) -> None:
+        """After a failed episode: leave nothing running and the plant back in AUTO."""
+        if self.session_started:
+            zs("session", "stop", self.sid, "--by", "eval-runner", check=False)
+        self.stop_truth.set()
+        if self.sc.get("stopped_modbus"):
+            sh("docker", "exec", "simulation", "supervisorctl", "start", "modbus", check=False)
+        try:
+            faults.clear()
+        except Exception as e:  # noqa: BLE001 - cleanup must reach the operator step even if this fails
+            print(f"cleanup: faults.clear failed: {e}")
+        operator("manual", "off")
 
     def warm_up(self, min_wall_s=120, steady_wall_s=30, timeout_wall_s=900):
         t0, steady_since = time.time(), None
@@ -282,7 +320,11 @@ def main() -> int:
     try:
         result = ep.run()
     except EpisodeInvalid as e:
+        ep.cleanup()
         result = {"scenario": a.scenario, "seed": a.seed, "valid": False, "problems": [str(e)]}
+    except BaseException:
+        ep.cleanup()
+        raise
         (out / "verdict.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
     print(json.dumps(result, indent=1))
     return 0 if result.get("valid") and result.get("match") else 1

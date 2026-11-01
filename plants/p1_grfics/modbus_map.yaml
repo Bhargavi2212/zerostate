@@ -5,7 +5,7 @@
 # constant_ok_raw: raw values a tag may sit still at without going STALE ("any" = always).
 # Phase 1 retune for the p1-1 patch: measured values carry noise, so noisy tags go STALE after 5 s;
 # valve feedback may sit still only at its end stops; placeholder 203 stays (single value, errs UNKNOWN).
-process_time_scale: 1
+process_time_scale: 10  # decided Nov 1: eval/results/timescale_2026-11-01.json + vent_fidelity_2026-11-01.json
 tags:
   # %IW100-112 measured / position inputs
   - {tag: f1_valve_pos,      host: 192.168.95.2, table: ir, address: 100, scale_min: 0, scale_max: 100,  unit: "%",   source_group: feed1,    max_static_wall_s: 5, constant_ok_raw: [0, 65535], placeholder_raw: [203], confirmed: true}

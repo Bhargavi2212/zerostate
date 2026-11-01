@@ -21,7 +21,7 @@ def replay(log: AuditLog, session: str, params: dict) -> list[str]:
     verdict, step_passed = None, {}
     for e in events:
         p = e["payload"]
-        if e["kind"] == "verdict" and p.get("source") == "warm_in":  # time-based, not from a window
+        if e["kind"] == "verdict" and p.get("source") in ("warm_in", "monitor_error"):  # not from a window
             verdict = gate.worsen(verdict, Verdict(p["verdict"]))
             continue
         if e["kind"] != "evaluation":

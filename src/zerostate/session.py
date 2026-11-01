@@ -117,6 +117,24 @@ class Session:
             self._evaluate_due_steps(now)
             if any(k >= 2 for k in self.marks) and now - self.last_monitor >= self.params["monitor_period_wall_s"]:
                 self._monitor(now)
+                self._prune()
+
+    def _prune(self) -> None:
+        """Keep only what a pending step evaluation or the next monitor window can still need:
+        a session stays open until someone signs, possibly a whole shift."""
+        keep = [self.last_monitor - self.params["rate_window_process_s"] / self.scale]
+        keep += [t for k, t in self.marks.items() if k not in self.evaluated]
+        cutoff = min(keep)
+        for tag, rows in self.buffer.items():
+            if rows and rows[0][0] < cutoff:
+                self.buffer[tag] = [r for r in rows if r[0] >= cutoff]
+
+    def fail(self, reason: str) -> None:
+        """The monitor itself stopped: say so in the audit log rather than go quiet."""
+        self.verdict = gate.worsen(self.verdict, Verdict.ESCALATED)
+        self.log.append(self.sid, "verdict", {"source": "monitor_error",
+                                              **gate.stamp(Verdict.ESCALATED, self.plan, self.params["version"], []),
+                                              "reasons": [f"monitor stopped: {reason}"]})
 
     def _warm_in(self, now: float) -> None:
         if self.witnesses <= set(self.latest) and all(self.latest[t].quality == Quality.GOOD for t in self.witnesses):
@@ -170,20 +188,24 @@ class Session:
                 final = next(s.k for s in self.plan.steps if s.kind == "final")
                 self.evaluated[final] = FindingStatus.PASS
 
-    def _settled_points(self, now: float) -> list[tuple[str, float]]:
+    def _settled_points(self, now: float, t0: float) -> list[tuple[str, float, float]]:
+        """(target, required, settle end in process-s from t0) for every point closed and settled by now."""
         latest: dict[str, tuple[float, float, float]] = {}
         for k, t_mark in sorted(self.marks.items()):
             s = self.steps[k]
             if s.kind in ("isolate", "vent_open", "vent_close"):
                 latest[s.target] = (t_mark, s.settle_process_s, s.required_state)
-        return [(target, req) for target, (t_mark, settle, req) in latest.items()
+        return [(target, req, max(0.0, self._ps(t0, t_mark) + settle))
+                for target, (t_mark, settle, req) in latest.items()
                 if req <= self.params["valve_tol_pct"] and self._ps(t_mark, now) >= settle]
 
     def _monitor(self, now: float) -> None:
-        window = self._window(self.last_monitor, now)
+        # Reach back the QUALITY rate baseline too, or the rate test never has a long enough span here.
+        t0 = self.last_monitor - self.params["rate_window_process_s"] / self.scale
+        window = self._window(t0, now)
         self.last_monitor = now
         k = max(self.marks)
-        only = self._settled_points(now)
+        only = self._settled_points(now, t0)
         rules = ["LIVE-QUALITY", "LIVE-VALVE"] if only else ["LIVE-QUALITY"]
         findings = gate.evaluate(self.plan, self.steps[k], window, self.params, rules, only=only if only else None)
         status = gate.combine(findings)

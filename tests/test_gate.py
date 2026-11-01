@@ -54,7 +54,7 @@ def test_verdict_is_stamped():
     findings = gate.evaluate(PLAN, STEP[2], window(lambda ps: steady(pressure=2700.0, f1_flow=640.0), 80), PARAMS,
                              STEP[2].checks)
     s = gate.stamp(Verdict.BLOCKED, PLAN, PARAMS["version"], findings)
-    assert s["plan_hash"] == PLAN.content_hash() and s["thresholds_version"] == "1+p1-1"
+    assert s["plan_hash"] == PLAN.content_hash() and s["thresholds_version"] == PARAMS["version"]
     assert s["assumptions"] == ["positive isolation upstream assumed"]
     assert set(s["rules"]) == {"LIVE-QUALITY", "LIVE-ALIVE", "LIVE-RELATION", "LIVE-VALVE", "LIVE-HOLD"}
     assert any("reading closed" in r for r in s["reasons"])

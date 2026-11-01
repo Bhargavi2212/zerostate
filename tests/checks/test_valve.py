@@ -40,3 +40,9 @@ def test_mode_step_needs_manual_mode():
 
 def test_unknown_without_samples_after_settle():
     assert run(window(lambda ps: steady(), 40)).status == S.UNKNOWN  # settle is 60 process-s
+
+
+def test_monitor_pairs_logged_before_settle_ends_still_replay():
+    w = window(lambda ps: steady(pressure=2700.0, f1_flow=640.0), 20)
+    assert valve.check(PLAN, STEP[2], w, PARAMS, only=[("f1", 0.0)]).status == S.FAIL
+    assert valve.check(PLAN, STEP[2], w, PARAMS, only=[("f1", 0.0, 0.0)]).status == S.FAIL

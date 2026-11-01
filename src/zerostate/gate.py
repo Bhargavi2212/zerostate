@@ -12,7 +12,7 @@ RANK = {None: 0, Verdict.NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF: 1, Verdict.ESCAL
 
 
 def evaluate(plan: IsolationPlan, step: Step, window: Window, params: dict, rules, only=None) -> list[Finding]:
-    """Run the named rules on one window. `only` restricts LIVE-VALVE to settled (target, required) pairs."""
+    """Run the named rules on one window. `only` restricts LIVE-VALVE to settled (target, required, settle end) triples."""
     out = []
     for rule_id in rules:
         rule = RULES[rule_id]

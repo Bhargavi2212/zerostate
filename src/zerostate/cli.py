@@ -50,13 +50,18 @@ def session_start(a) -> int:
     run_dir = _data() / "runs" / a.session
     run_dir.mkdir(parents=True, exist_ok=True)
     with open(run_dir / "signals.jsonl", "a", encoding="utf-8") as out:
-        while not (s.closed or s.stopped):
-            t = time.time()
-            signals = adapter.read()
-            out.write(json.dumps({"t": t, **{k: [v.value, v.raw, v.quality.value] for k, v in signals.items()}}) + "\n")
-            s.tick(t, signals, inbox.take(a.session))
-            time.sleep(max(0.0, POLL_WALL_S - (time.time() - t)))
-    adapter.close()
+        try:
+            while not (s.closed or s.stopped):
+                t = time.time()
+                signals = adapter.read()
+                out.write(json.dumps({"t": t, **{k: [v.value, v.raw, v.quality.value] for k, v in signals.items()}}) + "\n")
+                s.tick(t, signals, inbox.take(a.session))
+                time.sleep(max(0.0, POLL_WALL_S - (time.time() - t)))
+        except Exception as e:
+            s.fail(f"{type(e).__name__}: {e}")
+            raise
+        finally:
+            adapter.close()
     return 0
 
 
