@@ -14,16 +14,25 @@ dependencies = [
     "pymodbus>=3.6,<3.10",
 ]
 
+[project.scripts]
+zs = "zerostate.cli:main"
+
 [project.optional-dependencies]
 dev = ["pytest", "ruff", "pre-commit", "detect-secrets"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+zerostate = ["thresholds/*.yaml"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["net: runs inside the zerostate container against the live lab"]
-addopts = "-m 'not net'"
+markers = [
+    "net: runs inside the zerostate container against the live lab",
+    "live: runs on the host against the running lab (docker exec, localhost:80)",
+]
+addopts = "-m 'not net and not live'"
 
 [tool.ruff]
 line-length = 100

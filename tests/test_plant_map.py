@@ -13,6 +13,9 @@ def test_p1_map_loads_and_covers_plan_tags():
     tags = {e.tag for e in m.tags}
     assert len(tags) == len(m.tags) == 22
     plan = IsolationPlan.model_validate(yaml.safe_load((P1 / "envelope.yaml").read_text()))
-    used = {p.tag for p in plan.points} | {p.tag for p in plan.proving} | {w.signal_ref for w in plan.witnesses}
-    used |= {s for r in plan.relations for s in r.signals}
+    used = {w.signal_ref for w in plan.witnesses} | {s for r in plan.relations for s in r.signals}
+    used |= {st.target for st in plan.steps if st.kind == "mode"}
     assert used <= tags, used - tags
+    points = {p.tag for p in plan.points} | {p.tag for p in plan.proving}
+    assert {w.point for w in plan.witnesses if w.point} <= points
+    assert {st.target for st in plan.steps if st.kind in ("isolate", "vent_open", "vent_close")} <= points

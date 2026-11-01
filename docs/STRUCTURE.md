@@ -65,7 +65,7 @@ zerostate/
 │   ├── checks/                    # one file per rule; file name = rule ID suffix (PLAN-PATHS → plan/paths.py);
 │   │   │                          # each exports RULE_ID, RULE_VERSION, check(...) -> Finding
 │   │   ├── plan/   paths.py liveside.py boxedin.py software.py type.py proving.py mapping.py
-│   │   ├── live/   quality.py alive.py relation.py upstream.py hold.py valve.py camera.py   # CUSUM lives in relation.py
+│   │   ├── live/   quality.py alive.py relation.py upstream.py hold.py valve.py camera.py   # CUSUM lives in relation.py; __init__.py: window helpers + RULES registry
 │   │   └── process/ sequence.py independence.py reset.py
 │   ├── thresholds/default.yaml    # versioned generic thresholds; plant thresholds live with the plant (plants/<p>/thresholds.yaml → /app/config/<p>/), never in src/
 │   ├── cli.py                     # `zs` console script: session start/stop, status, step done, sign, audit verify/export, replay
@@ -136,13 +136,17 @@ zerostate/
 │   ├── test_freshness.py          # placeholder, STALE, constant_ok_raw, dead group (injectable clock)
 │   ├── test_plant_map.py          # map loads; every plan tag exists in the map
 │   ├── test_modbus_scan.py        # scan script offset check
+│   ├── test_timescale_judge.py    # time-scale pass/fail criteria (eval/tools/timescale_test.py)
+│   ├── test_runner.py             # runner logic without the lab: seeded draws, router-rule order
 │   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words (judge + refusals: Phase 2)
 │   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, settle before monitoring, UNKNOWN grace, stop
 │   ├── test_operator.py           # operator: setpoints before coil, readback mismatch aborts, manual off restores defaults
+│   ├── conftest.py                # shared in-process Modbus server fixture (adapter + operator tests)
 │   ├── test_audit_chain.py  test_replay.py  test_importer_gate.py  test_plants_only_diff.py
 │   ├── net/test_container_isolation.py   # run inside container: only PLC:502 reachable; truth, host ports, DMZ, router, internet not; app can't change net config
 │   ├── checks/                    # test_<rule>.py per rule (test_paths.py … test_reset.py), a passing and a failing case each; test_timescale_invariance.py
 │   ├── live/                      # marker `live`, run from the host against the lab: test_patch.py, test_operator_net.py
+│   │                              # tests/checks/synth.py: synthetic P1 windows (vent model, 4 Hz polls) for rule tests
 │   └── fixtures/                  # small recorded episodes for offline tests
 └── scripts/
     ├── modbus_scan.py             # Phase 0: map GRFICS registers (read-only)

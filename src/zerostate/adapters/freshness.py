@@ -27,7 +27,8 @@ class FreshnessTracker:
     def apply(self, signals: dict[str, Signal]) -> dict[str, Signal]:
         now = self.clock()
         out = dict(signals)
-        noisy_static: dict[str, list[bool]] = defaultdict(list)
+        noisy_static: dict[str, list[bool]] = defaultdict(list)  # per source group (one I/O device)
+        host_static: dict[str, list[bool]] = defaultdict(list)  # per host (the shared path, e.g. one PLC)
         for tag, s in signals.items():
             if s.quality != Quality.GOOD or s.raw is None:
                 continue
@@ -44,14 +45,19 @@ class FreshnessTracker:
                 continue
             static = now - self._last[tag][1] > e.max_static_wall_s
             noisy_static[e.source_group].append(static)
+            host_static[e.host].append(static)
             if static:
                 out[tag] = s.model_copy(update={"quality": Quality.STALE})
             elif tag not in self._seen_change:
                 # Not yet seen alive: frozen data would look fresh until the window ran out.
                 out[tag] = s.model_copy(update={"quality": Quality.UNKNOWN})
-        # A group is dead only if it has noise-carrying tags and every one of them stopped changing.
-        dead = {g for g, flags in noisy_static.items() if flags and all(flags)}
+        # A group / host is dead only if it has noise-carrying tags and every one of them stopped
+        # changing. The host rule covers groups with nothing noisy (valve closed, flow 0) behind a
+        # frozen path; if only one device died it marks the rest STALE too, which blocks (safe).
+        dead_groups = {g for g, flags in noisy_static.items() if flags and all(flags)}
+        dead_hosts = {h for h, flags in host_static.items() if flags and all(flags)}
         for tag, s in out.items():
-            if self.entries[tag].source_group in dead and s.quality != Quality.BAD:
+            e = self.entries[tag]
+            if (e.source_group in dead_groups or e.host in dead_hosts) and s.quality != Quality.BAD:
                 out[tag] = s.model_copy(update={"quality": Quality.STALE})
         return out

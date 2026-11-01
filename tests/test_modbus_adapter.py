@@ -1,63 +1,19 @@
-import asyncio
-import socket
-import threading
-import time
-
 import pytest
 import yaml
-from pymodbus.datastore import ModbusSequentialDataBlock, ModbusServerContext, ModbusSlaveContext
-from pymodbus.server import ServerAsyncStop, StartAsyncTcpServer
 
 from zerostate.adapters.modbus import ModbusReadOnly
 from zerostate.models.signal import Quality
 
 
-def free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
-
-
 @pytest.fixture
-def server():
-    port = free_port()
+def server(modbus_server):
     ir = [0] * 200
     ir[100], ir[101], ir[108] = 32768, 65535, 55296  # f1_valve_pos, f1_flow, pressure
     hr = [0] * 200
     hr[100] = 13107
     co = [False] * 16
     co[0] = True
-    # Block starts at 1: pymodbus servers add 1 to the requested address.
-    # di must be passed: pymodbus 3.9.2 ignores co/ir/hr when di is None.
-    ctx = ModbusServerContext(
-        slaves=ModbusSlaveContext(
-            di=ModbusSequentialDataBlock(1, [False] * 16),
-            ir=ModbusSequentialDataBlock(1, ir),
-            hr=ModbusSequentialDataBlock(1, hr),
-            co=ModbusSequentialDataBlock(1, co),
-        ),
-        single=True,
-    )
-    loop = asyncio.new_event_loop()
-    t = threading.Thread(
-        target=lambda: loop.run_until_complete(StartAsyncTcpServer(ctx, address=("127.0.0.1", port))),
-        daemon=True,
-    )
-    t.start()
-    for _ in range(50):
-        try:
-            socket.create_connection(("127.0.0.1", port), timeout=0.1).close()
-            break
-        except OSError:
-            time.sleep(0.05)
-
-    def stop():
-        asyncio.run_coroutine_threadsafe(ServerAsyncStop(), loop).result(5)
-        t.join(5)
-
-    yield port, stop
-    if t.is_alive():
-        stop()
+    return modbus_server(ir=ir, hr=hr, co=co)
 
 
 def write_map(tmp_path, port):

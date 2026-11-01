@@ -1,0 +1,5 @@
+id: S6
+title: PLC left in AUTO; f1 "closed" from the screen (manual setpoint only)
+real_case: HSG253 software-only isolation
+expected: [BLOCKED]
+operator: no_manual_mode

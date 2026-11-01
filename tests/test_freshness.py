@@ -12,9 +12,9 @@ class Clock:
         return self.t
 
 
-def entry(tag, group="tank", ok=(), placeholder=()):
+def entry(tag, group="tank", ok=(), placeholder=(), host="h"):
     return MapEntry(
-        tag=tag, host="h", table="ir", address=0, scale_min=0, scale_max=1, unit="x",
+        tag=tag, host=host, table="ir", address=0, scale_min=0, scale_max=1, unit="x",
         source_group=group, max_static_wall_s=10,
         constant_ok_raw=ok if ok == "any" else list(ok), placeholder_raw=list(placeholder),
     )
@@ -66,10 +66,12 @@ def test_any_constant_stays_good_with_static_for():
 
 
 def test_flow_only_constant_at_cutoff():
-    tr, c = setup(entry("flow", group="feed1", ok=[0]), entry("flow2", group="feed2", ok=[0]))
-    run(tr, c, 0, flow=25000, flow2=0)
-    run(tr, c, 1, flow=26000, flow2=0)
-    assert run(tr, c, 30, flow=26000, flow2=0) == {"flow": Quality.STALE, "flow2": Quality.GOOD}
+    # pressure keeps changing on the same host, so the host path is alive
+    tr, c = setup(entry("flow", group="feed1", ok=[0]), entry("flow2", group="feed2", ok=[0]), entry("pressure"))
+    run(tr, c, 0, flow=25000, flow2=0, pressure=1)
+    run(tr, c, 1, flow=26000, flow2=0, pressure=2)
+    q = run(tr, c, 30, flow=26000, flow2=0, pressure=3)
+    assert (q["flow"], q["flow2"]) == (Quality.STALE, Quality.GOOD)
 
 
 def test_dead_group_marks_every_tag_stale():
@@ -90,3 +92,32 @@ def test_bad_passes_through():
     out = tr.apply({"pressure": Signal(tag="pressure", value=None, raw=None, quality=Quality.BAD,
                                        source_ts=None, recv_ts=datetime.now(UTC))})
     assert out["pressure"].quality == Quality.BAD
+
+
+def test_host_freeze_marks_everything_from_that_host_stale():
+    # Oct 31 live case: tank froze behind the PLC while purge (valve closed, flow 0) stayed GOOD.
+    tr, c = setup(entry("pressure"), entry("purge_valve", group="purge", ok=[0, 65535]),
+                  entry("purge_flow", group="purge", ok=[0]), entry("other_host_p", group="x", host="h2"))
+    run(tr, c, 0, pressure=100, purge_valve=0, purge_flow=0, other_host_p=1)
+    run(tr, c, 1, pressure=101, purge_valve=0, purge_flow=0, other_host_p=2)
+    q = run(tr, c, 12, pressure=101, purge_valve=0, purge_flow=0, other_host_p=3)
+    assert q["purge_valve"] == q["purge_flow"] == q["pressure"] == Quality.STALE
+    assert q["other_host_p"] == Quality.GOOD  # a different path is unaffected
+
+
+def test_one_static_group_only_marks_that_group():
+    tr, c = setup(entry("pressure"), entry("level"), entry("flow", group="feed1", ok=[0]),
+                  entry("valve", group="feed1", ok=[0, 65535]))
+    run(tr, c, 0, pressure=1, level=1, flow=500, valve=65535)
+    run(tr, c, 1, pressure=2, level=2, flow=501, valve=65535)
+    q = run(tr, c, 12, pressure=3, level=3, flow=501, valve=65535)
+    assert q["flow"] == q["valve"] == Quality.STALE
+    assert q["pressure"] == q["level"] == Quality.GOOD
+
+
+def test_recovers_to_good_after_a_change():
+    tr, c = setup(entry("pressure"), entry("valve", group="purge", ok=[0, 65535]))
+    run(tr, c, 0, pressure=100, valve=0)
+    run(tr, c, 1, pressure=101, valve=0)
+    assert set(run(tr, c, 12, pressure=101, valve=0).values()) == {Quality.STALE}
+    assert set(run(tr, c, 13, pressure=102, valve=0).values()) == {Quality.GOOD}

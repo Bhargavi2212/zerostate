@@ -2,22 +2,24 @@
 # Live scan 2026-10-31 (scan_2026-10-31.json): IR 100-112 and HR 100-103 confirmed, offset 0.
 # HR 10-13 and coil 0 read fine but their meaning is confirmed only when the operator uses manual mode (Phase 1).
 # constant_ok_raw: raw values a tag may sit still at without going STALE ("any" = always).
+# Phase 1 retune for the p1-1 patch: measured values carry noise, so noisy tags go STALE after 5 s;
+# valve feedback may sit still only at its end stops; placeholder 203 stays (single value, errs UNKNOWN).
 process_time_scale: 1
 tags:
   # %IW100-112 measured / position inputs
-  - {tag: f1_valve_pos,      host: 192.168.95.2, table: ir, address: 100, scale_min: 0, scale_max: 100,  unit: "%",   source_group: feed1,    max_static_wall_s: 10, constant_ok_raw: any, placeholder_raw: [203], confirmed: true}
-  - {tag: f1_flow,           host: 192.168.95.2, table: ir, address: 101, scale_min: 0, scale_max: 1000, unit: flow,   source_group: feed1,  max_static_wall_s: 10, constant_ok_raw: [0], confirmed: true}
-  - {tag: f2_valve_pos,      host: 192.168.95.2, table: ir, address: 102, scale_min: 0, scale_max: 100,  unit: "%",   source_group: feed2,    max_static_wall_s: 10, constant_ok_raw: any, placeholder_raw: [203], confirmed: true}
-  - {tag: f2_flow,           host: 192.168.95.2, table: ir, address: 103, scale_min: 0, scale_max: 500,  unit: flow,   source_group: feed2,  max_static_wall_s: 10, constant_ok_raw: [0], confirmed: true}
-  - {tag: purge_valve_pos,   host: 192.168.95.2, table: ir, address: 104, scale_min: 0, scale_max: 100,  unit: "%",   source_group: purge,    max_static_wall_s: 10, constant_ok_raw: any, placeholder_raw: [203], confirmed: true}
-  - {tag: purge_flow,        host: 192.168.95.2, table: ir, address: 105, scale_min: 0, scale_max: 2000, unit: flow,   source_group: purge,  max_static_wall_s: 10, constant_ok_raw: [0], confirmed: true}
-  - {tag: product_valve_pos, host: 192.168.95.2, table: ir, address: 106, scale_min: 0, scale_max: 100,  unit: "%",   source_group: product,  max_static_wall_s: 10, constant_ok_raw: any, placeholder_raw: [203], confirmed: true}
-  - {tag: product_flow,      host: 192.168.95.2, table: ir, address: 107, scale_min: 0, scale_max: 500,  unit: flow,   source_group: product, max_static_wall_s: 10, constant_ok_raw: [0], confirmed: true}
-  - {tag: pressure,          host: 192.168.95.2, table: ir, address: 108, scale_min: 0, scale_max: 3200, unit: kPa,   source_group: tank,     max_static_wall_s: 10, confirmed: true}
-  - {tag: level,             host: 192.168.95.2, table: ir, address: 109, scale_min: 0, scale_max: 100,  unit: "%",   source_group: tank,     max_static_wall_s: 10, confirmed: true}
-  - {tag: a_in_purge,        host: 192.168.95.2, table: ir, address: 110, scale_min: 0, scale_max: 1,    unit: frac,  source_group: analyzer, max_static_wall_s: 10, confirmed: true}
-  - {tag: b_in_purge,        host: 192.168.95.2, table: ir, address: 111, scale_min: 0, scale_max: 1,    unit: frac,  source_group: analyzer, max_static_wall_s: 10, confirmed: true}
-  - {tag: c_in_purge,        host: 192.168.95.2, table: ir, address: 112, scale_min: 0, scale_max: 1,    unit: frac,  source_group: analyzer, max_static_wall_s: 10, confirmed: true}
+  - {tag: f1_valve_pos,      host: 192.168.95.2, table: ir, address: 100, scale_min: 0, scale_max: 100,  unit: "%",   source_group: feed1,    max_static_wall_s: 5, constant_ok_raw: [0, 65535], placeholder_raw: [203], confirmed: true}
+  - {tag: f1_flow,           host: 192.168.95.2, table: ir, address: 101, scale_min: 0, scale_max: 1000, unit: flow,   source_group: feed1,  max_static_wall_s: 5, constant_ok_raw: [0], confirmed: true}
+  - {tag: f2_valve_pos,      host: 192.168.95.2, table: ir, address: 102, scale_min: 0, scale_max: 100,  unit: "%",   source_group: feed2,    max_static_wall_s: 5, constant_ok_raw: [0, 65535], placeholder_raw: [203], confirmed: true}
+  - {tag: f2_flow,           host: 192.168.95.2, table: ir, address: 103, scale_min: 0, scale_max: 500,  unit: flow,   source_group: feed2,  max_static_wall_s: 5, constant_ok_raw: [0], confirmed: true}
+  - {tag: purge_valve_pos,   host: 192.168.95.2, table: ir, address: 104, scale_min: 0, scale_max: 100,  unit: "%",   source_group: purge,    max_static_wall_s: 5, constant_ok_raw: [0, 65535], placeholder_raw: [203], confirmed: true}
+  - {tag: purge_flow,        host: 192.168.95.2, table: ir, address: 105, scale_min: 0, scale_max: 2000, unit: flow,   source_group: purge,  max_static_wall_s: 5, constant_ok_raw: [0], confirmed: true}
+  - {tag: product_valve_pos, host: 192.168.95.2, table: ir, address: 106, scale_min: 0, scale_max: 100,  unit: "%",   source_group: product,  max_static_wall_s: 5, constant_ok_raw: [0, 65535], placeholder_raw: [203], confirmed: true}
+  - {tag: product_flow,      host: 192.168.95.2, table: ir, address: 107, scale_min: 0, scale_max: 500,  unit: flow,   source_group: product, max_static_wall_s: 5, constant_ok_raw: [0], confirmed: true}
+  - {tag: pressure,          host: 192.168.95.2, table: ir, address: 108, scale_min: 0, scale_max: 3200, unit: kPa,   source_group: tank,     max_static_wall_s: 5, confirmed: true}
+  - {tag: level,             host: 192.168.95.2, table: ir, address: 109, scale_min: 0, scale_max: 100,  unit: "%",   source_group: tank,     max_static_wall_s: 5, confirmed: true}
+  - {tag: a_in_purge,        host: 192.168.95.2, table: ir, address: 110, scale_min: 0, scale_max: 1,    unit: frac,  source_group: analyzer, max_static_wall_s: 5, confirmed: true}
+  - {tag: b_in_purge,        host: 192.168.95.2, table: ir, address: 111, scale_min: 0, scale_max: 1,    unit: frac,  source_group: analyzer, max_static_wall_s: 5, confirmed: true}
+  - {tag: c_in_purge,        host: 192.168.95.2, table: ir, address: 112, scale_min: 0, scale_max: 1,    unit: frac,  source_group: analyzer, max_static_wall_s: 5, confirmed: true}
   # %QW100-103 valve commands, %QX0.0 manual mode, %QW10-13 manual setpoints
   - {tag: f1_cmd,            host: 192.168.95.2, table: hr, address: 100, scale_min: 0, scale_max: 100,  unit: "%",   source_group: plc_cmd,  max_static_wall_s: 10, constant_ok_raw: any, confirmed: true}
   - {tag: f2_cmd,            host: 192.168.95.2, table: hr, address: 101, scale_min: 0, scale_max: 100,  unit: "%",   source_group: plc_cmd,  max_static_wall_s: 10, constant_ok_raw: any, confirmed: true}

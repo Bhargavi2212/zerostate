@@ -1,0 +1,31 @@
+diff --git a/web_visualization/data/index.php b/web_visualization/data/index.php
+index 73f469a..43fefca 100644
+--- a/web_visualization/data/index.php
++++ b/web_visualization/data/index.php
+@@ -37,6 +37,8 @@ $quiet_buffer_min_seconds = 5;
+ // the design doc). Deliberately not applied to every request touching a
+ // fault field - see detect_new_activation() below for why that matters.
+ $fault_activation_delay_seconds = 3;
++// ZS patch p1-1 (change H): simulator replies are read with fgets($fp, 65536); upstream read 1500 bytes,
++// and the stock state JSON is already ~1477 bytes, so the p1-1 feedback fields would be cut off.
+ 
+ // Maps a real-trigger field name to the tag name
+ // simulation/noise_floor/scheduler.py picks ambient events from, so the
+@@ -238,7 +240,7 @@ if ($httpMethod === 'POST') {
+ 
+         $request = json_encode(['request' => 'write', 'data' => ['inputs' => $inputs]]);
+         fwrite($fp, $request);
+-        echo fgets($fp, 1500);
++        echo fgets($fp, 65536);
+     }
+ 
+     if (is_array($cmd)) {
+@@ -281,7 +283,7 @@ if ($httpMethod === 'POST') {
+     }
+ } else {
+     fwrite($fp, '{"request":"read"}\n');
+-    $response = fgets($fp, 1500);
++    $response = fgets($fp, 65536);
+     $decoded = json_decode($response, true);
+     if (is_array($decoded)) {
+         $decoded['noise_floor'] = read_noise_floor_state($noise_floor_state_file, $noise_floor_default_state);

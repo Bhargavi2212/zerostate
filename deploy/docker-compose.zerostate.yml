@@ -1,6 +1,15 @@
 # Override for Fortiphyd's compose file. Run from D:\grfics:
 #   docker compose -f docker-compose.yml -f zerostate\deploy\docker-compose.zerostate.yml up -d --build zerostate
 services:
+  # GRFICS simulator replaced by the derived, patched image (plants/p1_grfics/patch). Fortiphyd's file is untouched.
+  simulation:
+    image: zerostate/grfics-simulation:p1-1
+    build: !reset null
+    pull_policy: never
+    environment:
+      ZS_TIME_SCALE: ${ZS_TIME_SCALE:-1}
+      ZS_NOISE: ${ZS_NOISE:-1}
+
   zerostate-net:
     build: {context: ./zerostate, dockerfile: deploy/Dockerfile.net}
     image: zerostate-net:local
@@ -26,3 +35,18 @@ services:
     cap_drop: [ALL]
     depends_on:
       zerostate-net: {condition: service_healthy}
+    volumes:
+      - zs-data:/data
+
+  # Eval tooling, not the product: performs isolation steps through the PLC's manual mode.
+  zs-operator:
+    build: {context: ./zerostate, dockerfile: plants/p1_grfics/Dockerfile.operator}
+    image: zs-operator:local
+    container_name: zs-operator
+    cap_add: [NET_ADMIN]
+    networks:
+      c-dmz-net:
+        ipv4_address: 192.168.90.70
+
+volumes:
+  zs-data:
