@@ -54,9 +54,10 @@ class Segment(_Plan):
 class Witness(_Plan):
     segment: str
     signal_ref: str
-    role: str
+    role: str  # pressure | level | feedback | command | flow | mode
     side: Literal["work", "upstream", "between_blocks"]
     redundancy_group: str | None = None
+    point: str | None = None  # isolation point this witness belongs to (feedback/command/flow)
 
 
 class Relation(_Plan):
@@ -78,8 +79,20 @@ class Assumption(_Plan):
 class HoldTest(_Plan):
     hold_process_s: float
     window_process_s: float
-    max_rise: float
+    max_rise_kpa: float
     upstream_min: float | None = None
+
+
+class Step(_Plan):
+    """One plan step; the rule ids it runs are data, not code."""
+
+    k: int
+    kind: Literal["mode", "isolate", "vent_open", "vent_close", "hold", "final"]
+    target: str | None = None  # isolation point id, or a tag (e.g. manual_mode)
+    required_state: float | None = None
+    checks: tuple[str, ...] = ()
+    settle_process_s: float = 0
+    timeout_process_s: float | None = None
 
 
 class IsolationPlan(_Plan):
@@ -93,6 +106,9 @@ class IsolationPlan(_Plan):
     relations: tuple[Relation, ...] = ()
     assumptions: tuple[Assumption, ...] = ()
     hold_test: HoldTest
+    steps: tuple[Step, ...] = ()
+    vent_target_kpa_abs: float | None = None  # operator goal (rolling mean)
+    p_depressurised_kpa_abs: float | None = None  # acceptance limit LIVE-HOLD checks
 
     def content_hash(self) -> str:
         canon = json.dumps(self.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))

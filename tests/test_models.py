@@ -34,7 +34,7 @@ def test_hash_stable_through_yaml_roundtrip():
 
 def test_hash_changes_when_plan_changes():
     plan = load_stub()
-    changed = plan.model_copy(update={"hold_test": plan.hold_test.model_copy(update={"max_rise": 11})})
+    changed = plan.model_copy(update={"hold_test": plan.hold_test.model_copy(update={"max_rise_kpa": 11})})
     assert changed.content_hash() != plan.content_hash()
 
 
@@ -50,6 +50,13 @@ def test_session_edits_do_not_touch_plan_hash():
     plan = load_stub()
     h = plan.content_hash()
     session = SessionState(plan_hash=h)
-    session.point_status["f1_valve_pos"] = "ITG"
+    session.point_status["f1"] = "ITG"
     session.signatures.append(Signature(role="installer", person="a", ts=datetime.now(UTC)))
     assert plan.content_hash() == h == session.plan_hash
+
+
+def test_plan_steps_name_their_checks():
+    plan = load_stub()
+    assert [st.k for st in plan.steps] == list(range(1, 9))
+    assert all(c.startswith("LIVE-") for st in plan.steps for c in st.checks)
+    assert plan.vent_target_kpa_abs < plan.p_depressurised_kpa_abs
