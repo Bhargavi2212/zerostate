@@ -117,6 +117,24 @@ class Session:
             self._evaluate_due_steps(now)
             if any(k >= 2 for k in self.marks) and now - self.last_monitor >= self.params["monitor_period_wall_s"]:
                 self._monitor(now)
+                self._prune()
+
+    def _prune(self) -> None:
+        """Keep only what a pending step evaluation or the next monitor window can still need:
+        a session stays open until someone signs, possibly a whole shift."""
+        keep = [self.last_monitor - self.params["rate_window_process_s"] / self.scale]
+        keep += [t for k, t in self.marks.items() if k not in self.evaluated]
+        cutoff = min(keep)
+        for tag, rows in self.buffer.items():
+            if rows and rows[0][0] < cutoff:
+                self.buffer[tag] = [r for r in rows if r[0] >= cutoff]
+
+    def fail(self, reason: str) -> None:
+        """The monitor itself stopped: say so in the audit log rather than go quiet."""
+        self.verdict = gate.worsen(self.verdict, Verdict.ESCALATED)
+        self.log.append(self.sid, "verdict", {"source": "monitor_error",
+                                              **gate.stamp(Verdict.ESCALATED, self.plan, self.params["version"], []),
+                                              "reasons": [f"monitor stopped: {reason}"]})
 
     def _warm_in(self, now: float) -> None:
         if self.witnesses <= set(self.latest) and all(self.latest[t].quality == Quality.GOOD for t in self.witnesses):

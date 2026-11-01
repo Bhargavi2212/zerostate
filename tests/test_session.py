@@ -161,3 +161,21 @@ def test_monitor_catches_a_dropout_jump_with_the_rate_test(tmp_path):
     d.run(4)
     st = d.status()
     assert st["verdict"] == "BLOCKED" and "faster than the process" in st["stamp"]["reasons"][0]
+
+
+def test_buffer_stays_bounded_in_a_long_session(tmp_path):
+    d = Driver(tmp_path)
+    clean_run(d)
+    d.run(300)  # five more minutes of monitoring after NO_DISCREPANCY (a session open for a shift)
+    keep_wall = PARAMS["rate_window_process_s"] / SCALE + PARAMS["monitor_period_wall_s"] + POLL
+    assert max(len(rows) for rows in d.s.buffer.values()) <= keep_wall / POLL + 2
+    assert d.status()["verdict"] == "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+
+
+def test_monitor_crash_escalates_and_still_replays(tmp_path):
+    d = Driver(tmp_path)
+    clean_run(d)
+    d.s.fail("OperationalError: database is locked")
+    st = d.status()
+    assert st["verdict"] == "ESCALATED" and st["stamp"]["reasons"] == ["monitor stopped: OperationalError: database is locked"]
+    assert replay(d.log, "s1", PARAMS) == []

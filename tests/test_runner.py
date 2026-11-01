@@ -39,3 +39,14 @@ def test_step_evaluated_reads_json_string_keys():
     st = json.loads(json.dumps({"steps": {1: "PASS", 2: "pending"}}))
     assert runner.evaluated(st, 1)
     assert not runner.evaluated(st, 2) and not runner.evaluated(st, 3)
+
+
+def test_operator_failure_makes_the_episode_invalid(monkeypatch):
+    import pytest
+    monkeypatch.setattr(runner, "operator", lambda *a: 1)
+    with pytest.raises(runner.EpisodeInvalid):
+        runner.act("set", "f1", "0")
+    monkeypatch.setattr(runner, "operator", lambda *a: 2)  # timeout: only allowed while venting
+    runner.act("wait-pressure-below", "102")
+    with pytest.raises(runner.EpisodeInvalid):
+        runner.act("set", "f1", "0")
