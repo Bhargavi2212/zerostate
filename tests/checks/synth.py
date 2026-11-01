@@ -24,7 +24,7 @@ def vented_pressure(ps: float, p0: float = 2700.0) -> float:
     return 100 + root * root
 
 
-def steady(**over) -> dict:
+def steady(_ps: float | None = None, **over) -> dict:
     """Isolated, vented plant at ~101 kPa with purge closed; override any tag."""
     base = {"pressure": 101.0, "manual_mode": 1.0}
     for v in ("f1", "f2", "purge", "product"):
