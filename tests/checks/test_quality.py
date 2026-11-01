@@ -32,3 +32,17 @@ def test_valve_closing_in_one_tick_is_not_a_spike():
     w = window(lambda ps: steady(f1_flow=640.0, f1_valve_pos=100.0, f1_cmd=100.0, pressure=2700.0)
                if ps < 10 else steady(pressure=2700.0), 40)
     assert run(w, k=2).status == S.PASS
+
+
+def test_one_late_stale_poll_is_not_a_rate_failure():
+    # Live S0 seed 2: polls stalled, the late one carried a value ~10 process-s old, the next was fresh
+    def lagged(ps):
+        return vent(30) if 30 <= ps < 41 else vent(ps)
+    assert run(window(lagged, 120)).status == S.PASS
+
+
+def test_rate_still_catches_a_dropout_before_the_floor():
+    # gauge falls to 100 kPa (above the 50 floor) instantly from 2700: impossible for the process
+    w = window(lambda ps: vent(ps, pressure=100.0) if ps >= 30 else vent(ps), 80)
+    r = run(w)
+    assert r.status == S.FAIL and "faster than the process" in r.message

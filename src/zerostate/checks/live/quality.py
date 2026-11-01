@@ -1,13 +1,11 @@
 """LIVE-QUALITY: every witness fresh and physically possible (QARTOD gross range; rate of change
 and spike only on the continuous state variables pressure and level)."""
 
-from itertools import pairwise
-
 from zerostate.checks.live import finding, series
 from zerostate.models.verdict import FindingStatus as S
 
 RULE_ID = "LIVE-QUALITY"
-RULE_VERSION = "1"
+RULE_VERSION = "2"  # v2: rate over a rate_window_process_s baseline, not one poll
 CONTINUOUS = {"pressure": ("max_rate_kpa_per_process_s", "spike_kpa"),
               "level": ("max_rate_level_pct_per_process_s", "spike_level_pct")}
 
@@ -40,8 +38,14 @@ def check(plan, step, window, params):
         if w.role in CONTINUOUS:
             rate_key, spike_key = CONTINUOUS[w.role]
             vals = [(ps, v) for ps, v, q in s if v is not None and q == "GOOD"]
-            for (p0, v0), (p1, v1) in pairwise(vals):
-                if p1 > p0 and abs(v1 - v0) / (p1 - p0) > params[rate_key]:
+            # Rate over a baseline of at least rate_window_process_s: one late poll carrying a stale value
+            # (transport jitter, x10 turns 1 s into 10 process-s) must not look like an impossible change.
+            j = 0
+            for i, (p1, v1) in enumerate(vals):
+                while j + 1 < i and p1 - vals[j + 1][0] >= params["rate_window_process_s"]:
+                    j += 1
+                p0, v0 = vals[j]
+                if p1 - p0 >= params["rate_window_process_s"] and abs(v1 - v0) / (p1 - p0) > params[rate_key]:
                     return finding(RULE_ID, RULE_VERSION, S.FAIL,
                                    f"{w.signal_ref} changed {abs(v1 - v0):.4g} in {p1 - p0:.3g} process-s, "
                                    "faster than the process can move", [w.signal_ref])
