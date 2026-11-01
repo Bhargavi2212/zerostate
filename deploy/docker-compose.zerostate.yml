@@ -35,6 +35,8 @@ services:
     cap_drop: [ALL]
     depends_on:
       zerostate-net: {condition: service_healthy}
+    volumes:
+      - zs-data:/data
 
   # Eval tooling, not the product: performs isolation steps through the PLC's manual mode.
   zs-operator:
@@ -45,3 +47,6 @@ services:
     networks:
       c-dmz-net:
         ipv4_address: 192.168.90.70
+
+volumes:
+  zs-data:

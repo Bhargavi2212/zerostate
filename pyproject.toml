@@ -14,6 +14,9 @@ dependencies = [
     "pymodbus>=3.6,<3.10",
 ]
 
+[project.scripts]
+zs = "zerostate.cli:main"
+
 [project.optional-dependencies]
 dev = ["pytest", "ruff", "pre-commit", "detect-secrets"]
 
