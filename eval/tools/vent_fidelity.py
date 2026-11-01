@@ -44,14 +44,14 @@ def vent(scale: float, warmup_s: float) -> dict:
     for v in ("f1", "f2", "product"):
         operator("set", v, "0")
     time.sleep(10 / scale + 2)  # let the closures settle (10 process-s)
-    rows, t0 = [], time.time()
-    operator("set", "purge", "100")
-    while (time.time() - t0) * scale < 1200:
-        p = truth.read()["outputs"]["pressure"]
-        rows.append(((time.time() - t0) * scale, p))
-        if p <= TARGET_KPA:
-            break
-        time.sleep(0.25)
+    rows, t0 = [], None
+    with truth.stream(4) as samples:  # VM-clock timestamps from inside the container
+        operator("set", "purge", "100")
+        for d in samples:
+            t0 = t0 or d["t"]  # first sample after the purge command returned
+            rows.append(((d["t"] - t0) * scale, d["outputs"]["pressure"]))
+            if rows[-1][1] <= TARGET_KPA or rows[-1][0] > 1200:
+                break
     operator("set", "purge", "0")
     operator("manual", "off")
     p0 = rows[0][1]
