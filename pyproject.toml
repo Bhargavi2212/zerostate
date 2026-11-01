@@ -20,6 +20,9 @@ dev = ["pytest", "ruff", "pre-commit", "detect-secrets"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+zerostate = ["thresholds/*.yaml"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [

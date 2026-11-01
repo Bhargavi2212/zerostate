@@ -65,7 +65,7 @@ zerostate/
 │   ├── checks/                    # one file per rule; file name = rule ID suffix (PLAN-PATHS → plan/paths.py);
 │   │   │                          # each exports RULE_ID, RULE_VERSION, check(...) -> Finding
 │   │   ├── plan/   paths.py liveside.py boxedin.py software.py type.py proving.py mapping.py
-│   │   ├── live/   quality.py alive.py relation.py upstream.py hold.py valve.py camera.py   # CUSUM lives in relation.py
+│   │   ├── live/   quality.py alive.py relation.py upstream.py hold.py valve.py camera.py   # CUSUM lives in relation.py; __init__.py: window helpers + RULES registry
 │   │   └── process/ sequence.py independence.py reset.py
 │   ├── thresholds/default.yaml    # versioned generic thresholds; plant thresholds live with the plant (plants/<p>/thresholds.yaml → /app/config/<p>/), never in src/
 │   ├── cli.py                     # `zs` console script: session start/stop, status, step done, sign, audit verify/export, replay
@@ -145,6 +145,7 @@ zerostate/
 │   ├── net/test_container_isolation.py   # run inside container: only PLC:502 reachable; truth, host ports, DMZ, router, internet not; app can't change net config
 │   ├── checks/                    # test_<rule>.py per rule (test_paths.py … test_reset.py), a passing and a failing case each; test_timescale_invariance.py
 │   ├── live/                      # marker `live`, run from the host against the lab: test_patch.py, test_operator_net.py
+│   │                              # tests/checks/synth.py: synthetic P1 windows (vent model, 4 Hz polls) for rule tests
 │   └── fixtures/                  # small recorded episodes for offline tests
 └── scripts/
     ├── modbus_scan.py             # Phase 0: map GRFICS registers (read-only)
