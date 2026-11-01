@@ -7,7 +7,8 @@ Read first: docs/PROJECT.md (what + never-say list), docs/ARCHITECTURE.md, docs/
 2. Ponytail on (`/ponytail full`). Climb the ladder: need it? → already here? → stdlib? → installed dep? → one line? → minimum + test.
 3. Work item by item (P0-1, P0-2 …). For each: code → tests → `pytest` green → commit. **One commit per spec item or smaller. Never commit failing tests.**
 4. Commit message: `P<phase>-<item> <what> (<claim ids>)`, e.g. `P0-3 read-only Modbus adapter (C1)`.
-5. End of phase: `/ponytail-review branch`, fix findings, run the gate commands in the spec, paste gate output into docs/specs/PHASE_<n>_GATE.md, merge, tag `phase-<n>`, delete the work branch. Work branches are `p<n>-work`, never the same name as a tag.
+5. End of phase: `/ponytail-review branch`, fix findings, run the gate commands in the spec, paste gate output into docs/specs/PHASE_<n>_GATE.md, open a pull request into `main`; after it is merged, tag `phase-<n>` and delete the work branch. Work branches are `p<n>-work`, never the same name as a tag.
+6. **Never push to `main` directly.** Every change, docs included, goes on a branch and lands through a pull request.
 
 ## Environment
 - Windows + PowerShell. `python -m venv .venv` then `.venv\Scripts\Activate.ps1`; `pip install -e .[dev]`. Never install into base/conda.
