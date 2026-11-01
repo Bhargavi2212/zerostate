@@ -88,7 +88,9 @@ def main() -> int:
     ap.add_argument("--warmup-s", type=float, default=120)
     args = ap.parse_args()
 
-    results = {}
+    out = ROOT / "eval" / "results" / f"timescale_{datetime.now(UTC):%Y-%m-%d}.json"
+    # Keep earlier runs from the same day (e.g. the x1 reference) so a later scale is judged against them.
+    results = json.loads(out.read_text(encoding="utf-8"))["results"] if out.exists() else {}
     for scale in args.scales:
         print(f"scale ×{scale}: recreating simulation, warming up {args.warmup_s:.0f} s", flush=True)
         recreate_simulation(scale)
@@ -99,7 +101,6 @@ def main() -> int:
         print(json.dumps(results[str(scale)]["stats"], indent=1), flush=True)
 
     verdict = judge(results)
-    out = ROOT / "eval" / "results" / f"timescale_{datetime.now(UTC):%Y-%m-%d}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({"minutes": args.minutes, "warmup_s": args.warmup_s,
                                "results": results, "verdict": verdict}, indent=1), encoding="utf-8")
