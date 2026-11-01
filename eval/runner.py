@@ -31,6 +31,7 @@ COMPOSE = ["docker", "compose", "-f", "docker-compose.yml", "-f", str(ROOT / "de
 SOURCES = ("192.168.90.60", "192.168.90.70")
 PLC = "192.168.95.2"
 TERMINAL = ("BLOCKED", "ESCALATED")
+IO_DEVICES = "python (feed1|feed2|purge|product|tank|analyzer).py"  # GRFICS remote I/O device scripts
 
 
 def _load(name):
@@ -123,7 +124,7 @@ def preflight() -> dict:
 
 def postflight(offset, scenario) -> dict:
     if scenario.get("stopped_modbus"):
-        sh("docker", "exec", "simulation", "supervisorctl", "start", "modbus", check=False)
+        sh("docker", "exec", "simulation", "supervisorctl", "start", "modbus", check=False)  # fresh device set
     faults.clear()
     operator("manual", "off")
     ids = ids_counts(offset)
@@ -165,10 +166,19 @@ class Episode:
             self.due.remove(item)
             f = item[1]
             if f.get("action") == "stop_modbus":
+                # run_all.sh backgrounds the device scripts and supervisor has no stopasgroup, so
+                # "stop modbus" alone leaves them serving (seen in the first S12): kill them too.
                 sh("docker", "exec", "simulation", "supervisorctl", "stop", "modbus")
+                sh("docker", "exec", "simulation", "pkill", "-f", IO_DEVICES, check=False)
                 self.sc["stopped_modbus"] = True
+                time.sleep(1)
+                if sh("docker", "exec", "simulation", "pgrep", "-f", IO_DEVICES, check=False).strip():
+                    raise EpisodeInvalid("comms-loss fault did not take: I/O device processes still running")
             else:
-                faults.set_inputs(**f["set"])
+                state = faults.set_inputs(**f["set"])["state"]
+                wrong = {k: state.get(k) for k, v in f["set"].items() if k in state and float(state[k]) != float(v)}
+                if wrong:
+                    raise EpisodeInvalid(f"fault did not take: {wrong}")
             self.log_event("fault", {**f, "t_vm": self.last_truth_t})
 
     # status ------------------------------------------------------------
