@@ -1,5 +1,5 @@
 id: S12
-title: comms loss: remote I/O stopped during the hold (PLC serves last values)
+title: "comms loss: remote I/O stopped during the hold (PLC serves last values)"
 real_case: Modbus last-value behaviour (seen live Oct 31)
 expected: [ESCALATED]
 faults:
