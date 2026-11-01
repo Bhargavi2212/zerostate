@@ -176,7 +176,7 @@ zerostate/
 ## 5. Conventions
 - Build workflow: this planning session writes one spec per phase in `docs/specs/PHASE_<n>.md` (what + acceptance tests + gate, never how). VS Code Claude Code with Ponytail plans → codes → tests from the spec. Rules for coding agents: `CLAUDE.md` at repo root (incl. the never-cut list).
 - Python ≥3.11 in a repo venv: `python -m venv .venv`; `.venv\Scripts\Activate.ps1`; `pip install -e .[dev]` (Windows/PowerShell). Runtime in Docker with pinned deps.
-- Git: one commit per spec item or smaller, never with failing tests; branch per phase named `p<n>-work` (never the same name as a tag); tag `phase-<n>` only after the gate passes, then delete the work branch; gate output saved in `docs/specs/PHASE_<n>_GATE.md`. Pre-commit: ruff, detect-secrets, fast pytest.
+- Git: one commit per spec item or smaller, never with failing tests; branch per phase named `p<n>-work` (never the same name as a tag); nothing is pushed to `main` directly, everything lands through a pull request; tag `phase-<n>` only after the gate passes and the PR is merged, then delete the work branch; gate output saved in `docs/specs/PHASE_<n>_GATE.md`. Pre-commit: ruff, detect-secrets, fast pytest.
 - Formatting/lint: ruff; tests: pytest; types: pydantic models, mypy on src/ (best effort).
 - Time: all timestamps UTC, ISO-8601; plant source timestamp kept separate from receive timestamp.
 - IDs: rule ids exactly as in ARCHITECTURE (`PLAN-PATHS`, `LIVE-ALIVE`, `PROC-RESET` …), version in the separate `RULE_VERSION` field; file name = lower-case suffix (`checks/live/alive.py`), test = `tests/checks/test_alive.py`; scenario ids as in EVAL.md; claim ids as in CLAIMS.md.
