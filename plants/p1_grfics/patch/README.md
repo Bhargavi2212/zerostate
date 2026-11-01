@@ -23,8 +23,9 @@ ZeroState repository is Apache-2.0. Fortiphyd's compose file and web files are n
 | F | New input `<v>_leak_pct` (0–100): flow uses `max(true_pos, leak_pct)` as the opening, including the product "opening ≤ 0 → no flow" line. True position and feedback unchanged. Truth `state.<v>_leak_pct`. | `TE_process.cc/.h` |
 | G | Remote I/O IR1 on the four valve devices serves `measured.<v>_valve_pos` instead of the true position. | `remote_io/modbus/{feed1,feed2,purge,product}.py` |
 | H | `index.php` reads simulator replies with `fgets($fp, 65536)` (was 1500). The stock state JSON is already 1,473–1,477 bytes, so G's four feedback fields alone pushed it over and cut off every truth read and the web/3D view. Two lines plus a comment; approved Nov 1 as a deviation from "web files unchanged". (`fgets(…, 4096)` reads elsewhere are left; the patched JSON is ~1,950 bytes.) | `web_visualization/data/index.php` (`web.patch`) |
+| I | Drift fault severity may be negative (a gauge drifting **low**, the dangerous direction: it says "depressurised" while pressure remains). The ≥ 0 clamp now applies only when a sensor is not in drift mode; noise and dropout severities stay ≥ 0. Approved Nov 1. | `TE_process.cc` |
 
-Unchanged: e-stop, all existing faults, the noise-floor scheduler, the PLC, and every web file except the two read sizes in H.
+Unchanged: e-stop, all existing faults (except I's sign rule for drift), the noise-floor scheduler, the PLC, and every web file except the two read sizes in H.
 Known upstream quirk left as is: the analyzer's sampling-delay copy loop never runs, so the measured
 analyzer tracks the live composition.
 

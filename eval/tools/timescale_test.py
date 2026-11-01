@@ -36,15 +36,12 @@ def recreate_simulation(scale: float) -> None:
 
 
 def log_truth(seconds: float, hz: float = 2.0) -> list[dict]:
-    rows, end = [], time.monotonic() + seconds
-    while time.monotonic() < end:
-        t0 = time.monotonic()
-        try:
-            o = truth.read()["outputs"]
-            rows.append({"t": t0, "pressure": o["pressure"], "liquid_level": o["liquid_level"]})
-        except OSError:
-            pass  # a missed sample is fine; the stats use what arrived
-        time.sleep(max(0.0, 1 / hz - (time.monotonic() - t0)))
+    rows = []
+    with truth.stream(hz) as samples:  # one reader inside the container, VM-clock timestamps
+        for d in samples:
+            rows.append({"t": d["t"], "pressure": d["outputs"]["pressure"], "liquid_level": d["outputs"]["liquid_level"]})
+            if d["t"] - rows[0]["t"] >= seconds:
+                break
     return rows
 
 
@@ -88,7 +85,9 @@ def main() -> int:
     ap.add_argument("--warmup-s", type=float, default=120)
     args = ap.parse_args()
 
-    results = {}
+    out = ROOT / "eval" / "results" / f"timescale_{datetime.now(UTC):%Y-%m-%d}.json"
+    # Keep earlier runs from the same day (e.g. the x1 reference) so a later scale is judged against them.
+    results = json.loads(out.read_text(encoding="utf-8"))["results"] if out.exists() else {}
     for scale in args.scales:
         print(f"scale ×{scale}: recreating simulation, warming up {args.warmup_s:.0f} s", flush=True)
         recreate_simulation(scale)
@@ -99,7 +98,6 @@ def main() -> int:
         print(json.dumps(results[str(scale)]["stats"], indent=1), flush=True)
 
     verdict = judge(results)
-    out = ROOT / "eval" / "results" / f"timescale_{datetime.now(UTC):%Y-%m-%d}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({"minutes": args.minutes, "warmup_s": args.warmup_s,
                                "results": results, "verdict": verdict}, indent=1), encoding="utf-8")

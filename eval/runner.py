@@ -144,6 +144,7 @@ class Episode:
         self.sid = out.name
         self.due: list[tuple[float, dict]] = []
         self.stop_truth = threading.Event()
+        self.last_truth_t = None  # Docker VM clock, same as ZeroState's audit timestamps
 
     # faults ------------------------------------------------------------
     def schedule(self, k: int, t_mark: float | None) -> None:
@@ -163,7 +164,7 @@ class Episode:
                 self.sc["stopped_modbus"] = True
             else:
                 faults.set_inputs(**f["set"])
-            self.log_event("fault", f)
+            self.log_event("fault", {**f, "t_vm": self.last_truth_t})
 
     # status ------------------------------------------------------------
     def status(self) -> dict:
@@ -188,14 +189,12 @@ class Episode:
             fh.write(json.dumps({"t": time.time(), "kind": kind, "data": data}) + "\n")
 
     def truth_logger(self):
-        with open(self.out / "truth.jsonl", "a", encoding="utf-8") as fh:
-            while not self.stop_truth.is_set():
-                t0 = time.time()
-                try:
-                    fh.write(json.dumps({"t": t0, **truth.read()}) + "\n")
-                except OSError:
-                    pass
-                time.sleep(max(0.0, 0.25 - (time.time() - t0)))
+        with open(self.out / "truth.jsonl", "a", encoding="utf-8") as fh, truth.stream(4) as samples:
+            for d in samples:  # one reader inside the simulation container, VM-clock timestamps
+                fh.write(json.dumps(d) + "\n")
+                self.last_truth_t = d["t"]
+                if self.stop_truth.is_set():
+                    return
 
     # run ------------------------------------------------------------------
     def run(self) -> dict:

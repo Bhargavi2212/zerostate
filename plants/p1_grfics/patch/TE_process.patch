@@ -1,5 +1,5 @@
 diff --git a/simulation/TE_process.cc b/simulation/TE_process.cc
-index aeda962..b3f77c1 100644
+index aeda962..6eec052 100644
 --- a/simulation/TE_process.cc
 +++ b/simulation/TE_process.cc
 @@ -85,6 +85,46 @@ void apply_sensor_fault(double true_value, double *measured, double *bias,
@@ -160,7 +160,29 @@ index aeda962..b3f77c1 100644
          product_flow = 0.0;
      }
      // if liquid level is 0 then product flow must be 0
-@@ -492,6 +597,27 @@ void TE::update(Json::Value inputs) {
+@@ -462,13 +567,14 @@ void TE::update(Json::Value inputs) {
+     purge_flow_fault_mode = std::max(std::min(purge_flow_fault_mode, 4), 0);
+     product_flow_fault_mode = std::max(std::min(product_flow_fault_mode, 4), 0);
+     analyzer_fault_mode = std::max(std::min(analyzer_fault_mode, 4), 0);
+-    tank_pressure_fault_severity = std::max(tank_pressure_fault_severity, 0.0);
+-    tank_level_fault_severity = std::max(tank_level_fault_severity, 0.0);
+-    f1_flow_fault_severity = std::max(f1_flow_fault_severity, 0.0);
+-    f2_flow_fault_severity = std::max(f2_flow_fault_severity, 0.0);
+-    purge_flow_fault_severity = std::max(purge_flow_fault_severity, 0.0);
+-    product_flow_fault_severity = std::max(product_flow_fault_severity, 0.0);
+-    analyzer_fault_severity = std::max(analyzer_fault_severity, 0.0);
++    // ZS patch p1-1 (change I): drift may be negative (a gauge drifting low); noise/dropout stay >= 0
++    if (tank_pressure_fault_mode != SENSOR_FAULT_DRIFT) tank_pressure_fault_severity = std::max(tank_pressure_fault_severity, 0.0);
++    if (tank_level_fault_mode != SENSOR_FAULT_DRIFT) tank_level_fault_severity = std::max(tank_level_fault_severity, 0.0);
++    if (f1_flow_fault_mode != SENSOR_FAULT_DRIFT) f1_flow_fault_severity = std::max(f1_flow_fault_severity, 0.0);
++    if (f2_flow_fault_mode != SENSOR_FAULT_DRIFT) f2_flow_fault_severity = std::max(f2_flow_fault_severity, 0.0);
++    if (purge_flow_fault_mode != SENSOR_FAULT_DRIFT) purge_flow_fault_severity = std::max(purge_flow_fault_severity, 0.0);
++    if (product_flow_fault_mode != SENSOR_FAULT_DRIFT) product_flow_fault_severity = std::max(product_flow_fault_severity, 0.0);
++    if (analyzer_fault_mode != SENSOR_FAULT_DRIFT) analyzer_fault_severity = std::max(analyzer_fault_severity, 0.0);
+ 
+     molar_A = std::max(molar_A, 0.0);
+     molar_B = std::max(molar_B, 0.0);
+@@ -492,6 +598,27 @@ void TE::update(Json::Value inputs) {
                          purge_flow_fault_mode, purge_flow_fault_severity, dt, now_seconds);
      apply_sensor_fault(product_flow, &measured_product_flow, &product_flow_bias,
                          product_flow_fault_mode, product_flow_fault_severity, dt, now_seconds);
@@ -188,7 +210,7 @@ index aeda962..b3f77c1 100644
      // analyzer is a single instrument: a real GC samples A/B/C together, so
      // they share one mode and one drift bias/dropout phase, not three
      // independent ones
-@@ -527,6 +653,18 @@ void TE::update(Json::Value inputs) {
+@@ -527,6 +654,18 @@ void TE::update(Json::Value inputs) {
              break;
      }
  
@@ -207,7 +229,7 @@ index aeda962..b3f77c1 100644
      if (product_flow <= 0.0) {
          //hold at last cost
          cost = cost;
-@@ -621,6 +759,27 @@ Json::Value TE::get_state_json() {
+@@ -621,6 +760,27 @@ Json::Value TE::get_state_json() {
      state["measured"]["B_in_purge"] = measured_B_in_purge;
      state["measured"]["C_in_purge"] = measured_C_in_purge;
  
