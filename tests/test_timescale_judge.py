@@ -1,4 +1,5 @@
 import importlib.util
+import math
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location(
@@ -25,10 +26,14 @@ vf = importlib.util.module_from_spec(vspec)
 vspec.loader.exec_module(vf)
 
 
-def test_vent_fidelity_judge():
-    phys = vf.physics_vent_s(2700)
-    assert 340 < phys < 370  # ~5.9 process-min from 2700 to 102 kPa
-    good = {"p0": 2700, "vent_s": phys, "physics_vent_s": phys, "curve": {"60": 1900, "120": 1300}}
-    slow = {**good, "vent_s": phys * 1.2, "curve": {"60": 2200, "120": 1300}}
-    v = vf.judge({"1.0": good, "10.0": good, "5.0": slow})
-    assert v["1.0"]["pass"] and v["10.0"]["pass"] and not v["5.0"]["pass"]
+def test_vent_fidelity_judge_aligns_on_a_common_start():
+    assert 340 < vf.physics_vent_s(2700) < 370  # ~5.9 process-min from 2700 to 102 kPa
+    # physics trajectory from different start pressures and a 4 process-s sampling offset
+    def rows(p0, offset=0.0):
+        return [(ps + offset, 100 + max(math.sqrt(p0 - 100) - vf.K_VENT * ps, 0) ** 2) for ps in range(400)]
+    x1 = {"times": vf.times_from_start(rows(2599))}
+    x10 = {"times": vf.times_from_start(rows(2662, offset=4))}
+    slow = {"times": {k: v * 1.3 for k, v in x1["times"].items()}}
+    v = vf.judge({"1.0": x1, "10.0": x10, "5.0": slow})
+    assert v["1.0"]["pass"] and v["10.0"]["pass"], v
+    assert not v["5.0"]["pass"]
