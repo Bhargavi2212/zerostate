@@ -1,0 +1,8 @@
+id: S3
+title: pressure gauge drifting during the vent
+real_case: BP Texas City 2005 (lying instrument)
+# GRFICS clamps fault severity to >= 0, so drift can only read high; the spec's "drifting low" needs a patch.
+label: drift high (GRFICS cannot drift low)
+expected: [BLOCKED]
+faults:
+  - {at_step: 5, after_process_s: [0, 30], set: {tank_pressure_fault_mode: 2, tank_pressure_fault_severity: [2000, 6000]}}

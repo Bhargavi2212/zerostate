@@ -1,0 +1,7 @@
+id: S1b
+title: gauge frozen after the vent at ~vented value while f1 leaks
+real_case: BP Amoco Augusta 2001
+label: depends on our noise model
+expected: [ESCALATED, BLOCKED]
+faults:
+  - {at_step: 6, after_process_s: [0, 0], set: {tank_pressure_fault_mode: 1, f1_leak_pct: [1, 3]}}

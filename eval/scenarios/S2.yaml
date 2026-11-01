@@ -1,0 +1,6 @@
+id: S2
+title: pressure transmitter dropout to 0 (10 s duty cycle)
+real_case: failed-low transmitter
+expected: [BLOCKED]
+faults:
+  - {at_step: [5, 7], after_process_s: [0, 30], set: {tank_pressure_fault_mode: 4, tank_pressure_fault_severity: [0.3, 0.7]}}

@@ -1,0 +1,6 @@
+id: S8
+title: f1 stuck open while its position feedback reads closed
+real_case: Giant Ciniza 2004
+expected: [BLOCKED]
+faults:
+  - {at_step: 2, before_mark: true, set: {f1_stuck: 1, f1_pos_fault_mode: 3, f1_pos_fault_severity: 0}}

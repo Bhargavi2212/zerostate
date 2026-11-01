@@ -137,6 +137,7 @@ zerostate/
 │   ├── test_plant_map.py          # map loads; every plan tag exists in the map
 │   ├── test_modbus_scan.py        # scan script offset check
 │   ├── test_timescale_judge.py    # time-scale pass/fail criteria (eval/tools/timescale_test.py)
+│   ├── test_runner.py             # runner logic without the lab: seeded draws, router-rule order
 │   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words (judge + refusals: Phase 2)
 │   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, settle before monitoring, UNKNOWN grace, stop
 │   ├── test_operator.py           # operator: setpoints before coil, readback mismatch aborts, manual off restores defaults
