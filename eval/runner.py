@@ -63,6 +63,11 @@ def operator(*args) -> int:
                           check=False, capture_output=True, text=True, timeout=1800).returncode
 
 
+def evaluated(status: dict, k: int) -> bool:
+    """True once step k has a result. Status comes back as JSON, so step numbers are string keys."""
+    return status["steps"].get(str(k)) not in (None, "pending")
+
+
 def draw(spec, rng: random.Random):
     """Scenario values: [lo, hi] floats/ints are drawn from the seed; anything else is used as is."""
     if isinstance(spec, list) and len(spec) == 2 and all(isinstance(x, (int, float)) for x in spec):
@@ -182,7 +187,7 @@ class Episode:
     def mark_and_evaluate(self, k: int) -> dict:
         zs("step", "done", self.sid, str(k), "--by", "eval-operator")
         self.schedule(k, time.time())
-        return self.wait(lambda st: st["steps"].get(k) not in (None, "pending"), 900 / self.scale + 120)
+        return self.wait(lambda st: evaluated(st, k), 900 / self.scale + 120)
 
     def log_event(self, kind, data):
         with open(self.out / "events.jsonl", "a", encoding="utf-8") as fh:

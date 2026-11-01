@@ -1,6 +1,7 @@
 """eval/runner.py logic that runs without the lab: seeded draws and the router-rule order check."""
 
 import importlib.util
+import json
 import random
 from pathlib import Path
 
@@ -31,3 +32,10 @@ def test_router_rules_must_sit_above_the_allow_all(monkeypatch):
     assert not runner.router_rules_ok()
     monkeypatch.setattr(runner, "sh", lambda *a, **k: chain(PAIRS[0], "-A FORWARD -j ACCEPT"))
     assert not runner.router_rules_ok()
+
+
+def test_step_evaluated_reads_json_string_keys():
+    # zs status --json turns step numbers into string keys; the first live S0 stalled on this
+    st = json.loads(json.dumps({"steps": {1: "PASS", 2: "pending"}}))
+    assert runner.evaluated(st, 1)
+    assert not runner.evaluated(st, 2) and not runner.evaluated(st, 3)

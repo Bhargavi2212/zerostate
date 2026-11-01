@@ -52,7 +52,8 @@ def read() -> dict:
 
 
 if __name__ == "__main__":
-    # python plants/p1_grfics/faults.py read | clear | set key=value ...
+    # python -P plants/p1_grfics/faults.py read | clear | set key=value ...
+    # (-P: operator.py next to this file would otherwise shadow the stdlib "operator" module)
     cmd = sys.argv[1]
     if cmd == "read":
         print(json.dumps(read(), indent=1))
