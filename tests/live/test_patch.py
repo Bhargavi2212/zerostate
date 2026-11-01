@@ -7,6 +7,7 @@ truth comes from the GRFICS web API on localhost.
 import importlib.util
 import json
 import subprocess
+import threading
 import time
 from pathlib import Path
 
@@ -49,18 +50,37 @@ def test_patch_version():
 
 
 def test_noise_on_modbus():
-    t = truth.read()
-    samples = scan(30)
     spans = {"f1_flow": 1000, "f2_flow": 500, "purge_flow": 2000, "product_flow": 500}
-    true_flow = {k: t["outputs"][k] for k in spans}
+    true_flows: dict[str, list[float]] = {k: [] for k in spans}
+    t = truth.read()
+
+    def log_truth(stop):
+        with truth.stream(4) as samples:  # true flows across the whole scan, not one snapshot
+            for d in samples:
+                for k in spans:
+                    true_flows[k].append(d["outputs"][k])
+                if stop.is_set():
+                    return
+
+    stop = threading.Event()
+    th = threading.Thread(target=log_truth, args=(stop,), daemon=True)
+    th.start()
+    samples = scan(30)
+    stop.set()
+    th.join(10)
     for tag, addr in IR.items():
         raws = [s["ir"][str(addr)] for s in samples if s["ir"]]
-        if tag in spans and true_flow[tag] < 0.01 * spans[tag]:
-            assert set(raws) == {0}, f"{tag} below cutoff must read exactly 0"
+        if tag in spans:
+            cut = 0.01 * spans[tag]
+            if max(true_flows[tag]) < cut:
+                assert set(raws) == {0}, f"{tag} below cutoff all scan must read exactly 0"
+            elif min(true_flows[tag]) > cut:
+                assert len(set(raws)) >= 20, f"{tag}: only {len(set(raws))} distinct raws in 30 s"
+            else:  # the AUTO controller moved it across the cutoff: noisy whenever it is above it
+                above = [r for r in raws if r > 0]
+                assert len(above) >= 3 and len(set(above)) >= 0.8 * len(above), (tag, above)
         elif tag.endswith("_valve_pos") and t["state"][tag] in (0.0, 100.0):
             continue  # at an end stop the clamp halves the noise; not noise-carrying (constant_ok_raw)
-        elif tag in spans and tag in ("purge_flow", "product_flow"):
-            assert len(set(raws)) >= 10, tag  # controller duty cycle may hold them at 0 part of the time
         else:
             assert len(set(raws)) >= 20, f"{tag}: only {len(set(raws))} distinct raws in 30 s"
 
