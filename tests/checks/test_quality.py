@@ -46,3 +46,13 @@ def test_rate_still_catches_a_dropout_before_the_floor():
     w = window(lambda ps: vent(ps, pressure=100.0) if ps >= 30 else vent(ps), 80)
     r = run(w)
     assert r.status == S.FAIL and "faster than the process" in r.message
+
+
+def test_v2_still_fails_a_dropout_jump_early_in_the_vent():
+    # 2700 -> 0 -> 2700 kPa during the vent: one poll, and three polls (~7.5 process-s) at 0
+    for width in (2.5, 7.5):
+        w = window(lambda ps, width=width: vent(ps, pressure=0.0) if 20 <= ps < 20 + width else vent(ps), 80)
+        assert run(w).status == S.FAIL
+        # with the 50 kPa floor switched off, the rate test alone must still catch the jump
+        no_floor = quality.check(PLAN, STEP[5], w, PARAMS | {"pressure_min_kpa": 0}, )
+        assert no_floor.status == S.FAIL and "faster than the process" in no_floor.message, (width, no_floor.message)

@@ -19,9 +19,11 @@ def targets(plan, step):
 
 
 def check(plan, step, window, params, only=None):
+    """`only`: the monitor's (target, required, settle end in process-s within this window) triples."""
     tol = params["valve_tol_pct"]
-    start = 0.0 if step.kind == "hold" or only is not None else step.settle_process_s
-    for target, req in (only if only is not None else targets(plan, step)):
+    start_all = 0.0 if step.kind == "hold" else step.settle_process_s
+    pairs = only if only is not None else [(t, r, start_all) for t, r in targets(plan, step)]
+    for target, req, start in pairs:
         cmd, fb, fl = (tag_for(plan, target, r) for r in ("command", "feedback", "flow"))
         if fb is None:  # a plain tag (e.g. manual_mode) must equal the required state
             vals = [v for ps, v, _ in series(window, target) if ps >= start and v is not None]

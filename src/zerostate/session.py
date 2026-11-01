@@ -170,20 +170,24 @@ class Session:
                 final = next(s.k for s in self.plan.steps if s.kind == "final")
                 self.evaluated[final] = FindingStatus.PASS
 
-    def _settled_points(self, now: float) -> list[tuple[str, float]]:
+    def _settled_points(self, now: float, t0: float) -> list[tuple[str, float, float]]:
+        """(target, required, settle end in process-s from t0) for every point closed and settled by now."""
         latest: dict[str, tuple[float, float, float]] = {}
         for k, t_mark in sorted(self.marks.items()):
             s = self.steps[k]
             if s.kind in ("isolate", "vent_open", "vent_close"):
                 latest[s.target] = (t_mark, s.settle_process_s, s.required_state)
-        return [(target, req) for target, (t_mark, settle, req) in latest.items()
+        return [(target, req, max(0.0, self._ps(t0, t_mark) + settle))
+                for target, (t_mark, settle, req) in latest.items()
                 if req <= self.params["valve_tol_pct"] and self._ps(t_mark, now) >= settle]
 
     def _monitor(self, now: float) -> None:
-        window = self._window(self.last_monitor, now)
+        # Reach back the QUALITY rate baseline too, or the rate test never has a long enough span here.
+        t0 = self.last_monitor - self.params["rate_window_process_s"] / self.scale
+        window = self._window(t0, now)
         self.last_monitor = now
         k = max(self.marks)
-        only = self._settled_points(now)
+        only = self._settled_points(now, t0)
         rules = ["LIVE-QUALITY", "LIVE-VALVE"] if only else ["LIVE-QUALITY"]
         findings = gate.evaluate(self.plan, self.steps[k], window, self.params, rules, only=only if only else None)
         status = gate.combine(findings)

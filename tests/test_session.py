@@ -146,3 +146,18 @@ def test_stop_leaves_the_session_unsigned(tmp_path):
     d.run(2, [{"kind": "stop", "by": "eval-runner"}])
     st = d.status()
     assert st["state"] == "stopped" and "signature" not in st
+
+
+def test_monitor_catches_a_dropout_jump_with_the_rate_test(tmp_path):
+    # floor switched off so only the rate test can see it: a dropout during the hold-up of steps 2-4
+    d = Driver(tmp_path)
+    d.s.params = PARAMS | {"pressure_min_kpa": 0}
+    d.run(2)
+    d.mark(1, lambda ps: steady(pressure=2700.0))
+    until_evaluated(d, 1)
+    d.mark(2)
+    until_evaluated(d, 2)
+    d.fn, d.fn_t0 = (lambda ps: steady(pressure=0.0 if ps < 5 else 2700.0)), d.t
+    d.run(4)
+    st = d.status()
+    assert st["verdict"] == "BLOCKED" and "faster than the process" in st["stamp"]["reasons"][0]
