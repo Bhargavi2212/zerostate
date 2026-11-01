@@ -118,6 +118,7 @@ zerostate/
 ├── eval/
 │   ├── scenarios/                 # S0–S12, PC0–PC6 as YAML (plant, fault, onset range, severity range, expected verdicts)
 │   ├── tools/timescale_test.py    # Phase 1: time-scale stability runs (×1 / ×10 / ×5) → results/timescale_<date>.json
+│   ├── tools/vent_fidelity.py     # Phase 1 rev 3: manual-mode vent at ×1 vs chosen scale vs physics → results/vent_fidelity_<date>.json
 │   ├── seal.py                    # draws tune/score seed ranges; writes manifest OUTSIDE repo; commits SHA-256(salt+manifest)
 │   ├── sealed_hash.txt            # committed hash only
 │   ├── claims.yaml                # claim id → tests → result key → exact README sentence

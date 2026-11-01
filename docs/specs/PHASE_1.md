@@ -21,6 +21,8 @@ Not in Phase 1: plan checks, process checks, models, camera, importer, UI, gas l
 14. **Marker `live`** for `tests/live/` (`addopts = -m "not net and not live"`). P1-1's leak case runs after P1-3 (needs the operator to close f1). The "≥ 20 distinct raws" check applies to tags above flow cutoff; flows at 0 are checked as exactly 0.
 15. **`tests/test_readonly.py`:** the `execute` / `send` ban is scoped to `adapters/` (SQLite uses `execute`; pymodbus is importable only under `adapters/`). `write_*` stays banned everywhere.
 16. **Replay** re-runs logged windows with the current rules/thresholds; each evaluation also logs the thresholds it used. One global audit chain.
+18. **Patch change H** (`index.php` reads 64 KB; stock JSON was already 1,477 of 1,500 bytes) and **change I** (drift severity may be negative; S3 drifts low, −2000 to −6000 kPa per process-hour).
+19. **Time scale:** ×5 if it passes the stability criterion; else ×10 under the corrected criterion (AUTO bounded + manual-mode vent at ×1 vs scale vs physics within 10 %, `eval/tools/vent_fidelity.py`); real time only if the vent check fails too. The vent check runs whichever scale wins.
 17. **After any Docker restart:** `docker compose … up -d`, then `apply_router_rules.ps1` (Docker restarts wipe the router rules).
 Branch: `p1-work`. Tag: `phase-1`. Due: Sun Nov 1 night.
 Order: P1-0 → P1-1 → P1-2 (the time scale decides every process-time number) → the rest in order.
