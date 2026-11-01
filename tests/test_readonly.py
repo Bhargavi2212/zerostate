@@ -7,8 +7,11 @@ SRC = Path(__file__).parents[1] / "src" / "zerostate"
 FORBIDDEN_CALLS = {
     "mask_write_register", "readwrite_registers",
     "write_value", "set_value", "write_attribute",  # asyncua
-    "execute", "send",  # raw request paths that could carry a write PDU
 }
+# Raw request paths that could carry a write PDU. Only a Modbus client has them, and pymodbus /
+# asyncua are importable only under adapters/, so they are banned there; elsewhere (SQLite's
+# conn.execute in the audit log) they are ordinary calls.
+ADAPTER_ONLY_FORBIDDEN = {"execute", "send"}
 WRITE_REQUEST_HINTS = ("Write", "MaskWrite", "ReadWrite")
 
 
@@ -19,7 +22,7 @@ def violations(source: str, path: str) -> list[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             name = node.func.attr
-            if name.startswith("write_") or name in FORBIDDEN_CALLS:
+            if name.startswith("write_") or name in FORBIDDEN_CALLS or (in_adapters and name in ADAPTER_ONLY_FORBIDDEN):
                 found.append(f"{path}:{node.lineno} calls .{name}()")
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module or "" if isinstance(node, ast.ImportFrom) else ""
