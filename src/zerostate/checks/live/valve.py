@@ -23,7 +23,8 @@ def check(plan, step, window, params, only=None):
     tol = params["valve_tol_pct"]
     start_all = 0.0 if step.kind == "hold" else step.settle_process_s
     pairs = only if only is not None else [(t, r, start_all) for t, r in targets(plan, step)]
-    for target, req, start in pairs:
+    for item in pairs:
+        target, req, start = (*item, 0.0)[:3]  # sessions logged before the settle end used 2-tuples
         cmd, fb, fl = (tag_for(plan, target, r) for r in ("command", "feedback", "flow"))
         if fb is None:  # a plain tag (e.g. manual_mode) must equal the required state
             vals = [v for ps, v, _ in series(window, target) if ps >= start and v is not None]
