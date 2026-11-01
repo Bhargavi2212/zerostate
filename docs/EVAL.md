@@ -48,7 +48,7 @@ Target: 5 variants per error, 15 correct. P1's real GRFICS plan is run separatel
 | S8 | valve position feedback lies | Giant 2004, Milford Haven 1994 | ✓ (patch) | ✓ (physics only, no camera) |
 | S10 | blocked vent (no flow when opened) | Tosco drains | — | ✓ |
 | S11 | dry test (no upstream pressure during hold) | WMC MHS-07 | — | ✓ |
-| S12 | comms loss / stale registers | Modbus last-value behaviour | ✓ | ✓ |
+| S12 | comms loss / stale registers (incl. whole-path freeze: every tag behind the PLC, also closed-valve groups, must leave GOOD) | Modbus last-value behaviour; seen live Oct 31 (~50 s frozen with successful reads) | ✓ | ✓ |
 | S9 | replayed values | Stuxnet | stretch | stretch |
 Target: 5 episodes per scenario per plant, 15 clean per plant (Decision 8). Run overnight Nov 2.
 
