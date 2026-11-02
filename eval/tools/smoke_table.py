@@ -22,6 +22,8 @@ def jsonl(p: Path) -> list[dict]:
 
 def row(run: Path, basis: str = "") -> dict:
     v = json.loads((run / "verdict.json").read_text(encoding="utf-8"))
+    pub = ROOT / "eval" / "results" / "episodes" / run.name
+    status = "INVALID" if (pub / "INVALID.md").exists() else "SUPERSEDED" if (pub / "SUPERSEDED.md").exists() else "counted"
     meta = json.loads((run / "meta.json").read_text(encoding="utf-8"))
     scale = meta["process_time_scale"]
     events = json.loads((run / "audit_export.json").read_text(encoding="utf-8")) if (run / "audit_export.json").exists() else []
@@ -30,6 +32,9 @@ def row(run: Path, basis: str = "") -> dict:
     start = next((e for e in events if e["kind"] == "session_start"), None)
     kinds = {s["kind"]: s["k"] for s in reversed(start["payload"]["plan"]["steps"])} if start else {}
     vent_k, hold_k = kinds.get("vent_open"), kinds.get("hold")  # from the logged plan, not fixed numbers
+    steps = start["payload"]["plan"]["steps"] if start else []
+    plan = ("block-in" if any(st.get("targets") for st in steps) else "close-purge" if len(steps) == 9
+            else "original" if steps else "")
     first = next((e for e in events if e["kind"] == "evaluation"
                   and e["payload"]["verdict_after"] in ("BLOCKED", "ESCALATED")), None)
     first_fail = " + ".join(f"{f['rule_id']} {f['status']}" for f in first["payload"]["findings"]
@@ -47,7 +52,7 @@ def row(run: Path, basis: str = "") -> dict:
     if hold_k in marks:
         p = [r["outputs"]["pressure"] for r in truth if r["t"] >= marks[hold_k]]
         hold = round(min(p), 1) if p else ""
-    return {"scenario": v.get("scenario"), "seed": v.get("seed"), "rules_basis": basis, "expected": "/".join(v.get("expected", [])),
+    return {"scenario": v.get("scenario"), "seed": v.get("seed"), "status": status, "plan": plan, "rules_basis": basis, "expected": "/".join(v.get("expected", [])),
             "actual": v.get("verdict") or "invalid", "match": v.get("match", False), "valid": v.get("valid", False),
             "first_block": first_fail, "to_block_process_s": to_block, "vent_start_kpa": vent_start,
             "vent_to_105_process_s": vent,
@@ -63,7 +68,9 @@ def main(runs: list[str]) -> int:
     out = ROOT / "eval" / "results" / f"smoke_p1_{datetime.now(UTC):%Y-%m-%d}.md"
     out.write_text("# P1 smoke run (tuning seeds)\n\n" + "\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
-    return 0 if all(r["match"] and r["valid"] for r in rows) else 1
+    counted = [r for r in rows if r["status"] == "counted"]
+    print(f"counted {len(counted)}, all match and valid: {all(r['match'] and r['valid'] for r in counted)}")
+    return 0 if all(r["match"] and r["valid"] for r in counted) else 1
 
 
 if __name__ == "__main__":
