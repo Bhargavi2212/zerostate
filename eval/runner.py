@@ -225,9 +225,15 @@ class Episode:
                 return st
             time.sleep(0.5)
 
-    def mark_and_evaluate(self, k: int) -> dict:
+    def mark(self, k: int) -> dict:
+        """Declare step k and wait until ZeroState has registered it, before anyone acts on the plant:
+        acting first leaves a gap where the monitor still holds the previous requirement (seen live:
+        purge opened for the vent while still listed as blocked in -> "commanded state wrong")."""
         zs("step", "done", self.sid, str(k), "--by", "eval-operator")
         self.schedule(k, time.time())
+        return self.wait(lambda st: st["steps"].get(str(k)) is not None, 30)
+
+    def evaluated(self, k: int) -> dict:
         return self.wait(lambda st: evaluated(st, k), 900 / self.scale + 120)
 
     def log_event(self, kind, data):
@@ -267,6 +273,9 @@ class Episode:
                 break
             k = step.k
             self.schedule(k, None)  # faults tied to "before step k"
+            st = self.mark(k)  # declare the step first, then act on the plant
+            if st["verdict"] in TERMINAL:
+                break
             if step.kind == "mode":
                 if variant != "no_manual_mode":
                     act("manual", "on")
@@ -279,7 +288,7 @@ class Episode:
                     act("set", target, str(step.required_state))
             elif step.kind == "vent_open":
                 act("set", step.target, str(step.required_state))
-            st = self.mark_and_evaluate(k)
+            st = self.evaluated(k)
             if step.kind == "vent_open" and st["verdict"] not in TERMINAL:
                 # keep venting until the plan's vent target (rolling mean); mark on regardless, like a hurried human
                 act("wait-pressure-below", str(self.plan.vent_target_kpa_abs), "--mean-of", "8",
