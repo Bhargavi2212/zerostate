@@ -4,12 +4,16 @@ truth.jsonl, events.jsonl). Writes eval/results/smoke_p1_<date>.md.
     python eval/tools/smoke_table.py runs/S0_seed7_* runs/S1_seed3_* ...
 """
 
+import importlib.util
 import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).parents[2]
+_spec = importlib.util.spec_from_file_location("runner", ROOT / "eval" / "runner.py")
+runner = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(runner)
 
 
 def ts(iso: str) -> float:
@@ -23,7 +27,8 @@ def jsonl(p: Path) -> list[dict]:
 def row(run: Path, basis: str = "") -> dict:
     v = json.loads((run / "verdict.json").read_text(encoding="utf-8"))
     pub = ROOT / "eval" / "results" / "episodes" / run.name
-    status = "INVALID" if (pub / "INVALID.md").exists() else "SUPERSEDED" if (pub / "SUPERSEDED.md").exists() else "counted"
+    status = ("INVALID" if (pub / "INVALID.md").exists() or not v.get("valid")
+              else "SUPERSEDED" if (pub / "SUPERSEDED.md").exists() else "counted")
     meta = json.loads((run / "meta.json").read_text(encoding="utf-8"))
     scale = meta["process_time_scale"]
     events = json.loads((run / "audit_export.json").read_text(encoding="utf-8")) if (run / "audit_export.json").exists() else []
@@ -48,6 +53,8 @@ def row(run: Path, basis: str = "") -> dict:
         vent_start = round(min(truth, key=lambda r: abs(r["t"] - marks[vent_k]))["outputs"]["pressure"])
         hit = next((r["t"] for r in truth if r["t"] >= marks[vent_k] and r["outputs"]["pressure"] <= 105), None)
         vent = round((hit - marks[vent_k]) * scale) if hit else "not reached"
+    if status == "counted" and plan != "block-in" and vent_start != "" and runner.vent_start_problem(vent_start):
+        status = "pre-guard, old plan"  # smoke history only: such a start is INVALID from the guard on
     hold = ""
     if hold_k in marks:
         p = [r["outputs"]["pressure"] for r in truth if r["t"] >= marks[hold_k]]
@@ -69,7 +76,8 @@ def main(runs: list[str]) -> int:
     out.write_text("# P1 smoke run (tuning seeds)\n\n" + "\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
     counted = [r for r in rows if r["status"] == "counted"]
-    print(f"counted {len(counted)}, all match and valid: {all(r['match'] and r['valid'] for r in counted)}")
+    pre = sum(r["status"] == "pre-guard, old plan" for r in rows)
+    print(f"counted {len(counted)} (+{pre} pre-guard), all match and valid: {all(r['match'] and r['valid'] for r in counted)}")
     return 0 if all(r["match"] and r["valid"] for r in counted) else 1
 
 

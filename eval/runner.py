@@ -32,6 +32,10 @@ SOURCES = ("192.168.90.60", "192.168.90.70")
 PLC = "192.168.95.2"
 TERMINAL = ("BLOCKED", "ESCALATED")
 IO_DEVICES = "python (feed1|feed2|purge|product|tank|analyzer).py"  # GRFICS remote I/O device scripts
+MIN_VENT_START_KPA = 1500  # below this the vent rules get too little range to judge: episode INVALID
+TUNING_SEEDS = range(1000)  # anything else is a scoring seed
+# hash of the committed block-in plan (P1), a plan digest, not a secret
+BENCHMARK_PLAN_HASH = "89adfcf4fbb0a8e2b058c02ceed5d879d0a72312da92024bf967c8aec14f2a92"  # pragma: allowlist secret
 
 
 def _load(name):
@@ -75,6 +79,21 @@ def operator(*args) -> int:
 def evaluated(status: dict, k: int) -> bool:
     """True once step k has a result. Status comes back as JSON, so step numbers are string keys."""
     return status["steps"].get(str(k)) not in (None, "pending")
+
+
+def seed_problem(seed: int, plan_hash: str) -> str | None:
+    """Scoring seeds run only on the committed block-in plan, so a benchmark never mixes plans."""
+    if seed < 0:
+        return "seed must be >= 0"
+    if seed not in TUNING_SEEDS and plan_hash != BENCHMARK_PLAN_HASH:
+        return f"scoring seed {seed} refused: plan hash {plan_hash[:12]} is not the benchmark plan {BENCHMARK_PLAN_HASH[:12]}"
+    return None
+
+
+def vent_start_problem(p_kpa: float | None) -> str | None:
+    if p_kpa is None or p_kpa < MIN_VENT_START_KPA:
+        return f"vent start {p_kpa} kPa below {MIN_VENT_START_KPA}: too little range for the vent rules"
+    return None
 
 
 def draw(spec, rng: random.Random):
@@ -180,6 +199,7 @@ class Episode:
         self.due: list[tuple[float, dict]] = []
         self.stop_truth = threading.Event()
         self.last_truth_t = None  # Docker VM clock, same as ZeroState's audit timestamps
+        self.last_pressure = None
         self.session_started = False
 
     # faults ------------------------------------------------------------
@@ -244,7 +264,7 @@ class Episode:
         with open(self.out / "truth.jsonl", "a", encoding="utf-8") as fh, truth.stream(4) as samples:
             for d in samples:  # one reader inside the simulation container, VM-clock timestamps
                 fh.write(json.dumps(d) + "\n")
-                self.last_truth_t = d["t"]
+                self.last_truth_t, self.last_pressure = d["t"], d["outputs"]["pressure"]
                 if self.stop_truth.is_set():
                     return
 
@@ -272,6 +292,8 @@ class Episode:
             if st["verdict"] in TERMINAL or step.kind == "final":
                 break
             k = step.k
+            if step.kind == "vent_open" and (problem := vent_start_problem(self.last_pressure)):
+                raise EpisodeInvalid(problem)
             self.schedule(k, None)  # faults tied to "before step k"
             st = self.mark(k)  # declare the step first, then act on the plant
             if st["verdict"] in TERMINAL:
@@ -341,14 +363,14 @@ def main() -> int:
     ap.add_argument("--scenario", required=True)
     ap.add_argument("--seed", type=int, required=True)
     a = ap.parse_args()
-    if not 0 <= a.seed <= 999:
-        raise SystemExit("Phase 1 uses tuning seeds 0-999 only")
     scenario = yaml.safe_load((ROOT / "eval" / "scenarios" / f"{a.scenario}.yaml").read_text(encoding="utf-8"))
     out = ROOT / "runs" / f"{a.scenario}_seed{a.seed}_{datetime.now(UTC):%Y%m%dT%H%M%S}"
+    ep = Episode(scenario, a.seed, out)
+    if problem := seed_problem(a.seed, ep.plan.content_hash()):
+        raise SystemExit(problem)
     out.mkdir(parents=True)
     images = {n: sh("docker", "inspect", "--format", "{{.Image}}", n, check=False).strip()
               for n in ("simulation", "zerostate", "zs-operator", "plc")}
-    ep = Episode(scenario, a.seed, out)
     (out / "meta.json").write_text(json.dumps({"scenario": scenario, "seed": a.seed, "faults": ep.faults,
                                                "process_time_scale": ep.scale, "images": images,
                                                "plan_hash": ep.plan.content_hash()}, indent=1), encoding="utf-8")
@@ -360,7 +382,7 @@ def main() -> int:
     except BaseException:
         ep.cleanup()
         raise
-        (out / "verdict.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
+    (out / "verdict.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
     publish(out)
     print(json.dumps(result, indent=1))
     return 0 if result.get("valid") and result.get("match") else 1

@@ -41,8 +41,11 @@ flowmeter cutoff, so LIVE-VALVE caught them first). Fixed and re-run:
 - Plan: step 2 blocks in the reactor (f1 then purge); runner declares each step before acting.
   Vent start 1826–2411 kPa, recorded with its two causes.
 - All episode logs committed under `eval/results/episodes/` (30 folders, 6.2 MB).
-Final table: `eval/results/smoke_p1_2026-11-02.md` — **25 counted episodes, all match, all valid,
-all replay identically under the final rules**; 3 INVALID and 2 SUPERSEDED with notes.
+- Runner guards: a vent start below 1500 kPa makes the episode INVALID; scoring seeds (≥ 1000) run
+  only on the committed block-in plan (hash check).
+Final table: `eval/results/smoke_p1_2026-11-02.md` — **21 counted episodes, all match, all valid,
+all replay identically under the final rules**; 4 "pre-guard, old plan" (S0 seeds 3, 4, 24, 25:
+vent starts 224–985 kPa, smoke history only), 3 INVALID and 2 SUPERSEDED with notes.
 
 ## Raw output (final image)
 ```

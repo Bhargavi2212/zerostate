@@ -52,3 +52,24 @@ def test_operator_failure_makes_the_episode_invalid(monkeypatch):
     runner.act("wait-pressure-below", "102")
     with pytest.raises(runner.EpisodeInvalid):
         runner.act("set", "f1", "0")
+
+
+def test_vent_start_below_guard_is_invalid():
+    assert runner.vent_start_problem(1499.9)
+    assert runner.vent_start_problem(None)  # no truth sample yet: can't show the start was high enough
+    assert runner.vent_start_problem(1500) is None
+
+
+def test_scoring_seeds_need_the_benchmark_plan():
+    other = "0" * 64
+    assert runner.seed_problem(7, other) is None  # tuning seeds may run any plan (smoke)
+    assert runner.seed_problem(1000, other)
+    assert runner.seed_problem(1000, runner.BENCHMARK_PLAN_HASH) is None
+    assert runner.seed_problem(-1, runner.BENCHMARK_PLAN_HASH)
+
+
+def test_benchmark_plan_is_the_committed_plan():
+    plan = runner.IsolationPlan.model_validate(runner.yaml.safe_load(
+        (runner.P1 / "envelope.yaml").read_text(encoding="utf-8")))
+    assert plan.content_hash() == runner.BENCHMARK_PLAN_HASH
+    assert any(s.targets for s in plan.steps)  # block-in
