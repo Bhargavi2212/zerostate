@@ -27,6 +27,9 @@ def row(run: Path, basis: str = "") -> dict:
     events = json.loads((run / "audit_export.json").read_text(encoding="utf-8")) if (run / "audit_export.json").exists() else []
     truth = jsonl(run / "truth.jsonl")
     marks = {e["payload"]["k"]: ts(e["ts"]) for e in events if e["kind"] == "step_done"}
+    start = next((e for e in events if e["kind"] == "session_start"), None)
+    kinds = {s["kind"]: s["k"] for s in reversed(start["payload"]["plan"]["steps"])} if start else {}
+    vent_k, hold_k = kinds.get("vent_open"), kinds.get("hold")  # from the logged plan, not fixed numbers
     first = next((e for e in events if e["kind"] == "evaluation"
                   and e["payload"]["verdict_after"] in ("BLOCKED", "ESCALATED")), None)
     first_fail = " + ".join(f"{f['rule_id']} {f['status']}" for f in first["payload"]["findings"]
@@ -35,17 +38,19 @@ def row(run: Path, basis: str = "") -> dict:
     fault_t = next((e["data"].get("t_vm") for e in jsonl(run / "events.jsonl") if e["kind"] == "fault"), None)
     since = fault_t or marks.get(1)
     to_block = round((terminal - since) * scale) if terminal and since else ""
-    vent = ""
-    if 5 in marks:
-        hit = next((r["t"] for r in truth if r["t"] >= marks[5] and r["outputs"]["pressure"] <= 105), None)
-        vent = round((hit - marks[5]) * scale) if hit else "not reached"
+    vent, vent_start = "", ""
+    if vent_k in marks:
+        vent_start = round(min(truth, key=lambda r: abs(r["t"] - marks[vent_k]))["outputs"]["pressure"])
+        hit = next((r["t"] for r in truth if r["t"] >= marks[vent_k] and r["outputs"]["pressure"] <= 105), None)
+        vent = round((hit - marks[vent_k]) * scale) if hit else "not reached"
     hold = ""
-    if 7 in marks:
-        p = [r["outputs"]["pressure"] for r in truth if r["t"] >= marks[7]]
+    if hold_k in marks:
+        p = [r["outputs"]["pressure"] for r in truth if r["t"] >= marks[hold_k]]
         hold = round(min(p), 1) if p else ""
     return {"scenario": v.get("scenario"), "seed": v.get("seed"), "rules_basis": basis, "expected": "/".join(v.get("expected", [])),
             "actual": v.get("verdict") or "invalid", "match": v.get("match", False), "valid": v.get("valid", False),
-            "first_block": first_fail, "to_block_process_s": to_block, "vent_to_105_process_s": vent,
+            "first_block": first_fail, "to_block_process_s": to_block, "vent_start_kpa": vent_start,
+            "vent_to_105_process_s": vent,
             "min_hold_kpa": hold, "problems": "; ".join(v.get("problems", []))}
 
 

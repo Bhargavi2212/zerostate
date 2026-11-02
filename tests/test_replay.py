@@ -13,7 +13,7 @@ def record(tmp_path):
     log = AuditLog(tmp_path / "audit.sqlite")
     log.append("s1", "session_start", {"plan": PLAN.model_dump(mode="json"), "plan_hash": PLAN.content_hash()})
     closed_full = (lambda ps: steady(pressure=2700.0), 80)
-    traj = {1: (steady, 20), 2: closed_full, 3: closed_full, 4: closed_full, 5: closed_full,
+    traj = {1: (steady, 20), **{k: closed_full for k in range(2, VENT)},
             VENT: (vent, 120), VENT_CLOSE: (steady, 80), HOLD: (steady, 600)}
     verdict, passed = None, {}
     for k, (fn, dur) in traj.items():

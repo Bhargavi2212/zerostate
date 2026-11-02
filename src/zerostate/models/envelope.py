@@ -89,6 +89,7 @@ class Step(_Plan):
     k: int
     kind: Literal["mode", "isolate", "vent_open", "vent_close", "hold", "final"]
     target: str | None = None  # isolation point id, or a tag (e.g. manual_mode)
+    targets: tuple[str, ...] = ()  # several points in one step, in order (e.g. block in: f1 then purge)
     required_state: float | None = None
     checks: tuple[str, ...] = ()
     settle_process_s: float = 0
@@ -111,8 +112,17 @@ class IsolationPlan(_Plan):
     p_depressurised_kpa_abs: float | None = None  # acceptance limit LIVE-HOLD checks
 
     def content_hash(self) -> str:
-        canon = json.dumps(self.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+        d = self.model_dump(mode="json")
+        for st in d["steps"]:
+            if not st["targets"]:
+                del st["targets"]  # plans logged before `targets` existed keep their hash
+        canon = json.dumps(d, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(canon.encode()).hexdigest()
+
+
+def step_targets(step: "Step") -> tuple[str, ...]:
+    """The points (or tag) a step acts on, in order."""
+    return step.targets or ((step.target,) if step.target else ())
 
 
 class Signature(BaseModel):

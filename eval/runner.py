@@ -22,7 +22,7 @@ from pathlib import Path
 
 import yaml
 
-from zerostate.models.envelope import IsolationPlan
+from zerostate.models.envelope import IsolationPlan, step_targets
 
 ROOT = Path(__file__).parents[1]
 GRFICS = ROOT.parent
@@ -271,8 +271,12 @@ class Episode:
                 if variant != "no_manual_mode":
                     act("manual", "on")
             elif step.kind in ("isolate", "vent_close"):
-                target = "f2" if (variant == "wrong_valve_step2" and k == 2) else step.target
-                act("set", target, str(step.required_state))
+                for i, target in enumerate(step_targets(step)):  # e.g. block in: inlet first, then outlet
+                    if variant == "wrong_valve_step2" and k == 2 and target == "f1":
+                        target = "f2"
+                    if i:
+                        time.sleep(2)
+                    act("set", target, str(step.required_state))
             elif step.kind == "vent_open":
                 act("set", step.target, str(step.required_state))
             st = self.mark_and_evaluate(k)

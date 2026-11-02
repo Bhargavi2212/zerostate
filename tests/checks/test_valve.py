@@ -46,3 +46,10 @@ def test_monitor_pairs_logged_before_settle_ends_still_replay():
     w = window(lambda ps: steady(pressure=2700.0, f1_flow=640.0), 20)
     assert valve.check(PLAN, STEP[2], w, PARAMS, only=[("f1", 0.0)]).status == S.FAIL
     assert valve.check(PLAN, STEP[2], w, PARAMS, only=[("f1", 0.0, 0.0)]).status == S.FAIL
+
+
+def test_block_in_step_checks_every_target():
+    # step 2 blocks in f1 then purge: purge left open must fail it
+    assert run(window(lambda ps: steady(pressure=2700.0), 80)).status == S.PASS
+    r = run(window(lambda ps: steady(pressure=2700.0, purge_valve_pos=100.0, purge_cmd=100.0, purge_flow=1795.0), 80))
+    assert r.status == S.FAIL and "purge" in r.message

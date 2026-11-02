@@ -3,7 +3,7 @@ from pathlib import Path
 import yaml
 
 from zerostate.adapters.modbus import load_map
-from zerostate.models.envelope import IsolationPlan
+from zerostate.models.envelope import IsolationPlan, step_targets
 
 P1 = Path(__file__).parents[1] / "plants" / "p1_grfics"
 
@@ -18,4 +18,4 @@ def test_p1_map_loads_and_covers_plan_tags():
     assert used <= tags, used - tags
     points = {p.tag for p in plan.points} | {p.tag for p in plan.proving}
     assert {w.point for w in plan.witnesses if w.point} <= points
-    assert {st.target for st in plan.steps if st.kind in ("isolate", "vent_open", "vent_close")} <= points
+    assert {t for st in plan.steps if st.kind in ("isolate", "vent_open", "vent_close") for t in step_targets(st)} <= points
