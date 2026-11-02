@@ -1,9 +1,9 @@
-from checks.synth import PARAMS, PLAN, STEP, steady, vent, window
+from checks.synth import PARAMS, PLAN, STEP, VENT, steady, vent, window
 from zerostate.checks.live import quality
 from zerostate.models.verdict import FindingStatus as S
 
 
-def run(w, k=5):
+def run(w, k=VENT):
     return quality.check(PLAN, STEP[k], w, PARAMS)
 
 
@@ -54,5 +54,5 @@ def test_v2_still_fails_a_dropout_jump_early_in_the_vent():
         w = window(lambda ps, width=width: vent(ps, pressure=0.0) if 20 <= ps < 20 + width else vent(ps), 80)
         assert run(w).status == S.FAIL
         # with the 50 kPa floor switched off, the rate test alone must still catch the jump
-        no_floor = quality.check(PLAN, STEP[5], w, PARAMS | {"pressure_min_kpa": 0}, )
+        no_floor = quality.check(PLAN, STEP[VENT], w, PARAMS | {"pressure_min_kpa": 0}, )
         assert no_floor.status == S.FAIL and "faster than the process" in no_floor.message, (width, no_floor.message)

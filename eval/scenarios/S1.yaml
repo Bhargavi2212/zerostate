@@ -3,4 +3,4 @@ title: pressure gauge frozen during the vent
 real_case: BP Amoco Augusta 2001
 expected: [BLOCKED, ESCALATED]  # rev 3: late onset lets ALIVE pass; noise loss gives UNKNOWN
 faults:
-  - {at_step: 5, after_process_s: [10, 60], set: {tank_pressure_fault_mode: 1}}
+  - {at_step: vent_open, after_process_s: [10, 60], set: {tank_pressure_fault_mode: 1}}

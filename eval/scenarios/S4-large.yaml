@@ -1,0 +1,6 @@
+id: S4-large
+title: f1 commanded closed but passing, leak above the flowmeter cutoff
+real_case: Tosco Avon 1999
+expected: [BLOCKED]  # LIVE-VALVE: flow through a valve reading closed (f1 cutoff ~1.6 %)
+faults:
+  - {at_step: 2, before_mark: true, set: {f1_leak_pct: [2.0, 5.0]}}

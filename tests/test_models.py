@@ -57,6 +57,15 @@ def test_session_edits_do_not_touch_plan_hash():
 
 def test_plan_steps_name_their_checks():
     plan = load_stub()
-    assert [st.k for st in plan.steps] == list(range(1, 9))
+    assert [st.k for st in plan.steps] == list(range(1, len(plan.steps) + 1))
+    assert plan.steps[-1].kind == "final"
     assert all(c.startswith("LIVE-") for st in plan.steps for c in st.checks)
     assert plan.vent_target_kpa_abs < plan.p_depressurised_kpa_abs
+
+
+def test_plans_logged_before_targets_keep_their_hash():
+    import json
+    run = min((STUB.parents[2] / "eval" / "results" / "episodes").glob("S0_seed1_*"))
+    ev = json.loads((run / "audit_export.json").read_text(encoding="utf-8"))
+    start = next(e for e in ev if e["kind"] == "session_start")["payload"]
+    assert IsolationPlan.model_validate(start["plan"]).content_hash() == start["plan_hash"]

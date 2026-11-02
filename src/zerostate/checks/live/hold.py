@@ -6,7 +6,7 @@ from zerostate.checks.live import finding, quality, series, tag_for
 from zerostate.models.verdict import FindingStatus as S
 
 RULE_ID = "LIVE-HOLD"
-RULE_VERSION = "1"
+RULE_VERSION = "2"  # v2: limit = stricter of plan and hold_max_rise_kpa threshold
 
 
 def check(plan, step, window, params):
@@ -20,10 +20,11 @@ def check(plan, step, window, params):
     first = fmean(v for ps, v in p if ps <= ht.window_process_s)
     last = fmean(v for ps, v in p if ps >= p[-1][0] - ht.window_process_s)
     rise = last - first
-    if rise > ht.max_rise_kpa:
+    limit = min(ht.max_rise_kpa, params["hold_max_rise_kpa"])  # thresholds may tighten a plan, never loosen it
+    if rise > limit:
         return finding(RULE_ID, RULE_VERSION, S.FAIL,
                        f"{p_tag} rose {rise:.1f} kPa over the {ht.hold_process_s:g} process-s hold "
-                       f"(limit {ht.max_rise_kpa:g}): energy is getting back in", [p_tag])
+                       f"(limit {limit:g}): energy is getting back in", [p_tag])
     if plan.p_depressurised_kpa_abs is not None and last > plan.p_depressurised_kpa_abs:
         return finding(RULE_ID, RULE_VERSION, S.FAIL,
                        f"{p_tag} ends the hold at {last:.1f} kPa abs, above {plan.p_depressurised_kpa_abs:g}", [p_tag])

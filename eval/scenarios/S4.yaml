@@ -1,6 +1,0 @@
-id: S4
-title: f1 commanded closed but passing
-real_case: Tosco Avon 1999
-expected: [BLOCKED]  # VALVE if leak >= ~1.6 %, else HOLD
-faults:
-  - {at_step: 2, before_mark: true, set: {f1_leak_pct: [0.5, 5]}}

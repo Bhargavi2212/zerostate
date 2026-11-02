@@ -1,6 +1,6 @@
 """C11: a logged session replays to the same findings and verdicts; a changed threshold shows up."""
 
-from checks.synth import PARAMS, PLAN, STEP, steady, vent, window
+from checks.synth import HOLD, PARAMS, PLAN, STEP, VENT, VENT_CLOSE, steady, vent, window
 
 from zerostate import gate
 from zerostate.audit.log import AuditLog
@@ -12,8 +12,9 @@ def record(tmp_path):
     """Log a clean synthetic session the way session.py does: one evaluation event per step."""
     log = AuditLog(tmp_path / "audit.sqlite")
     log.append("s1", "session_start", {"plan": PLAN.model_dump(mode="json"), "plan_hash": PLAN.content_hash()})
-    traj = {1: (steady, 20), 2: (lambda ps: steady(pressure=2700.0), 80), 3: (lambda ps: steady(pressure=2700.0), 80),
-            4: (lambda ps: steady(pressure=2700.0), 80), 5: (vent, 120), 6: (steady, 80), 7: (steady, 600)}
+    closed_full = (lambda ps: steady(pressure=2700.0), 80)
+    traj = {1: (steady, 20), **{k: closed_full for k in range(2, VENT)},
+            VENT: (vent, 120), VENT_CLOSE: (steady, 80), HOLD: (steady, 600)}
     verdict, passed = None, {}
     for k, (fn, dur) in traj.items():
         w = window(fn, dur)

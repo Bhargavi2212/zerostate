@@ -4,7 +4,7 @@ import ast
 import itertools
 from pathlib import Path
 
-from checks.synth import PARAMS, PLAN, STEP, steady, window
+from checks.synth import HOLD, PARAMS, PLAN, STEP, steady, window
 
 from zerostate import gate
 from zerostate.models.evidence import Finding
@@ -45,9 +45,9 @@ def test_no_discrepancy_only_when_the_plan_completes():
 
 def test_completes_plan_needs_every_step_passed():
     passed = {s.k: True for s in PLAN.steps if s.kind != "final"}
-    assert gate.completes_plan(PLAN, passed, 7)
-    assert not gate.completes_plan(PLAN, {**passed, 3: False}, 7)
-    assert not gate.completes_plan(PLAN, passed, 6)
+    assert gate.completes_plan(PLAN, passed, HOLD)
+    assert not gate.completes_plan(PLAN, {**passed, 3: False}, HOLD)
+    assert not gate.completes_plan(PLAN, passed, HOLD - 1)
 
 
 def test_verdict_is_stamped():

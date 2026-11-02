@@ -1,0 +1,40 @@
+{
+ "scenario": {
+  "id": "S4-small",
+  "title": "f1 commanded closed but passing, leak below the flowmeter cutoff",
+  "real_case": "Tosco Avon 1999",
+  "expected": [
+   "BLOCKED"
+  ],
+  "faults": [
+   {
+    "at_step": 2,
+    "before_mark": true,
+    "set": {
+     "f1_leak_pct": [
+      0.3,
+      1.5
+     ]
+    }
+   }
+  ]
+ },
+ "seed": 21,
+ "faults": [
+  {
+   "at_step": 2,
+   "before_mark": true,
+   "set": {
+    "f1_leak_pct": 0.49793937579983755
+   }
+  }
+ ],
+ "process_time_scale": 10,
+ "images": {
+  "simulation": "sha256:8dbbdb286c047ad6d2920dc6cc8b6a0d84d6d14efad69498ff4836ad650b61a9",
+  "zerostate": "sha256:0cfe9b8f3eb6561f9ae3790d6362d6e6409926c74186a5d8f359b142893ed5f8",
+  "zs-operator": "sha256:e575cc26f154c0bc8a6865ce740ec4fc6f48dd07ece7fc924e55cfdf599150e5",
+  "plc": "sha256:7397c8440578dd8e9ff01133445ed264f1166beb5f00fc72d476d738b9797987"
+ },
+ "plan_hash": "0c86abe0f8f9c5939dd1d9e5d9c4d639fe04f9aab7db667803efc527c2fc1bf9"
+}

@@ -1,10 +1,10 @@
-from checks.synth import PARAMS, PLAN, STEP, vent, vented_pressure, window
+from checks.synth import PARAMS, PLAN, STEP, VENT, vent, vented_pressure, window
 from zerostate.checks.live import relation
 from zerostate.models.verdict import FindingStatus as S
 
 
 def run(w):
-    return relation.check(PLAN, STEP[5], w, PARAMS)
+    return relation.check(PLAN, STEP[VENT], w, PARAMS)
 
 
 def test_pass_pressure_agrees_with_valve_law():

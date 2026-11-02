@@ -1,0 +1,36 @@
+{
+ "scenario": "S1b",
+ "seed": 12,
+ "expected": [
+  "ESCALATED",
+  "BLOCKED"
+ ],
+ "verdict": "BLOCKED",
+ "match": true,
+ "valid": true,
+ "problems": [],
+ "stamp": {
+  "assumptions": [
+   "positive isolation upstream assumed"
+  ],
+  "package_version": "0.1.0",
+  "plan_hash": "318917d29c6d22fd23d0ccf52b221ec5fede5daf8a64da2c646393eb418ce23c",
+  "reasons": [
+   "LIVE-QUALITY: pressure changed 125.5 in 2.5 process-s, faster than the process can move"
+  ],
+  "rules": {
+   "LIVE-ALIVE": "1",
+   "LIVE-HOLD": "1",
+   "LIVE-QUALITY": "1",
+   "LIVE-RELATION": "1",
+   "LIVE-VALVE": "1"
+  },
+  "source": "monitor",
+  "thresholds_version": "1+p1-1",
+  "verdict": "BLOCKED"
+ },
+ "steps": {
+  "1": "PASS",
+  "2": "PASS"
+ }
+}

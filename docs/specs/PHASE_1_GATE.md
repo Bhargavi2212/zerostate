@@ -30,6 +30,23 @@ Run 2026-11-01 (UTC 17:40–19:10), branch `p1-work`, GRFICS patched image `zero
 ## Claims
 C1, C4, C9, C11 → built, evidence pending (PASSING only via the Phase 3 claims audit).
 
+## Close-out after the Phase 1 review (Nov 1–2)
+The review found that LIVE-HOLD had never caught a fault live (S4 and S1b leaks were above the
+flowmeter cutoff, so LIVE-VALVE caught them first). Fixed and re-run:
+- `hold_max_rise_kpa` 5 → 1.0 from clean-hold data (holds fall 3.5–5.4 kPa); all earlier smoke
+  episodes replay identically under it.
+- Scenarios split: S4-small (0.3–1.5 %, LIVE-HOLD), S4-large (2–5 %, LIVE-VALVE); S1b leak below the
+  cutoff behind a frozen gauge (ESCALATED via noise loss). Live: S4-small BLOCKED by **LIVE-HOLD**
+  (+7.9 kPa at 0.5 %; 0.93 %), S1b ESCALATED, S4-large BLOCKED by LIVE-VALVE.
+- Plan: step 2 blocks in the reactor (f1 then purge); runner declares each step before acting.
+  Vent start 1826–2411 kPa, recorded with its two causes.
+- All episode logs committed under `eval/results/episodes/` (30 folders, 6.2 MB).
+- Runner guards: a vent start below 1500 kPa makes the episode INVALID; scoring seeds (≥ 1000) run
+  only on the committed block-in plan (hash check).
+Final table: `eval/results/smoke_p1_2026-11-02.md` — **21 counted episodes, all match, all valid,
+all replay identically under the final rules**; 4 "pre-guard, old plan" (S0 seeds 3, 4, 24, 25:
+vent starts 224–985 kPa, smoke history only), 3 INVALID and 2 SUPERSEDED with notes.
+
 ## Raw output (final image)
 ```
 ### pytest -q (repo venv)
@@ -42,19 +59,71 @@ C1, C4, C9, C11 → built, evidence pending (PASSING only via the Phase 3 claims
 15 passed in 19.18s
 
 ### replay + audit verify + IDS per episode (final image)
-S0_seed1_20261101T174920 | replay identical | chain ok; 18 events in S0_seed1_20261101T174920 | {"rotated":false,"9100001":0,"9100002":9}
-S0_seed2_20261101T183158 | replay identical | chain ok; 18 events in S0_seed2_20261101T183158 | {"rotated":false,"9100001":0,"9100002":9}
-S0_seed3_20261101T175819 | replay identical | chain ok; 18 events in S0_seed3_20261101T175819 | {"rotated":false,"9100001":0,"9100002":9}
-S1_seed11_20261101T180250 | replay identical | chain ok; 14 events in S1_seed11_20261101T180250 | {"rotated":false,"9100001":0,"9100002":8}
-S1b_seed12_20261101T183640 | replay identical | chain ok; 16 events in S1b_seed12_20261101T183640 | {"rotated":false,"9100001":0,"9100002":9}
-S2_seed13_20261101T181009 | replay identical | chain ok; 16 events in S2_seed13_20261101T181009 | {"rotated":false,"9100001":0,"9100002":9}
-S3_seed14_20261101T181353 | replay identical | chain ok; 14 events in S3_seed14_20261101T181353 | {"rotated":false,"9100001":0,"9100002":8}
-S4_seed15_20261101T181823 | replay identical | chain ok; 8 events in S4_seed15_20261101T181823 | {"rotated":false,"9100001":0,"9100002":5}
-S5_seed16_20261101T182128 | replay identical | chain ok; 8 events in S5_seed16_20261101T182128 | {"rotated":false,"9100001":0,"9100002":5}
-S6_seed17_20261101T182418 | replay identical | chain ok; 6 events in S6_seed17_20261101T182418 | {"rotated":false,"9100001":0,"9100002":2}
-S8_seed18_20261101T182645 | replay identical | chain ok; 8 events in S8_seed18_20261101T182645 | {"rotated":false,"9100001":0,"9100002":5}
-S12_seed19_20261101T184743 | replay identical | chain ok; 18 events in S12_seed19_20261101T184743 | {"rotated":false,"9100001":0,"9100002":9}
-S0_seed4_20261101T185842 | replay identical | chain ok; 18 events in S0_seed4_20261101T185842 | {"rotated":false,"9100001":0,"9100002":9}
+S0_seed1_20261101T174920 | replay identical | chain ok; 18 events in S0_seed1_20261101T174920 | {
+"rotated":false,
+"9100001":0,
+"9100002":9
+}
+S0_seed2_20261101T183158 | replay identical | chain ok; 18 events in S0_seed2_20261101T183158 | {
+"rotated":false,
+"9100001":0,
+"9100002":9
+}
+S0_seed3_20261101T175819 | replay identical | chain ok; 18 events in S0_seed3_20261101T175819 | {
+"rotated":false,
+"9100001":0,
+"9100002":9
+}
+S1_seed11_20261101T180250 | replay identical | chain ok; 14 events in S1_seed11_20261101T180250 | {
+"rotated":false,
+"9100001":0,
+"9100002":8
+}
+S1b_seed12_20261101T183640 | replay identical | chain ok; 16 events in S1b_seed12_20261101T183640 | {
+"rotated":false,
+"9100001":0,
+"9100002":9
+}
+S2_seed13_20261101T181009 | replay identical | chain ok; 16 events in S2_seed13_20261101T181009 | {
+"rotated":false,
+"9100001":0,
+"9100002":9
+}
+S3_seed14_20261101T181353 | replay identical | chain ok; 14 events in S3_seed14_20261101T181353 | {
+"rotated":false,
+"9100001":0,
+"9100002":8
+}
+S4_seed15_20261101T181823 | replay identical | chain ok; 8 events in S4_seed15_20261101T181823 | {
+"rotated":false,
+"9100001":0,
+"9100002":5
+}
+S5_seed16_20261101T182128 | replay identical | chain ok; 8 events in S5_seed16_20261101T182128 | {
+"rotated":false,
+"9100001":0,
+"9100002":5
+}
+S6_seed17_20261101T182418 | replay identical | chain ok; 6 events in S6_seed17_20261101T182418 | {
+"rotated":false,
+"9100001":0,
+"9100002":2
+}
+S8_seed18_20261101T182645 | replay identical | chain ok; 8 events in S8_seed18_20261101T182645 | {
+"rotated":false,
+"9100001":0,
+"9100002":5
+}
+S12_seed19_20261101T184743 | replay identical | chain ok; 18 events in S12_seed19_20261101T184743 | {
+"rotated":false,
+"9100001":0,
+"9100002":9
+}
+S0_seed4_20261101T185842 | replay identical | chain ok; 18 events in S0_seed4_20261101T185842 | {
+"rotated":false,
+"9100001":0,
+"9100002":9
+}
 
 ### smoke table
 | scenario | seed | rules_basis | expected | actual | match | valid | first_block | to_block_process_s | vent_to_105_process_s | min_hold_kpa | problems |

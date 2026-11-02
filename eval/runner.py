@@ -22,7 +22,7 @@ from pathlib import Path
 
 import yaml
 
-from zerostate.models.envelope import IsolationPlan
+from zerostate.models.envelope import IsolationPlan, step_targets
 
 ROOT = Path(__file__).parents[1]
 GRFICS = ROOT.parent
@@ -32,6 +32,10 @@ SOURCES = ("192.168.90.60", "192.168.90.70")
 PLC = "192.168.95.2"
 TERMINAL = ("BLOCKED", "ESCALATED")
 IO_DEVICES = "python (feed1|feed2|purge|product|tank|analyzer).py"  # GRFICS remote I/O device scripts
+MIN_VENT_START_KPA = 1500  # below this the vent rules get too little range to judge: episode INVALID
+TUNING_SEEDS = range(1000)  # anything else is a scoring seed
+# hash of the committed block-in plan (P1), a plan digest, not a secret
+BENCHMARK_PLAN_HASH = "89adfcf4fbb0a8e2b058c02ceed5d879d0a72312da92024bf967c8aec14f2a92"  # pragma: allowlist secret
 
 
 def _load(name):
@@ -77,11 +81,28 @@ def evaluated(status: dict, k: int) -> bool:
     return status["steps"].get(str(k)) not in (None, "pending")
 
 
+def seed_problem(seed: int, plan_hash: str) -> str | None:
+    """Scoring seeds run only on the committed block-in plan, so a benchmark never mixes plans."""
+    if seed < 0:
+        return "seed must be >= 0"
+    if seed not in TUNING_SEEDS and plan_hash != BENCHMARK_PLAN_HASH:
+        return f"scoring seed {seed} refused: plan hash {plan_hash[:12]} is not the benchmark plan {BENCHMARK_PLAN_HASH[:12]}"
+    return None
+
+
+def vent_start_problem(p_kpa: float | None) -> str | None:
+    if p_kpa is None or p_kpa < MIN_VENT_START_KPA:
+        return f"vent start {p_kpa} kPa below {MIN_VENT_START_KPA}: too little range for the vent rules"
+    return None
+
+
 def draw(spec, rng: random.Random):
     """Scenario values: [lo, hi] floats/ints are drawn from the seed; anything else is used as is."""
     if isinstance(spec, list) and len(spec) == 2 and all(isinstance(x, (int, float)) for x in spec):
         lo, hi = spec
         return rng.randint(lo, hi) if all(isinstance(x, int) for x in spec) else rng.uniform(lo, hi)
+    if isinstance(spec, list) and spec and all(isinstance(x, str) for x in spec):
+        return rng.choice(spec)  # e.g. a step kind drawn from [vent_open, vent_close, hold]
     if isinstance(spec, dict):
         return {k: draw(v, rng) for k, v in spec.items()}
     return spec
@@ -114,6 +135,25 @@ def ids_counts(offset: tuple[int, str]) -> dict:
                f"tail -c +{start} /var/log/suricata/eve.json | grep -c '\"signature_id\":{sid}' || true")
         out[sid] = int(n.strip() or 0)
     return out
+
+
+PUBLISH = ("audit_export.json", "verdict.json", "meta.json", "ids.json", "events.jsonl")
+
+
+def publish(run: Path) -> Path:
+    """Copy what anyone needs to replay and score an episode into eval/results/episodes/ (committed);
+    truth is gzipped. signals.jsonl stays in runs/ (it is the same data the audit windows carry)."""
+    import gzip
+    import shutil
+    dest = ROOT / "eval" / "results" / "episodes" / run.name
+    dest.mkdir(parents=True, exist_ok=True)
+    for name in PUBLISH:
+        if (run / name).exists():
+            shutil.copyfile(run / name, dest / name)
+    if (run / "truth.jsonl").exists():
+        with open(run / "truth.jsonl", "rb") as src, gzip.open(dest / "truth.jsonl.gz", "wb") as dst:
+            shutil.copyfileobj(src, dst)
+    return dest
 
 
 def preflight() -> dict:
@@ -159,12 +199,14 @@ class Episode:
         self.due: list[tuple[float, dict]] = []
         self.stop_truth = threading.Event()
         self.last_truth_t = None  # Docker VM clock, same as ZeroState's audit timestamps
+        self.last_pressure = None
         self.session_started = False
 
     # faults ------------------------------------------------------------
     def schedule(self, k: int, t_mark: float | None) -> None:
+        kind = next(s.kind for s in self.plan.steps if s.k == k)
         for f in self.faults:
-            if f.get("at_step") == k and (f.get("before_mark") if t_mark is None else not f.get("before_mark")):
+            if f.get("at_step") in (k, kind) and (f.get("before_mark") if t_mark is None else not f.get("before_mark")):
                 delay = 0.0 if t_mark is None else draw(f.get("after_process_s", [0, 0]), self.rng) / self.scale
                 self.due.append(((t_mark or time.time()) + delay, f))
         self.fire_due()
@@ -203,9 +245,15 @@ class Episode:
                 return st
             time.sleep(0.5)
 
-    def mark_and_evaluate(self, k: int) -> dict:
+    def mark(self, k: int) -> dict:
+        """Declare step k and wait until ZeroState has registered it, before anyone acts on the plant:
+        acting first leaves a gap where the monitor still holds the previous requirement (seen live:
+        purge opened for the vent while still listed as blocked in -> "commanded state wrong")."""
         zs("step", "done", self.sid, str(k), "--by", "eval-operator")
         self.schedule(k, time.time())
+        return self.wait(lambda st: st["steps"].get(str(k)) is not None, 30)
+
+    def evaluated(self, k: int) -> dict:
         return self.wait(lambda st: evaluated(st, k), 900 / self.scale + 120)
 
     def log_event(self, kind, data):
@@ -216,7 +264,7 @@ class Episode:
         with open(self.out / "truth.jsonl", "a", encoding="utf-8") as fh, truth.stream(4) as samples:
             for d in samples:  # one reader inside the simulation container, VM-clock timestamps
                 fh.write(json.dumps(d) + "\n")
-                self.last_truth_t = d["t"]
+                self.last_truth_t, self.last_pressure = d["t"], d["outputs"]["pressure"]
                 if self.stop_truth.is_set():
                     return
 
@@ -244,16 +292,25 @@ class Episode:
             if st["verdict"] in TERMINAL or step.kind == "final":
                 break
             k = step.k
+            if step.kind == "vent_open" and (problem := vent_start_problem(self.last_pressure)):
+                raise EpisodeInvalid(problem)
             self.schedule(k, None)  # faults tied to "before step k"
+            st = self.mark(k)  # declare the step first, then act on the plant
+            if st["verdict"] in TERMINAL:
+                break
             if step.kind == "mode":
                 if variant != "no_manual_mode":
                     act("manual", "on")
             elif step.kind in ("isolate", "vent_close"):
-                target = "f2" if (variant == "wrong_valve_step2" and k == 2) else step.target
-                act("set", target, str(step.required_state))
+                for i, target in enumerate(step_targets(step)):  # e.g. block in: inlet first, then outlet
+                    if variant == "wrong_valve_step2" and k == 2 and target == "f1":
+                        target = "f2"
+                    if i:
+                        time.sleep(2)
+                    act("set", target, str(step.required_state))
             elif step.kind == "vent_open":
                 act("set", step.target, str(step.required_state))
-            st = self.mark_and_evaluate(k)
+            st = self.evaluated(k)
             if step.kind == "vent_open" and st["verdict"] not in TERMINAL:
                 # keep venting until the plan's vent target (rolling mean); mark on regardless, like a hurried human
                 act("wait-pressure-below", str(self.plan.vent_target_kpa_abs), "--mean-of", "8",
@@ -306,14 +363,14 @@ def main() -> int:
     ap.add_argument("--scenario", required=True)
     ap.add_argument("--seed", type=int, required=True)
     a = ap.parse_args()
-    if not 0 <= a.seed <= 999:
-        raise SystemExit("Phase 1 uses tuning seeds 0-999 only")
     scenario = yaml.safe_load((ROOT / "eval" / "scenarios" / f"{a.scenario}.yaml").read_text(encoding="utf-8"))
     out = ROOT / "runs" / f"{a.scenario}_seed{a.seed}_{datetime.now(UTC):%Y%m%dT%H%M%S}"
+    ep = Episode(scenario, a.seed, out)
+    if problem := seed_problem(a.seed, ep.plan.content_hash()):
+        raise SystemExit(problem)
     out.mkdir(parents=True)
     images = {n: sh("docker", "inspect", "--format", "{{.Image}}", n, check=False).strip()
               for n in ("simulation", "zerostate", "zs-operator", "plc")}
-    ep = Episode(scenario, a.seed, out)
     (out / "meta.json").write_text(json.dumps({"scenario": scenario, "seed": a.seed, "faults": ep.faults,
                                                "process_time_scale": ep.scale, "images": images,
                                                "plan_hash": ep.plan.content_hash()}, indent=1), encoding="utf-8")
@@ -325,7 +382,8 @@ def main() -> int:
     except BaseException:
         ep.cleanup()
         raise
-        (out / "verdict.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
+    (out / "verdict.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
+    publish(out)
     print(json.dumps(result, indent=1))
     return 0 if result.get("valid") and result.get("match") else 1
 

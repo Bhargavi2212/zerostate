@@ -4,4 +4,4 @@ real_case: BP Texas City 2005 (transmitter reading falsely low)
 expected: [BLOCKED]
 faults:
   # drift severity in kPa per process-hour; negative = reads low (patch change I)
-  - {at_step: 5, after_process_s: [0, 30], set: {tank_pressure_fault_mode: 2, tank_pressure_fault_severity: [-6000, -2000]}}
+  - {at_step: vent_open, after_process_s: [0, 30], set: {tank_pressure_fault_mode: 2, tank_pressure_fault_severity: [-6000, -2000]}}

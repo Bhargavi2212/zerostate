@@ -1,9 +1,9 @@
-from checks.synth import PARAMS, PLAN, STEP, steady, window
+from checks.synth import ISOLATE_F1, MODE, PARAMS, PLAN, STEP, steady, window
 from zerostate.checks.live import valve
 from zerostate.models.verdict import FindingStatus as S
 
 
-def run(w, k=2):
+def run(w, k=ISOLATE_F1):
     return valve.check(PLAN, STEP[k], w, PARAMS)
 
 
@@ -34,8 +34,8 @@ def test_transient_before_settle_is_ignored():
 
 
 def test_mode_step_needs_manual_mode():
-    assert run(window(lambda ps: steady(), 20), k=1).status == S.PASS
-    assert run(window(lambda ps: steady(manual_mode=0.0), 20), k=1).status == S.FAIL
+    assert run(window(lambda ps: steady(), 20), k=MODE).status == S.PASS
+    assert run(window(lambda ps: steady(manual_mode=0.0), 20), k=MODE).status == S.FAIL
 
 
 def test_unknown_without_samples_after_settle():
@@ -46,3 +46,10 @@ def test_monitor_pairs_logged_before_settle_ends_still_replay():
     w = window(lambda ps: steady(pressure=2700.0, f1_flow=640.0), 20)
     assert valve.check(PLAN, STEP[2], w, PARAMS, only=[("f1", 0.0)]).status == S.FAIL
     assert valve.check(PLAN, STEP[2], w, PARAMS, only=[("f1", 0.0, 0.0)]).status == S.FAIL
+
+
+def test_block_in_step_checks_every_target():
+    # step 2 blocks in f1 then purge: purge left open must fail it
+    assert run(window(lambda ps: steady(pressure=2700.0), 80)).status == S.PASS
+    r = run(window(lambda ps: steady(pressure=2700.0, purge_valve_pos=100.0, purge_cmd=100.0, purge_flow=1795.0), 80))
+    assert r.status == S.FAIL and "purge" in r.message

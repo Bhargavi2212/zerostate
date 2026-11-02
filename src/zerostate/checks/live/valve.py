@@ -1,6 +1,7 @@
 """LIVE-VALVE: commanded state, position feedback, and no flow through a valve that reads closed."""
 
 from zerostate.checks.live import aligned, cutoff, finding, series, tag_for
+from zerostate.models.envelope import step_targets
 from zerostate.models.verdict import FindingStatus as S
 
 RULE_ID = "LIVE-VALVE"
@@ -10,11 +11,12 @@ RULE_VERSION = "1"
 def targets(plan, step):
     """(target, required) pairs this step checks; on the hold, every point closed before it."""
     if step.kind != "hold":
-        return [(step.target, step.required_state)]
+        return [(t, step.required_state) for t in step_targets(step)]
     latest = {}
     for s in plan.steps:
         if s.k < step.k and s.kind in ("isolate", "vent_close"):
-            latest[s.target] = s.required_state
+            for t in step_targets(s):
+                latest[t] = s.required_state
     return list(latest.items())
 
 

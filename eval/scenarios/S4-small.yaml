@@ -1,0 +1,6 @@
+id: S4-small
+title: f1 commanded closed but passing, leak below the flowmeter cutoff
+real_case: Tosco Avon 1999
+expected: [BLOCKED]  # only the 600 process-s hold can see it (LIVE-HOLD, 1.0 kPa limit)
+faults:
+  - {at_step: 2, before_mark: true, set: {f1_leak_pct: [0.3, 1.5]}}

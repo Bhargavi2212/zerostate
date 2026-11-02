@@ -12,7 +12,7 @@ from pathlib import Path
 
 from zerostate import gate
 from zerostate.audit.log import AuditLog
-from zerostate.models.envelope import IsolationPlan
+from zerostate.models.envelope import IsolationPlan, step_targets
 from zerostate.models.evidence import Window
 from zerostate.models.signal import Quality, Signal
 from zerostate.models.verdict import FindingStatus, Verdict
@@ -194,7 +194,8 @@ class Session:
         for k, t_mark in sorted(self.marks.items()):
             s = self.steps[k]
             if s.kind in ("isolate", "vent_open", "vent_close"):
-                latest[s.target] = (t_mark, s.settle_process_s, s.required_state)
+                for t in step_targets(s):
+                    latest[t] = (t_mark, s.settle_process_s, s.required_state)
         return [(target, req, max(0.0, self._ps(t0, t_mark) + settle))
                 for target, (t_mark, settle, req) in latest.items()
                 if req <= self.params["valve_tol_pct"] and self._ps(t_mark, now) >= settle]
