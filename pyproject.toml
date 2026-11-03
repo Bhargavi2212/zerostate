@@ -16,13 +16,16 @@ dependencies = [
     "pypdfium2==4.30.0",
     "Pillow==11.3.0",
     "asyncua==1.1.6",
+    "fastapi==0.162.0",
+    "uvicorn==0.54.0",
+    "python-multipart==0.0.33",
 ]
 
 [project.scripts]
 zs = "zerostate.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "pre-commit", "detect-secrets"]
+dev = ["pytest", "ruff", "pre-commit", "detect-secrets", "httpx"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

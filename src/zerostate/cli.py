@@ -32,6 +32,11 @@ def _data() -> Path:
     return d
 
 
+def _audit() -> Path:
+    """ZS_AUDIT: the audit log on its own volume (zerostate rw, zs-api ro); default unchanged."""
+    return Path(os.environ.get("ZS_AUDIT", _data() / "audit.sqlite"))
+
+
 def _thresholds() -> dict:
     return load_thresholds(os.environ.get("ZS_THRESHOLDS", "/app/config/p1_grfics/thresholds.yaml"))
 
@@ -83,7 +88,7 @@ def open_adapter(map_path: str | Path):
 
 
 def session_start(a) -> int:
-    log = AuditLog(_data() / "audit.sqlite")
+    log = AuditLog(_audit())
     if log.events(a.session):
         print(f"session {a.session} already exists", file=sys.stderr)
         return 1
@@ -167,7 +172,18 @@ def main(argv: list[str] | None = None) -> int:
     pc.add_argument("--role", default="issuer", choices=["issuer"])
     for p_ in (pi, pshow, pc):
         p_.add_argument("--map", help="plant_map.yaml (default /app/config/<plant>/plant_map.yaml)")
+    api = sub.add_parser("api", help="HTTP API for the console (docs/API.md); the container publishes it on 127.0.0.1 only")
+    api.add_argument("--host", default="0.0.0.0")
+    api.add_argument("--port", type=int, default=8090)
     a = ap.parse_args(argv)
+
+    if a.cmd == "api":
+        import uvicorn
+
+        from zerostate.api.server import create_app
+
+        uvicorn.run(create_app(_data(), _audit(), _config(), _thresholds()), host=a.host, port=a.port)
+        return 0
 
     if a.cmd == "session" and a.action == "start":
         return session_start(a)
@@ -185,7 +201,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             inbox.put(a.session, "sign", by=a.by, role=a.role, note=a.note)
         return 0
-    log = AuditLog(_data() / "audit.sqlite")
+    log = AuditLog(_audit())
     events = log.events(a.session)
     if not events:
         print(f"no session {a.session}", file=sys.stderr)
