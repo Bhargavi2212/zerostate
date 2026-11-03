@@ -89,7 +89,7 @@ claims:
   - id: C6.p1
     batch: p1
     engine: live checks only (Phase 1 engine)
-    sentence: "On {false_blocks.n} clean episodes in batch p1 (live checks only (Phase 1 engine)) it falsely blocked {false_blocks.k} (95% CI {false_blocks.ci_low}–{false_blocks.ci_high})."
+    sentence: "On {false_blocks.n} clean episodes in batch p1 (live checks only (Phase 1 engine)) it falsely blocked or escalated {false_blocks.k} (95% CI {false_blocks.ci_low}–{false_blocks.ci_high})."
     tests: []
     results: eval/results/score_p1.json
     keys: [false_blocks.n, false_blocks.k, false_blocks.ci_low, false_blocks.ci_high]
@@ -97,7 +97,7 @@ claims:
   - id: C6.2
     batch: "2"
     engine: full engine (live + process + camera)
-    sentence: "On {false_blocks.n} clean episodes in batch 2 (full engine (live + process + camera)) it falsely blocked {false_blocks.k} (95% CI {false_blocks.ci_low}–{false_blocks.ci_high})."
+    sentence: "On {false_blocks.n} clean episodes in batch 2 (full engine (live + process + camera)) it falsely blocked or escalated {false_blocks.k} (95% CI {false_blocks.ci_low}–{false_blocks.ci_high})."
     tests: []
     results: eval/results/score_2.json
     keys: [false_blocks.n, false_blocks.k, false_blocks.ci_low, false_blocks.ci_high]
@@ -105,7 +105,7 @@ claims:
   - id: C6.p2
     batch: p2
     engine: gas line, full engine
-    sentence: "On {false_blocks.n} clean episodes in batch p2 (gas line, full engine) it falsely blocked {false_blocks.k} (95% CI {false_blocks.ci_low}–{false_blocks.ci_high})."
+    sentence: "On {false_blocks.n} clean episodes in batch p2 (gas line, full engine) it falsely blocked or escalated {false_blocks.k} (95% CI {false_blocks.ci_low}–{false_blocks.ci_high})."
     tests: []
     results: eval/results/score_p2.json
     keys: [false_blocks.n, false_blocks.k, false_blocks.ci_low, false_blocks.ci_high]

@@ -307,7 +307,13 @@ def score_decisions(decisions: dict, eps: dict, fs: dict) -> dict:
     clean = [n for n in answered if label(conditions(eps[n], DEFINITIONS["primary"], fs), faulty(eps[n])) == "clean"]
     out["false_blocks"] = rate(sum(1 for n in clean if answered[n]["answer"] == "block"), len(clean))
     out["passes"] = sum(1 for d in answered.values() if d["answer"] == "pass")
+    out["decided_on"] = {"k": len(answered), "n": len(eps), "whole_job": sum(whole_job(eps[n]) for n in answered)}
     return out
+
+
+def whole_job(ep: dict) -> bool:
+    """Every non-final plan step was marked: the episode ran the whole job, not stopped early on a block."""
+    return all(s["k"] in ep["marks"] for s in ep["plan"]["steps"] if s["kind"] != "final")
 
 
 # ---------------------------------------------------------------- batch
@@ -405,7 +411,10 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
             "windows": "a line's flow and state count from its own isolate mark plus the step's settle time, the vent valve's "
                        "from the vent_close mark plus its settle time, pressure from the vent_close mark (not evaluated if never reached)",
             "label": "from truth after the isolation marks, whatever the verdict; descriptive only for BLOCKED or ESCALATED",
-            "false_block": "BLOCKED on an episode labelled clean (ESCALATED on clean reported separately)",
+            "false_block": "BLOCKED or ESCALATED on an episode labelled clean (as pre-registered in EVAL); the split is reported",
+            "decided_on": "a system decided on an episode when it gave a verdict there; it saw the whole job when every "
+                          "non-final plan step was marked before its decision (an episode ZeroState blocked early stops "
+                          "there, so a baseline never faces the rest of that job)",
         },
         "n_scored": len(rows),
         "dangerous_miss": {d: rate(count(lambda r, d=d: r["dangerous_miss"][d], rows), len(rows)) for d in DEFINITIONS},
@@ -413,8 +422,10 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
                           "n": len(fault_rows)},
         "missed_faults_secondary": {"k": count(lambda r: r["verdict"] == NO_DISC and not r["dangerous_miss"]["secondary"], fault_rows),
                                     "n": len(fault_rows)},
-        "false_blocks": rate(count(lambda r: r["verdict"] == "BLOCKED", clean), len(clean)),
-        "escalated_clean": {"k": count(lambda r: r["verdict"] == "ESCALATED", clean), "n": len(clean)},
+        "false_blocks": {**rate(count(lambda r: r["verdict"] in ("BLOCKED", "ESCALATED"), clean), len(clean)),
+                         "blocked": count(lambda r: r["verdict"] == "BLOCKED", clean),
+                         "escalated": count(lambda r: r["verdict"] == "ESCALATED", clean)},
+        "decided_on": {"k": len(rows), "n": len(rows), "whole_job": sum(map(whole_job, chosen.values()))},
         "labels": {d: dict(Counter(r["label"][d] for r in rows)) for d in DEFINITIONS},
         "time_to_block_process_s": {s: {"n": len(v), "median": statistics.median(v), "min": min(v), "max": max(v)} for s, v in sorted(ttb.items())},
         "severity_at_release": {r["episode"]: r["severity_at_release"] for r in rows if "severity_at_release" in r},
@@ -456,10 +467,13 @@ def markdown(s: dict) -> str:
     L += ["", "## Results", "", "| Measure | Result |", "|---|---|"]
     L += [f"| Dangerous misses, {d} | {show(s['dangerous_miss'][d])} |" for d in DEFINITIONS]
     L += [f"| Missed faults (fault, NO_DISCREPANCY, no condition met), primary | {s['missed_faults']['k']}/{s['missed_faults']['n']} |",
-          f"| False blocks on clean episodes | {show(s['false_blocks'])} |",
-          f"| Escalated clean | {s['escalated_clean']['k']}/{s['escalated_clean']['n']} |",
+          f"| False blocks on clean episodes (BLOCKED or ESCALATED) | {show(s['false_blocks'])} |",
+          f"| — of which BLOCKED / ESCALATED | {s['false_blocks']['blocked']} / {s['false_blocks']['escalated']} |",
+          f"| ZeroState decided on | {s['decided_on']['k']} of {s['decided_on']['n']} (whole job in {s['decided_on']['whole_job']}) |",
           f"| INVALID entries | {s['invalid']['k']}/{s['invalid']['n']} (attempts: {s['invalid']['invalid_attempts']} INVALID of {s['invalid']['attempts']}) |"]
     for name, b in s["baselines"].items():
+        d_on = b["decided_on"]
+        L += [f"| Baseline {name}: decided on | {d_on['k']} of {d_on['n']} (whole job in {d_on['whole_job']}) |"]
         L += [f"| Baseline {name}: dangerous misses, {d} | {show(b['dangerous_miss'][d])} |" for d in DEFINITIONS]
         L += [f"| Baseline {name}: false blocks | {show(b['false_blocks'])} |"]
     L += ["", "Labels from truth (descriptive for BLOCKED / ESCALATED):", ""]

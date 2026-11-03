@@ -133,6 +133,11 @@ def test_batch_keys_and_counts(batch):
     assert s["dangerous_miss"]["secondary"]["k"] == 1  # the passed 0.5 % leak, under 0.1 % only
     assert set(s["dangerous_miss"]["secondary"]) == {"k", "n", "ci_low", "ci_high"}
     assert s["false_blocks"]["k"] == 1 and s["false_blocks"]["n"] == 2
+    assert (s["false_blocks"]["blocked"], s["false_blocks"]["escalated"]) == (1, 0)
+    assert s["decided_on"]["k"] == s["decided_on"]["n"] == 4
+    for b in s["baselines"].values():
+        assert b["decided_on"]["n"] == 4 and b["decided_on"]["whole_job"] <= b["decided_on"]["k"]
+
     assert s["missed_faults"] == {"k": 1, "n": 2}  # the leak passed: no primary condition met
     assert s["missed_faults_secondary"] == {"k": 0, "n": 2}
     assert s["invalid"]["k"] == 1 and s["invalid"]["n"] == 5
