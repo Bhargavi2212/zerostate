@@ -155,6 +155,8 @@ zerostate/
 │   ├── test_modbus_adapter.py     # in-process Modbus server: scaled values; server down → BAD
 │   ├── test_freshness.py          # placeholder, STALE, constant_ok_raw, dead group (injectable clock)
 │   ├── test_plant_map.py          # map loads; every plan tag exists in the map
+│   ├── test_build.py              # merge deterministic, never invents a value; P2 plan passes every plan rule, P1 BLOCKED by SOFTWARE + TYPE; plan check at session start (refuse / override) and its replay
+│   ├── test_plan_cases.py         # plan-check set: generator deterministic; every PCn label matches the rules on one seed
 │   ├── test_modbus_scan.py        # scan script offset check
 │   ├── test_timescale_judge.py    # time-scale pass/fail criteria (eval/tools/timescale_test.py)
 │   ├── test_runner.py             # runner logic without the lab: seeded draws, router-rule order
@@ -171,6 +173,7 @@ zerostate/
 │   ├── checks/                    # test_<rule>.py per rule (test_paths.py … test_reset.py), a passing and a failing case each; test_timescale_invariance.py
 │   ├── live/                      # marker `live`, run from the host against the lab: test_patch.py, test_operator_net.py
 │   │                              # tests/checks/synth.py: synthetic P1 windows (vent model, 4 Hz polls) for rule tests
+│   │                              # tests/checks/plan_synth.py: small hand-built plant maps and plans for the plan-rule tests
 │   └── fixtures/                  # small recorded episodes for offline tests
 └── scripts/
     └── modbus_scan.py             # Phase 0: map GRFICS registers (read-only)

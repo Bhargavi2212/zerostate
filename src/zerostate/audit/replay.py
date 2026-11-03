@@ -3,8 +3,10 @@ thresholds, and report any finding or verdict that comes out different."""
 
 from zerostate import gate
 from zerostate.audit.log import AuditLog
+from zerostate.checks.plan import run_plan_checks
 from zerostate.models.envelope import IsolationPlan
 from zerostate.models.evidence import Window
+from zerostate.models.plant_map import PlantMap
 from zerostate.models.verdict import FindingStatus, Verdict
 
 
@@ -25,6 +27,15 @@ def replay(log: AuditLog, session: str, params: dict) -> list[str]:
             verdict = gate.worsen(verdict, Verdict(p["verdict"]))
             continue
         if e["kind"] != "evaluation":
+            continue
+        if p["source"] == "plan":  # re-run on the logged map; a plan evaluation never changes the verdict
+            m = PlantMap.model_validate(p["map"])
+            if m.content_hash() != p["map_hash"]:
+                mismatches.append(f"event {e['id']}: logged map does not match its logged hash")
+            got = [(f.rule_id, f.status.value, f.message, f.path) for f in run_plan_checks(plan, m, params)]
+            logged = [(f["rule_id"], f["status"], f["message"], f.get("path", [])) for f in p["findings"]]
+            if got != logged:
+                mismatches.append(f"event {e['id']} (plan): replay {got} != logged {logged}")
             continue
         only = [tuple(x) for x in p["only"]] if p.get("only") is not None else None
         findings = gate.evaluate(plan, steps[p["step"]], Window.model_validate(p["window"]), params, p["rules"], only)

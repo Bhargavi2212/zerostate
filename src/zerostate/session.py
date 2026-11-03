@@ -12,8 +12,10 @@ from pathlib import Path
 
 from zerostate import gate
 from zerostate.audit.log import AuditLog
+from zerostate.checks.plan import PLAN_RULES, run_plan_checks
 from zerostate.models.envelope import IsolationPlan, step_targets
 from zerostate.models.evidence import Window
+from zerostate.models.plant_map import PlantMap
 from zerostate.models.signal import Quality, Signal
 from zerostate.models.verdict import FindingStatus, Verdict
 
@@ -22,6 +24,10 @@ TERMINAL = (Verdict.BLOCKED, Verdict.ESCALATED)
 
 class PlanHashMismatch(Exception):
     """The plan given is not the plan a person confirmed: refuse to start."""
+
+
+class PlanCheckFailed(Exception):
+    """A plan check did not pass and no override was given: refuse to start."""
 
 
 class Inbox:
@@ -45,9 +51,16 @@ class Inbox:
 
 class Session:
     def __init__(self, sid: str, plan: IsolationPlan, plan_hash: str, params: dict, process_time_scale: float,
-                 spans: dict, log: AuditLog, now: float):
+                 spans: dict, log: AuditLog, now: float, plant_map: PlantMap | None = None, override: str | None = None):
+        """plant_map: run the plan checks first; any finding that is not PASS refuses the start unless an
+        override text is given, which is then logged and stamped into every verdict (it never changes one)."""
         if plan.content_hash() != plan_hash:
             raise PlanHashMismatch(f"plan hash {plan.content_hash()} != confirmed {plan_hash}")
+        plan_findings = run_plan_checks(plan, plant_map, params) if plant_map is not None else None
+        bad = [f"{f.rule_id}: {f.message}" for f in plan_findings or [] if f.status != FindingStatus.PASS]
+        if bad and override is None:
+            raise PlanCheckFailed("; ".join(bad))
+        self.override = override
         self.sid, self.plan, self.params, self.scale, self.spans, self.log = sid, plan, params, process_time_scale, spans, log
         self.steps = {s.k: s for s in plan.steps}
         self.witnesses = {w.signal_ref for w in plan.witnesses}
@@ -62,10 +75,17 @@ class Session:
         self.unknown_since: float | None = None
         self.last_monitor = now
         versions = gate.stamp(Verdict.ESCALATED, plan, params["version"], [])
-        log.append(sid, "session_start", {"plan": plan.model_dump(mode="json"), "plan_hash": plan_hash,
-                                          "package_version": versions["package_version"], "rules": versions["rules"],
-                                          "thresholds_version": params["version"], "thresholds": params,
-                                          "process_time_scale": process_time_scale})
+        start = {"plan": plan.model_dump(mode="json"), "plan_hash": plan_hash,
+                 "package_version": versions["package_version"], "rules": versions["rules"],
+                 "thresholds_version": params["version"], "thresholds": params, "process_time_scale": process_time_scale}
+        if override is not None:
+            start["plan_check_override"] = override
+        log.append(sid, "session_start", start)
+        if plan_findings is not None:  # logged with its map so replay re-runs it; never changes the verdict
+            log.append(sid, "evaluation", {
+                "source": "plan", "step": None, "rules": list(PLAN_RULES), "map": plant_map.model_dump(mode="json"),
+                "map_hash": plant_map.content_hash(), "override": override, "thresholds_version": params["version"],
+                "findings": [f.model_dump(mode="json") for f in plan_findings], "verdict_after": None})
 
     # ---- helpers ---------------------------------------------------------------------------
     def _ps(self, t0: float, t1: float) -> float:
@@ -89,7 +109,7 @@ class Session:
     def _set_verdict(self, new: Verdict | None, findings, source: str) -> None:
         if new is not None and new != self.verdict:
             self.verdict = new
-            self.log.append(self.sid, "verdict", {"source": source, **gate.stamp(new, self.plan, self.params["version"], findings)})
+            self.log.append(self.sid, "verdict", {"source": source, **gate.stamp(new, self.plan, self.params["version"], findings, self.override)})
 
     def _record_evaluation(self, source: str, k: int, rules, window: Window, findings, only=None, completes=False):
         new = gate.next_verdict(self.verdict, findings, completes)
@@ -133,7 +153,7 @@ class Session:
         """The monitor itself stopped: say so in the audit log rather than go quiet."""
         self.verdict = gate.worsen(self.verdict, Verdict.ESCALATED)
         self.log.append(self.sid, "verdict", {"source": "monitor_error",
-                                              **gate.stamp(Verdict.ESCALATED, self.plan, self.params["version"], []),
+                                              **gate.stamp(Verdict.ESCALATED, self.plan, self.params["version"], [], self.override),
                                               "reasons": [f"monitor stopped: {reason}"]})
 
     def _warm_in(self, now: float) -> None:
@@ -144,7 +164,7 @@ class Session:
             self.state = "warm_in_failed"
             bad = sorted(t for t in self.witnesses if t not in self.latest or self.latest[t].quality != Quality.GOOD)
             self.verdict = Verdict.ESCALATED
-            self.log.append(self.sid, "verdict", {"source": "warm_in", **gate.stamp(Verdict.ESCALATED, self.plan, self.params["version"], []),
+            self.log.append(self.sid, "verdict", {"source": "warm_in", **gate.stamp(Verdict.ESCALATED, self.plan, self.params["version"], [], self.override),
                                                   "reasons": [f"instruments not verified live: {', '.join(bad)}"]})
 
     def _handle(self, now: float, msg: dict) -> None:

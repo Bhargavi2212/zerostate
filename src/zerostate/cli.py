@@ -18,7 +18,8 @@ from zerostate.audit.log import AuditLog
 from zerostate.audit.replay import replay
 from zerostate.config import load_thresholds
 from zerostate.models.envelope import IsolationPlan
-from zerostate.session import Inbox, PlanHashMismatch, Session, status_from_events
+from zerostate.models.plant_map import PlantMap
+from zerostate.session import Inbox, PlanCheckFailed, PlanHashMismatch, Session, status_from_events
 
 POLL_WALL_S = 0.25  # 4 Hz
 
@@ -41,9 +42,12 @@ def session_start(a) -> int:
     plan = IsolationPlan.model_validate(yaml.safe_load(Path(a.plan).read_text(encoding="utf-8-sig")))
     adapter = ModbusReadOnly(os.environ.get("ZS_MAP", "/app/config/p1_grfics/modbus_map.yaml"))
     spans = {e.tag: (e.scale_min, e.scale_max) for e in adapter.map.tags}
+    pmap = (PlantMap.model_validate(yaml.safe_load(Path(a.plan_map).read_text(encoding="utf-8-sig")))
+            if a.plan_map else None)
     try:
-        s = Session(a.session, plan, a.plan_hash, _thresholds(), adapter.map.process_time_scale, spans, log, time.time())
-    except PlanHashMismatch as e:
+        s = Session(a.session, plan, a.plan_hash, _thresholds(), adapter.map.process_time_scale, spans, log, time.time(),
+                    plant_map=pmap, override=a.plan_check_override)
+    except (PlanHashMismatch, PlanCheckFailed) as e:
         print(f"refused: {e}", file=sys.stderr)
         return 1
     inbox = Inbox(_data() / "inbox.sqlite")
@@ -73,6 +77,8 @@ def main(argv: list[str] | None = None) -> int:
     st.add_argument("--plan", required=True)
     st.add_argument("--plan-hash", required=True)
     st.add_argument("--session", required=True)
+    st.add_argument("--plan-map", help="plant map: run the plan checks before starting")
+    st.add_argument("--plan-check-override", help="text accepting a plan-check finding; logged and stamped on every verdict")
     stop = se.add_parser("stop")
     stop.add_argument("session")
     stop.add_argument("--by", default="eval-runner")
@@ -125,6 +131,8 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  step {k}: {v}")
             for r in (s["stamp"] or {}).get("reasons", []):
                 print(f"  reason: {r}")
+            if (s["stamp"] or {}).get("plan_check_override"):
+                print(f"  plan-check override: {s['stamp']['plan_check_override']}")
         return 0
     if a.cmd == "audit" and a.action == "verify":
         ok, bad = log.verify()
