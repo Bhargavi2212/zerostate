@@ -30,9 +30,10 @@ from zerostate.checks.plan import (  # helpers above must be defined first
     boxedin,
     liveside,
     paths,
+    software,
 )
 
-PLAN_RULES = {m.RULE_ID: m for m in (paths, liveside, boxedin)}
+PLAN_RULES = {m.RULE_ID: m for m in (paths, liveside, boxedin, software)}
 
 
 def run_plan_checks(plan: IsolationPlan, m: PlantMap, params: dict) -> list[Finding]:
