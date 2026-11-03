@@ -171,6 +171,7 @@ zerostate/
 │   ├── checks/                    # test_<rule>.py per rule (test_paths.py … test_reset.py), a passing and a failing case each; test_timescale_invariance.py
 │   ├── live/                      # marker `live`, run from the host against the lab: test_patch.py, test_operator_net.py
 │   │                              # tests/checks/synth.py: synthetic P1 windows (vent model, 4 Hz polls) for rule tests
+│   │                              # tests/checks/plan_synth.py: small hand-built plant maps and plans for the plan-rule tests
 │   └── fixtures/                  # small recorded episodes for offline tests
 └── scripts/
     └── modbus_scan.py             # Phase 0: map GRFICS registers (read-only)
