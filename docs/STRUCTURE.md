@@ -145,7 +145,7 @@ zerostate/
 â”‚   â”œâ”€â”€ voice_test.py              # 20 clips (outside git) â†’ transcript â†’ intent; expected intents committed
 â”‚   â”œâ”€â”€ run_benchmark.py           # loops runner.py over a sealed manifest: resumable, one retry, stops after 3 INVALID in a row, 05:00 watchdog
 â”‚   â”œâ”€â”€ plan_benchmark.py  read_accuracy.py  p2_validation.py  importer_accuracy.py
-â”‚   â”œâ”€â”€ score.py                   # opens seal, compares to truth, Wilson CIs
+â”‚   â”œâ”€â”€ score.py                   # opens seal, checks every episode (manifest, batch, plan hash, audit chain, replay), labels from truth under both hazard definitions (DECISIONS Nov 3), Wilson CIs -> results/score_<batch>.{json,md}
 â”‚   â”œâ”€â”€ claims_audit.py            # reads claims.yaml: tests exist + pass, result keys exist, README sentence matches
 â”‚   â””â”€â”€ results/                   # committed outputs (json + md) with commit hash: timescale_<date>.json, smoke_p1_<date>.md, â€¦
 â”‚       â”œâ”€â”€ bench/<batch>/<episode>/  # scoring episodes of a sealed batch (+ progress.jsonl, signals_sha256.json: hash of each full local signals.jsonl); same files as episodes/
