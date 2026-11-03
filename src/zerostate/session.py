@@ -51,6 +51,8 @@ class Session:
         self.sid, self.plan, self.params, self.scale, self.spans, self.log = sid, plan, params, process_time_scale, spans, log
         self.steps = {s.k: s for s in plan.steps}
         self.witnesses = {w.signal_ref for w in plan.witnesses}
+        # the monitor starts at the first isolate mark (P1 step 2, P2 step 1)
+        self.monitor_from = min((s.k for s in plan.steps if s.kind == "isolate"), default=float("inf"))
         self.t_start = now
         self.state = "warming_in"
         self.verdict: Verdict | None = None
@@ -115,7 +117,7 @@ class Session:
             self._warm_in(now)
         if self.state == "ready":
             self._evaluate_due_steps(now)
-            if any(k >= 2 for k in self.marks) and now - self.last_monitor >= self.params["monitor_period_wall_s"]:
+            if any(k >= self.monitor_from for k in self.marks) and now - self.last_monitor >= self.params["monitor_period_wall_s"]:
                 self._monitor(now)
                 self._prune()
 

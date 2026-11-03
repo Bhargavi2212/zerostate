@@ -18,6 +18,7 @@ COPY scripts ./scripts
 COPY tests/net ./tests/net
 # Only plant data the product needs; never truth or fault code.
 COPY plants/p1_grfics/modbus_map.yaml plants/p1_grfics/envelope.yaml plants/p1_grfics/thresholds.yaml ./config/p1_grfics/
+COPY plants/p2_gasline/opcua_map.yaml plants/p2_gasline/thresholds.yaml ./config/p2_gasline/
 ENV ZS_MAP=/app/config/p1_grfics/modbus_map.yaml ZS_THRESHOLDS=/app/config/p1_grfics/thresholds.yaml ZS_DATA=/data
 # audit.sqlite (core only), inbox.sqlite (human/operator actions), runs/<session>/signals.jsonl
 RUN mkdir -p /data && chown zs:zs /data

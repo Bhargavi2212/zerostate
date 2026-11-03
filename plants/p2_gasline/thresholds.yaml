@@ -1,0 +1,8 @@
+# P2 plant thresholds: overrides of src/zerostate/thresholds/default.yaml (existing keys only).
+# Copied into the zerostate image at /app/config/p2_gasline/.
+# PROVISIONAL until tuned on P2 tuning seeds (hold at 200 kPa); tuning bumps the version and records
+# a one-line reason in docs/DECISIONS.md.
+version: "p2-0"
+# provisional until tuned on P2 tuning seeds: ~3x the window-mean noise expected from +-0.1 % of a
+# 2500 kPa span over 16-sample windows (sd of a window-mean difference ~0.5 kPa)
+hold_max_rise_kpa: 1.5

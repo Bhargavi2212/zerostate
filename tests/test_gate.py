@@ -56,7 +56,7 @@ def test_verdict_is_stamped():
     s = gate.stamp(Verdict.BLOCKED, PLAN, PARAMS["version"], findings)
     assert s["plan_hash"] == PLAN.content_hash() and s["thresholds_version"] == PARAMS["version"]
     assert s["assumptions"] == ["positive isolation upstream assumed"]
-    assert set(s["rules"]) == {"LIVE-QUALITY", "LIVE-ALIVE", "LIVE-RELATION", "LIVE-VALVE", "LIVE-HOLD"}
+    assert set(s["rules"]) == {"LIVE-QUALITY", "LIVE-ALIVE", "LIVE-RELATION", "LIVE-VALVE", "LIVE-HOLD", "LIVE-UPSTREAM"}
     assert any("reading closed" in r for r in s["reasons"])
 
 

@@ -1,3 +1,4 @@
+from checks import synth_p2 as p2
 from checks.synth import PARAMS, PLAN, STEP, VENT, steady, vent, window
 from zerostate.checks.live import alive
 from zerostate.models.verdict import FindingStatus as S
@@ -18,3 +19,50 @@ def test_fail_gauge_frozen_at_vent_start():
 
 def test_unknown_if_vent_never_opened():
     assert run(window(lambda ps: steady(pressure=2700.0), 120)).status == S.UNKNOWN
+
+
+# ---------------------------------------------------------------- P2 (v2): gauges by segment, blocked vent, bleed, after-hold
+
+
+def run_p2(k, w):
+    return alive.check(p2.PLAN, p2.STEP[k], w, p2.PARAMS)
+
+
+def test_p2_pass_both_vessel_gauges_track_the_vent():
+    r = run_p2(p2.VENT, p2.opened(p2.isolated(p2.line()), "VV-213", 120))
+    assert r.status == S.PASS and "PT-211" in r.message and "PT-212" in r.message
+
+
+def test_p2_fail_blocked_vent_open_no_flow_no_fall():
+    # S10: VV-213 blocked (flow scale 0): feedback open, FT-213 at zero, no fall
+    r = run_p2(p2.VENT, p2.opened(p2.isolated(p2.line(**{"VV-213.flow_scale": 0})), "VV-213", 120))
+    assert r.status == S.FAIL and "vent blocked" in r.message
+
+
+def test_p2_pass_bleed_on_feedback_alone():
+    m = p2.do(p2.line(), ("XV-201", 0), ("XV-203", 0))
+    r = run_p2(p2.BLEED, p2.opened(m, "BV-202", 120))
+    assert r.status == S.PASS and r.message.startswith("PT-202 fell")
+
+
+def test_p2_fail_bleed_gauge_does_not_fall():
+    m = p2.do(p2.line(), ("XV-201", 0), ("XV-203", 0))
+    m.set("PT-202.fault_mode", 1)
+    assert run_p2(p2.BLEED, p2.opened(m, "BV-202", 120)).status == S.FAIL
+
+
+def test_p2_pass_after_hold_gauges_follow_the_final_vent():
+    m = p2.at_hold(p2.isolated(p2.line()))
+    m.step(600)
+    r = run_p2(p2.FINAL_VENT, p2.opened(m, "VV-213", 120))
+    assert r.status == S.PASS and "after the hold" in r.message
+
+
+def test_p2_fail_after_hold_frozen_gauges_cannot_follow():
+    # S1b: both vessel gauges frozen during the hold while XV-204 leaks
+    m = p2.at_hold(p2.isolated(p2.line(**{"XV-204.leak_pct": 0.5})))
+    m.set("PT-211.fault_mode", 1)
+    m.set("PT-212.fault_mode", 1)
+    m.step(600)
+    r = run_p2(p2.FINAL_VENT, p2.opened(m, "VV-213", 120))
+    assert r.status == S.FAIL and "after the hold" in r.message
