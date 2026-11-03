@@ -1,0 +1,3 @@
+L-230 spool change downstream of D-220.
+First close XV-204 (proved, lock C-3), then close XV-231 (non-proved, lock C-4).
+No vent on this section. Hold 10 minutes.

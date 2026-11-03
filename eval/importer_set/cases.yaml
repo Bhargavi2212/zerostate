@@ -1,0 +1,161 @@
+# Importer accuracy set (C14): authored by us, n = 12. Gold lists are what the author wrote, written by
+# hand and committed before any importer ran on these inputs. A field the author left unclear is null
+# in the gold (t02: which feed valve; s05: a scribbled-over tag), and the importer must return null.
+# Texts: t01-t06 (P1: t01-t03, P2: t04-t06). Sheets: s01-s06 from make_sheets.py (s06 as a PDF).
+# Notes are not scored.
+cases:
+  - id: t01
+    route: text
+    input: t01.txt
+    gold:
+      plant: p1_grfics
+      work_equipment: reactor
+      points:
+        - {tag: f1, required_state: closed, seq: 1, isolation_type: non_proved, lock_id: L-11}
+        - {tag: f2, required_state: closed, seq: 2, isolation_type: non_proved, lock_id: L-12}
+        - {tag: product, required_state: closed, seq: 3, isolation_type: non_proved, lock_id: L-13}
+      vent: purge
+      hold_minutes: 10
+  - id: t02
+    route: text
+    input: t02.txt
+    ambiguity: "the feed valve: the author doesn't know which feed line (f1 or f2)"
+    gold:
+      plant: p1_grfics
+      work_equipment: reactor
+      points:
+        - {tag: product, required_state: closed, seq: 1, isolation_type: non_proved, lock_id: "21"}
+        - {tag: null, required_state: closed, seq: 2, isolation_type: non_proved, lock_id: "22"}
+      vent: purge
+  - id: t03
+    route: text
+    input: t03.txt
+    gold:
+      plant: p1_grfics
+      work_equipment: reactor
+      points:
+        - {tag: f2, required_state: closed, seq: 1, isolation_type: non_proved, lock_id: "7"}
+        - {tag: f1, required_state: closed, seq: 2, isolation_type: non_proved, lock_id: "8"}
+        - {tag: product, required_state: closed, seq: 3, isolation_type: non_proved, lock_id: "9"}
+      vent: purge
+      hold_minutes: 10
+  - id: t04
+    route: text
+    input: t04.txt
+    gold:
+      plant: p2_gasline
+      work_equipment: F-210
+      points:
+        - {tag: XV-201, required_state: closed, seq: 1, isolation_type: proved, lock_id: A-01}
+        - {tag: XV-203, required_state: closed, seq: 2, isolation_type: proved, lock_id: A-02}
+        - {tag: BV-202, required_state: open, seq: 3}
+        - {tag: XV-204, required_state: closed, seq: 4, isolation_type: proved, lock_id: A-03}
+      vent: VV-213
+      proving:
+        - {tag: BV-202, proves: [XV-201, XV-203]}
+        - {tag: VV-213, proves: [XV-204]}
+      hold_minutes: 10
+  - id: t05
+    route: text
+    input: t05.txt
+    gold:
+      plant: p2_gasline
+      work_equipment: C-202
+      points:
+        - {tag: XV-201, required_state: closed, seq: 1, isolation_type: proved, lock_id: B-14}
+        - {tag: XV-203, required_state: closed, seq: 2, isolation_type: proved, lock_id: B-15}
+        - {tag: BV-202, required_state: open, seq: 3}
+      vent: BV-202
+      proving:
+        - {tag: BV-202, proves: [XV-201, XV-203]}
+      hold_minutes: 10
+  - id: t06
+    route: text
+    input: t06.txt
+    gold:
+      plant: p2_gasline
+      work_equipment: L-230
+      points:
+        - {tag: XV-204, required_state: closed, seq: 1, isolation_type: proved, lock_id: C-3}
+        - {tag: XV-231, required_state: closed, seq: 2, isolation_type: non_proved, lock_id: C-4}
+      hold_minutes: 10
+  - id: s01
+    route: image
+    input: s01.png
+    gold:
+      plant: p2_gasline
+      work_equipment: F-210
+      points:
+        - {tag: XV-201, required_state: closed, seq: 1, isolation_type: proved, lock_id: D-01}
+        - {tag: XV-203, required_state: closed, seq: 2, isolation_type: proved, lock_id: D-02}
+        - {tag: BV-202, required_state: open, seq: 3}
+        - {tag: XV-204, required_state: closed, seq: 4, isolation_type: proved, lock_id: D-03}
+      vent: VV-213
+      proving:
+        - {tag: BV-202, proves: [XV-201, XV-203]}
+        - {tag: VV-213, proves: [XV-204]}
+      hold_minutes: 10
+  - id: s02
+    route: image
+    input: s02.png
+    gold:
+      plant: p1_grfics
+      work_equipment: reactor
+      points:
+        - {tag: f1, required_state: closed, seq: 1, isolation_type: non_proved, lock_id: "31"}
+        - {tag: f2, required_state: closed, seq: 2, isolation_type: non_proved, lock_id: "32"}
+        - {tag: product, required_state: closed, seq: 3, isolation_type: non_proved, lock_id: "33"}
+      vent: purge
+      hold_minutes: 10
+  - id: s03
+    route: image
+    input: s03.png
+    gold:
+      plant: p2_gasline
+      work_equipment: C-202
+      points:
+        - {tag: XV-201, required_state: closed, seq: 1, isolation_type: proved, lock_id: E-1}
+        - {tag: XV-203, required_state: closed, seq: 2, isolation_type: proved, lock_id: E-2}
+        - {tag: BV-202, required_state: open, seq: 3}
+      vent: BV-202
+      proving:
+        - {tag: BV-202, proves: [XV-201, XV-203]}
+      hold_minutes: 10
+  - id: s04
+    route: image
+    input: s04.png
+    gold:
+      plant: p1_grfics
+      work_equipment: reactor
+      points:
+        - {tag: product, required_state: closed, seq: 1, isolation_type: non_proved, lock_id: L-41}
+        - {tag: f1, required_state: closed, seq: 2, isolation_type: non_proved, lock_id: L-42}
+        - {tag: f2, required_state: closed, seq: 3, isolation_type: non_proved, lock_id: L-43}
+      vent: purge
+      hold_minutes: 10
+  - id: s05
+    route: image
+    input: s05.png
+    ambiguity: "row 4 tag is scribbled over (only 'XV-' is readable)"
+    gold:
+      plant: p2_gasline
+      work_equipment: F-210
+      points:
+        - {tag: XV-201, required_state: closed, seq: 1, isolation_type: proved, lock_id: F-1}
+        - {tag: XV-203, required_state: closed, seq: 2, isolation_type: proved, lock_id: F-2}
+        - {tag: BV-202, required_state: open, seq: 3}
+        - {tag: null, required_state: closed, seq: 4, isolation_type: proved, lock_id: F-3}
+      vent: VV-213
+      proving:
+        - {tag: BV-202, proves: [XV-201, XV-203]}
+      hold_minutes: 10
+  - id: s06
+    route: image
+    input: s06.pdf
+    gold:
+      plant: p2_gasline
+      work_equipment: L-230
+      points:
+        - {tag: XV-204, required_state: closed, seq: 1, isolation_type: proved, lock_id: G-1}
+        - {tag: XV-231, required_state: closed, seq: 2, isolation_type: non_proved, lock_id: G-2}
+      hold_minutes: 10

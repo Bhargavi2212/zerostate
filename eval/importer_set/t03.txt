@@ -1,0 +1,3 @@
+WO 30502 / reactor
+ISOL: 1) f2 CLOSE (NP, lock 7)  2) f1 CLOSE (NP, lock 8)  3) product CLOSE (NP, lock 9)
+vent via purge. hold 10 min.

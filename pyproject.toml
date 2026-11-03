@@ -12,6 +12,8 @@ dependencies = [
     "pydantic>=2",
     "pyyaml",
     "pymodbus>=3.6,<3.10",
+    "pypdfium2==4.30.0",
+    "Pillow==11.3.0",
 ]
 
 [project.scripts]
