@@ -113,6 +113,18 @@ def test_noise_is_within_a_tenth_of_a_percent_of_span_and_seeded():
     assert max(abs(v - a.p("F-210")) for v in va) <= 2.5 and len(set(va)) > 400
 
 
+def test_every_p2_scenario_fault_is_a_model_key():
+    import yaml
+
+    for f in sorted((Path(__file__).parents[1] / "eval" / "scenarios" / "p2").glob("*.yaml")):
+        sc = yaml.safe_load(f.read_text(encoding="utf-8"))
+        assert sc["plant"] == "p2_gasline" and sc["id"] == f.stem and sc["expected"]
+        m = model.GasLine(seed=0)
+        for fault in sc.get("faults", []):
+            for k, v in fault.get("set", {}).items():
+                m.set(k, v[0] if isinstance(v, list) else v)
+
+
 def test_psv_relieves_above_set_pressure():
     m = isolated()
     m.set("D-220.pressure_kpa", 2600)
