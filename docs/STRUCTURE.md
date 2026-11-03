@@ -85,7 +85,7 @@ zerostate/
 â”‚   â”‚                              # not built: align.py (lag is a measured threshold), redact.py (no people in simulator frames)
 â”‚   â”œâ”€â”€ llm/
 â”‚   â”‚   â”œâ”€â”€ client.py              # the only Meta API caller: via zs-proxy (explicit), spark_json / sam_boxes, ledger /data/credits.jsonl, budget stop ZS_BUDGET_USD
-â”‚   â”‚   â”œâ”€â”€ prompts/               # one .md per prompt, versioned (import_list_v1.md: list from text; transcribe_sheet_v1.md: verbatim sheet transcript for the photo route; read_display_v1.md: one display crop -> {value, readable})
+â”‚   â”‚   â”œâ”€â”€ prompts/               # one .md per prompt, versioned (import_list_v1.md: list from text; transcribe_sheet_v1.md: verbatim sheet transcript for the photo route; read_display_v1.md: one display crop -> {value, readable}; read_display_v2.md: same, right-aligned single digits incl. 0 are complete)
 â”‚   â”‚   â””â”€â”€ explain.py             # Phase 3: plain-language answer from logged findings only (never changes a verdict)
 â”‚   â”œâ”€â”€ session.py                 # session lifecycle: warm-in â†’ ready â†’ steps (pending â†’ evaluated) â†’ verdict; continuous monitor; inbox/audit I/O
 â”‚   â”œâ”€â”€ gate.py                    # pure verdict policy: findings â†’ verdict, monotonic, signature closes, verdict stamping; no model judge

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from zerostate.llm.client import data_url, spark_json
 
-PROMPT_ID = "read_display_v1"
+PROMPT_ID = "read_display_v2"  # v2: right-aligned single digits (incl. 0) are complete; v1 kept for older readings
 PAD, UPSCALE = 0.15, 3
 
 

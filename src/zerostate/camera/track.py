@@ -24,7 +24,7 @@ from zerostate import gate
 from zerostate.camera.client import fetch_frame
 from zerostate.camera.freeze import ahash, value_at
 from zerostate.camera.locate import locate
-from zerostate.camera.read import read_display
+from zerostate.camera.read import PROMPT_ID, read_display
 from zerostate.checks.live import camera, tag_for
 from zerostate.llm.client import SAM, SPARK, ModelUnavailable, sam_boxes, spark_json
 from zerostate.models.envelope import step_targets
@@ -85,12 +85,15 @@ def burst(job: dict, fetch=fetch_frame, sam=sam_boxes, spark=spark_json, sleep=t
         except ModelUnavailable as e:
             boxes, note = dict.fromkeys(regions), f"locate unavailable: {e}"
         for p, region in regions.items():
+            # Fixed-camera calibration: when SAM ran but missed a mapped display (e.g. a lone "0"), read the
+            # display's calibrated region instead, and log that the map located it, not SAM.
+            box, by = (boxes[p], "sam") if boxes[p] is not None else (None if note else region, None if note else "map")
             r = {"t": t, "value": None, "readable": False, "frame_sha256": sha, "crop_hash": ahash(img.crop(tuple(int(x) for x in region))),
-                 "box": [float(x) for x in boxes[p]] if boxes[p] is not None else None,
-                 "note": note or (None if boxes[p] else "display not located")}
-            if boxes[p] is not None:
+                 "box": [float(x) for x in box] if box is not None else None, "located_by": by, "prompt": PROMPT_ID,
+                 "note": note or (None if box is not None else "display not located")}
+            if box is not None:
                 try:
-                    r.update(read_display(img, boxes[p], spark))
+                    r.update(read_display(img, box, spark))
                 except ModelUnavailable as e:
                     r["note"] = f"read unavailable: {e}"
             out[p].append(r)

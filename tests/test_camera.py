@@ -101,6 +101,24 @@ def test_burst_reads_each_located_display():
     assert out[0]["readings"][0]["box"] == [100.0, 100.0, 220.0, 150.0]
 
 
+def test_burst_reads_the_calibrated_region_when_sam_misses_and_says_so():
+    """Fixed-camera calibration: SAM found nothing (a lone "0"), so the mapped region is read, logged located_by map."""
+    seen = []
+
+    def spark(msgs, schema, purpose):
+        seen.append(purpose)
+        return schema(value=0.0, readable=True)
+    out = burst({"step": 2, "points": {"f1": ("default", F1_BOX)}}, fetch=lambda v: (frame(), 5.0),
+                sam=lambda img, prompt, purpose: [], spark=spark, sleep=lambda s: None)
+    r = out[0]["readings"][0]
+    assert r["value"] == 0.0 and r["located_by"] == "map" and r["box"] == [float(x) for x in F1_BOX]
+    assert r["prompt"] == "read_display_v2" and seen[0].endswith("read_display_v2")
+    sam_hit = burst({"step": 2, "points": {"f1": ("default", F1_BOX)}}, fetch=lambda v: (frame(), 5.0),
+                    sam=lambda img, prompt, purpose: [{"x1": 100, "y1": 100, "x2": 220, "y2": 150, "c": 0.9}],
+                    spark=spark, sleep=lambda s: None)
+    assert sam_hit[0]["readings"][0]["located_by"] == "sam"
+
+
 def test_burst_saves_each_frame_named_by_its_logged_hash(tmp_path):
     sam = lambda img, prompt, purpose: [{"x1": 100, "y1": 100, "x2": 220, "y2": 150, "c": 0.9}]
     spark = lambda msgs, schema, purpose: schema(value=100.0, readable=True)
