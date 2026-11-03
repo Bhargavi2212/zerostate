@@ -200,7 +200,7 @@ class Rig:
     def to_step_2(self):
         self.run(2)
         self.run(POLL, [{"kind": "step_done", "k": 1, "by": "op"}])
-        self.run(3)
+        self.run(5)  # step 1's checks: the 3 s wall settle floor (min_settle_wall_s) + the valve check
         self.run(POLL, [{"kind": "step_done", "k": 2, "by": "op"}])
         self.run(8)  # settle (60 process-s = 6 s wall) has passed: a capture was started
 

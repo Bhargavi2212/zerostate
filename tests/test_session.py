@@ -227,6 +227,31 @@ def test_unknown_grace_then_escalate(tmp_path):
     assert replay(d.log, "s1", PARAMS) == []
 
 
+def slow_mode_switch(ps):
+    """Batch p1 S1 seed 260352266: manual mode reached the PLC 1.25 s (12.5 process-s) after the mark. The
+    driver marks one poll (2.5 process-s) after this signal function starts."""
+    return steady(pressure=2700.0, manual_mode=0.0 if ps < 2.5 + 12.5 else 1.0)
+
+
+def test_settle_floor_in_wall_time_absorbs_a_slow_mode_switch(tmp_path):
+    d = Driver(tmp_path)
+    d.run(2)
+    d.mark(1, slow_mode_switch)
+    until_evaluated(d, 1)
+    assert d.status()["steps"][1] == "PASS" and d.status()["verdict"] is None
+    assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_without_the_floor_the_slow_switch_blocks_and_replays(tmp_path):
+    d = Driver(tmp_path)
+    d.s.params = {**PARAMS, "min_settle_wall_s": 0}  # the batch p1 engine: settle 10 process-s = 1 s wall at x10
+    d.run(2)
+    d.mark(1, slow_mode_switch)
+    until_evaluated(d, 1)
+    assert d.status()["verdict"] == "BLOCKED"
+    assert replay(d.log, "s1", PARAMS) == []  # logged with no floor, replayed with today's params: same result
+
+
 def test_verdict_never_improves_and_sign_closes(tmp_path):
     d = Driver(tmp_path)
     d.run(2)

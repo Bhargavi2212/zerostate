@@ -12,6 +12,7 @@ from pathlib import Path
 
 from zerostate import gate
 from zerostate.audit.log import AuditLog
+from zerostate.checks.live.valve import targets as valve_targets
 from zerostate.checks.plan import PLAN_RULES, run_plan_checks
 from zerostate.checks.process import PROC_RULES, reset, run_process_checks, sequence
 from zerostate.models.envelope import IsolationPlan, step_targets
@@ -109,11 +110,16 @@ class Session:
         samples = {tag: [s for s in rows if t0 <= s[0] <= t1] for tag, rows in self.buffer.items()}
         return Window(t0=t0, t1=t1, process_time_scale=self.scale, samples=samples, spans=self.spans)
 
+    def _settle_ps(self, settle_process_s: float) -> float:
+        """The plan's settle time, but never less than min_settle_wall_s of wall clock: the mark -> operator
+        write -> PLC scan -> Modbus poll delay is wall time and does not shrink with the time scale."""
+        return max(settle_process_s, self.params.get("min_settle_wall_s", 0) * self.scale)
+
     def _duration_ps(self, step) -> float:
         p = self.params
         if step.kind == "hold":
             return self.plan.hold_test.hold_process_s
-        base = step.settle_process_s + p["valve_check_process_s"]
+        base = self._settle_ps(step.settle_process_s) + p["valve_check_process_s"]
         return max(base, p["vent_check_process_s"]) if step.kind == "vent_open" else base
 
     def _next_step(self) -> int | None:
@@ -256,14 +262,18 @@ class Session:
             if k in self.evaluated or self._ps(t_mark, now) < self._duration_ps(step):
                 continue
             window = self._window(t_mark, now)
-            findings = gate.evaluate(self.plan, step, window, self.params, step.checks)
+            settle = self._settle_ps(step.settle_process_s)
+            # A raised settle start is logged as LIVE-VALVE's `only` triples, so replay checks exactly what ran.
+            only = ([(t, r, settle) for t, r in valve_targets(self.plan, step)]
+                    if step.kind != "hold" and settle > step.settle_process_s else None)
+            findings = gate.evaluate(self.plan, step, window, self.params, step.checks, only=only)
             self.evaluated[k] = gate.combine(findings)
             passed = {j: st == FindingStatus.PASS for j, st in self.evaluated.items()}
             done = gate.completes_plan(self.plan, passed, k)
             if done:  # the process rules get the last word before the plan can complete (e.g. a verify missing)
                 self.actions.append({"kind": "final"})
                 done = self._process_evaluation(k) == FindingStatus.PASS
-            self._record_evaluation("step", k, step.checks, window, findings, completes=done)
+            self._record_evaluation("step", k, step.checks, window, findings, only=only, completes=done)
             if done:  # the final step needs no mark: it is "every step above passed"
                 final = next(s.k for s in self.plan.steps if s.kind == "final")
                 self.evaluated[final] = FindingStatus.PASS
@@ -275,7 +285,7 @@ class Session:
             s = self.steps[k]
             if s.kind in ("isolate", "vent_open", "vent_close"):
                 for t in step_targets(s):
-                    latest[t] = (t_mark, s.settle_process_s, s.required_state)
+                    latest[t] = (t_mark, self._settle_ps(s.settle_process_s), s.required_state)
         return [(target, req, max(0.0, self._ps(t0, t_mark) + settle))
                 for target, (t_mark, settle, req) in latest.items()
                 if req <= self.params["valve_tol_pct"] and self._ps(t_mark, now) >= settle]
