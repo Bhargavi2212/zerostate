@@ -1,0 +1,10 @@
+# Where each valve's digital display sits in a frame: view (views.yaml) -> display region -> plan point.
+# Regions are pixel boxes [x1, y1, x2, y2] in that view's frame. ZeroState reads this file (copied to
+# /app/config/frame_service/) to match SAM boxes by overlap and to hash the region for freeze detection.
+# On P1 the page renders the simulator's true state: idealised camera.
+# PLACEHOLDER REGIONS: to measure live on the chosen view; until then reads come back "display not located".
+idealised: true
+views:
+  default:
+    displays:
+      f1: [0, 0, 1, 1]  # to measure live

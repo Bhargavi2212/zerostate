@@ -57,6 +57,21 @@ services:
         ipv4_address: 172.30.0.2
       zs-uplink: {}
 
+  # The camera (P1: idealised, it renders the simulator's true state). Reaches the simulator over
+  # a-grfics-admin, never the Windows port forward; serves GET /frame only on zs-internal. Truth sidecars
+  # (eval only) go to zs-frames-truth, which no other service mounts.
+  zs-frames:
+    build: {context: ./zerostate, dockerfile: plants/frame_service/Dockerfile}
+    image: zs-frames:local
+    container_name: zs-frames
+    shm_size: 1gb  # Chromium
+    networks:
+      a-grfics-admin: {}
+      zs-internal:
+        ipv4_address: 172.30.0.3
+    volumes:
+      - zs-frames-truth:/truth
+
   # Eval tooling, not the product: performs isolation steps through the PLC's manual mode.
   zs-operator:
     build: {context: ./zerostate, dockerfile: plants/p1_grfics/Dockerfile.operator}
@@ -77,3 +92,4 @@ networks:
 
 volumes:
   zs-data:
+  zs-frames-truth:  # eval only; mounted by zs-frames alone

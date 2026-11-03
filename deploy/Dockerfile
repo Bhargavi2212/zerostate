@@ -20,6 +20,8 @@ COPY tests/net ./tests/net
 # Globs so an owner-made confirmed.yaml is included when it exists (YAML data only, never .py truth/fault code).
 COPY plants/p1_grfics/*.yaml ./config/p1_grfics/
 COPY plants/p2_gasline/*.yaml ./config/p2_gasline/
+# Where each display sits in a camera view (data only; views and the frame service stay in zs-frames).
+COPY plants/frame_service/display_map.yaml ./config/frame_service/
 ENV ZS_CONFIG=/app/config ZS_MAP=/app/config/p1_grfics/modbus_map.yaml ZS_THRESHOLDS=/app/config/p1_grfics/thresholds.yaml ZS_DATA=/data
 # audit.sqlite (core only), inbox.sqlite (human/operator actions), runs/<session>/signals.jsonl
 RUN mkdir -p /data && chown zs:zs /data

@@ -1,0 +1,10 @@
+# Fixed camera views of the simulator's 3D page (zs-frames). GET /frame?view=<name> accepts only these names.
+# PLACEHOLDER until the live render check (Phase 2 P2-4, first lab task): confirm the Unity WebGL scene
+# renders in headless Chromium, then find a view that shows the f1 display (ideally purge and product too)
+# with the default camera or a scripted sequence below.
+#   actions: [{press: <key>, hold_ms: n}, {click: [x, y]}, {drag: [[x1, y1], [x2, y2]]}, {wait_ms: n}]
+default:
+  url: http://simulation/
+  viewport: [1280, 720]
+  load_wait_s: 20
+  actions: []
