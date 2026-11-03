@@ -4,6 +4,8 @@ A plan is the plant map plus an isolation list a person authors (models/envelope
 graph/build.py merges the two. Instruments are not graph nodes: each sits `at` a node.
 """
 
+import hashlib
+import json
 from typing import Literal
 
 from pydantic import model_validator
@@ -79,6 +81,10 @@ class PlantMap(_Plan):
 
     def node(self, node_id: str) -> Node | None:
         return next((n for n in self.nodes if n.id == node_id), None)
+
+    def content_hash(self) -> str:
+        canon = json.dumps(self.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(canon.encode()).hexdigest()
 
     def tags(self) -> set[str]:
         """Every name a person may write in an isolation list: nodes and instrument tags."""

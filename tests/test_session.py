@@ -14,10 +14,10 @@ SCALE, POLL = 10.0, 0.25
 
 
 class Driver:
-    def __init__(self, tmp_path, quality=lambda t, tag: "GOOD"):
+    def __init__(self, tmp_path, quality=lambda t, tag: "GOOD", **session_kw):
         self.log = AuditLog(tmp_path / "audit.sqlite")
         self.t, self.quality, self.fn, self.fn_t0 = 0.0, quality, (lambda ps: steady(pressure=2700.0)), 0.0
-        self.s = Session("s1", PLAN, PLAN.content_hash(), PARAMS, SCALE, SPANS, self.log, now=0.0)
+        self.s = Session("s1", PLAN, PLAN.content_hash(), PARAMS, SCALE, SPANS, self.log, now=0.0, **session_kw)
 
     def run(self, wall_s, inbox=()):
         inbox = list(inbox)
