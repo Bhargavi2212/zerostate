@@ -1,0 +1,91 @@
+/* ISA-101 high-performance HMI: neutral greys; colour only for abnormal states, always with text and a
+   shape as well. There is no green anywhere: no state of this console means "go". */
+:root {
+  --bg: #d4d4d4; --panel: #e4e4e4; --ink: #1e1e1e; --muted: #555; --line: #8a8a8a; --dark: #3a3a3a;
+  --alarm: #b00000; --alarm-ink: #ffffff; --warn: #e8b400; --warn-ink: #1e1e1e;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, "Segoe UI", Arial, sans-serif; }
+main { padding: 8px 16px 40px; }
+h1 { font-size: 20px; margin: 8px 0; } h2 { font-size: 16px; margin: 4px 0 8px; } h3 { font-size: 14px; margin: 4px 0; }
+a { color: #1f3a5a; }
+.top { display: flex; gap: 16px; align-items: baseline; padding: 8px 16px; background: #c4c4c4; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.top nav a { margin-right: 10px; }
+.muted { color: var(--muted); } .small { font-size: 12px; }
+.error { color: var(--alarm); font-weight: 600; }
+.panel { background: var(--panel); border: 1px solid var(--line); padding: 8px 12px; margin: 8px 0; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 1100px) { .cols { grid-template-columns: 1fr; } }
+.side { display: grid; grid-template-columns: 1fr 1fr 0.6fr; gap: 12px; }
+.photo { max-width: 100%; border: 1px solid var(--line); }
+.transcript { white-space: pre-wrap; background: #f2f2f2; padding: 6px; border: 1px solid var(--line); }
+table.grid { border-collapse: collapse; width: 100%; background: #efefef; }
+table.grid th, table.grid td { border: 1px solid #b0b0b0; padding: 3px 6px; text-align: left; vertical-align: top; }
+table.grid th { background: #d8d8d8; font-weight: 600; }
+input, select, textarea, button { font: inherit; }
+button { background: #cfcfcf; border: 1px solid var(--dark); padding: 3px 10px; cursor: pointer; }
+button:disabled { color: #8a8a8a; border-color: #a0a0a0; cursor: not-allowed; }
+.tabs button[aria-selected="true"] { background: #f2f2f2; border-bottom-width: 3px; font-weight: 600; }
+.tabpane { margin: 8px 0; }
+label.block, label.block textarea { display: block; }
+.fields label { margin-right: 14px; }
+/* unclear cell: abnormal, so it carries colour AND text ("unclear" placeholder) AND a heavy dashed border */
+.unclear { border: 2px dashed var(--alarm); background: #fff4f4; }
+.badge { display: inline-block; padding: 1px 6px; border: 1px solid var(--dark); font-size: 12px; margin-left: 4px; }
+.badge.default { background: #f2f2f2; border-style: dotted; }
+.blocked-list { border-left: 4px solid var(--alarm); padding-left: 8px; }
+.findings { list-style: none; padding-left: 0; }
+.f-FAIL td, li.f-FAIL { font-weight: 600; }
+.f-FAIL .mark, td.f-FAIL, tr.f-FAIL td:nth-child(2) { color: var(--alarm); }
+.f-UNKNOWN .mark, td.f-UNKNOWN, tr.f-UNKNOWN td:nth-child(2) { color: #6a5000; }
+tr.flash td { outline: 3px solid var(--dark); }
+/* assumptions strip: permanent, always on top */
+.strip { position: sticky; top: 0; z-index: 2; background: #c8c8c8; border: 1px solid var(--dark); padding: 6px 10px; }
+/* verdict banner: two tracks. Never green. */
+.banner { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.track { padding: 8px 12px; border: 2px solid var(--line); background: var(--panel); }
+.track-verdict { font-size: 18px; font-weight: 700; }
+.track.v-eval, .badge.v-eval { background: var(--panel); color: var(--ink); }
+.track.v-ndf, .badge.v-ndf { background: var(--panel); color: var(--ink); border: 3px double var(--dark); }
+.track.v-blocked, .badge.v-blocked { background: var(--alarm); color: var(--alarm-ink); border-color: #600000; }
+.track.v-escalated, .badge.v-escalated { background: var(--warn); color: var(--warn-ink); border-color: #6a5000; }
+.track.v-blocked .track-verdict::before { content: "◆ "; }
+.track.v-escalated .track-verdict::before { content: "▲ "; }
+.actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.signed { font-weight: 600; border: 1px solid var(--dark); padding: 4px 8px; }
+.not-accepted { font-weight: 600; }
+dialog { border: 2px solid var(--dark); background: #ececec; min-width: 380px; }
+dialog label { display: block; margin: 6px 0; }
+menu { display: flex; gap: 8px; padding: 0; }
+/* plant view */
+.plantwrap { overflow-x: auto; margin: 0; }
+.plant { background: #ececec; border: 1px solid var(--line); }
+.plant .pipe { stroke: var(--dark); stroke-width: 2; }
+.plant .pipe.open-path { stroke: var(--alarm); stroke-width: 5; stroke-dasharray: 8 4; }
+.plant .box { fill: #f2f2f2; stroke: var(--dark); stroke-width: 1.5; }
+.plant .valve { fill: #f2f2f2; stroke: var(--dark); stroke-width: 1.5; }
+.plant .valve.opened { fill: #ffffff; }
+.plant .valve.shut { fill: var(--dark); }
+.plant .work-outline { fill: none; stroke: #000; stroke-width: 4; }
+.plant .disagree-outline { fill: none; stroke: var(--warn); stroke-width: 4; stroke-dasharray: 6 3; }
+.plant text { text-anchor: middle; fill: var(--ink); font-size: 12px; }
+.plant text.id { font-weight: 700; }
+.plant text.small { font-size: 10px; }
+.plant text.alarm-text { fill: #6a5000; font-weight: 700; }
+.open-path-text { color: var(--alarm); font-weight: 600; margin: 2px 0; }
+/* charts */
+.chart { margin: 0 0 8px; } .chart figcaption { font-weight: 600; }
+.chart svg { background: #efefef; border: 1px solid var(--line); max-width: 100%; height: auto; }
+.chart .series { fill: none; stroke: var(--dark); stroke-width: 2; }
+.chart .axis { stroke: var(--line); stroke-width: 1; }
+.chart .band { fill: #bdbdbd; opacity: 0.6; }
+.chart .band-hold { fill: #a9a9a9; }
+.chart text { fill: var(--ink); font-size: 10px; } .chart .end { text-anchor: end; }
+.chart .crosshair { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 2; }
+/* camera */
+.camera-label { font-weight: 600; }
+.frame { position: relative; display: inline-block; max-width: 100%; }
+.frame-img { display: block; max-width: 100%; }
+.sam-box { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sam-box rect { fill: none; stroke: #000; stroke-width: 3; stroke-dasharray: 6 3; }
+.crop { border: 1px solid var(--dark); max-height: 80px; margin: 4px 0; }
