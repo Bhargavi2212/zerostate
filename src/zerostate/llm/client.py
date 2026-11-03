@@ -74,10 +74,13 @@ def data_url(image: bytes, mime: str = "image/jpeg") -> str:
     return f"data:{mime};base64," + base64.b64encode(image).decode()
 
 
-def spark_json(messages: list[dict], schema: type[BaseModel], purpose: str, opener=None) -> BaseModel:
-    """Muse Spark with a strict-JSON reply validated against `schema`; one retry, then ModelUnavailable."""
+def spark_json(messages: list[dict], schema: type[BaseModel], purpose: str, opener=None,
+               temperature: float | None = None) -> BaseModel:
+    """Muse Spark with a strict-JSON reply validated against `schema`; one retry, then ModelUnavailable.
+    `temperature` is sent only when given (the Muse-alone baseline pins 0)."""
+    body = {"model": SPARK, "messages": messages, **({} if temperature is None else {"temperature": temperature})}
     for attempt in (1, 2):
-        with _post("/chat/completions", {"model": SPARK, "messages": messages}, opener=opener) as r:
+        with _post("/chat/completions", body, opener=opener) as r:
             try:
                 reply = json.loads(r.read())
                 content = reply["choices"][0]["message"]["content"] or ""

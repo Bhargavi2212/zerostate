@@ -51,3 +51,78 @@ def test_gauge_rule_scored_with_the_same_hazard_code():
     assert g["dangerous_miss"]["primary"]["k"] == 0 and g["dangerous_miss"]["primary"]["n"] == 2
     assert g["dangerous_miss"]["secondary"]["k"] == 1  # the passed leak: true f1 above 0.1 % after the mark
     assert "muse_alone" not in b
+
+
+muse = _load("muse_alone", ROOT / "eval" / "baselines" / "muse_alone.py")
+
+
+class FakeCall:
+    """Stands in for client.spark_json: records each call, returns a pinned decision. No network."""
+
+    def __init__(self, decision="pass", fail=False):
+        self.decision, self.fail, self.calls = decision, fail, []
+
+    def __call__(self, messages, schema, purpose, temperature=None):
+        self.calls.append({"messages": messages, "purpose": purpose, "temperature": temperature})
+        if self.fail:
+            raise muse.client.ModelUnavailable("fake: no reply")
+        return schema(decision=self.decision, reason="fake")
+
+
+def test_muse_alone_one_call_temperature_zero_and_pinned_mapping():
+    fake = FakeCall("block")
+    r = muse.run_one(_ep("S0_seed1184053442_"), call=fake)
+    assert r["answer"] == "block" and r["t"] is not None
+    assert len(fake.calls) == 1 and fake.calls[0]["temperature"] == 0
+    text = fake.calls[0]["messages"][0]["content"]
+    assert text.startswith((ROOT / "eval" / "baselines" / "muse_alone_v1.md").read_text(encoding="utf-8"))
+    assert "PLAN:" in text and "MEASURED SERIES" in text and "pressure" in text
+    assert "truth" not in text.lower()  # measured signals only, never simulator internals
+    assert muse.ANSWER == {"pass": "pass", "block": "block"}
+
+
+def test_muse_alone_unavailable_is_listed_not_counted(tmp_path):
+    out = tmp_path / "muse.json"
+    res = muse.run_batch([_ep("S0_seed1184053442_")], out, call=FakeCall(fail=True))
+    assert next(iter(res["episodes"].values()))["answer"] == "unavailable"
+    fake = FakeCall("pass")
+    res = muse.run_batch([_ep("S0_seed1184053442_")], out, call=fake)  # resumes: retries the unavailable one
+    assert len(fake.calls) == 1 and next(iter(res["episodes"].values()))["answer"] == "pass"
+    muse.run_batch([_ep("S0_seed1184053442_")], out, call=fake)
+    assert len(fake.calls) == 1  # an answered episode is never called again
+
+
+def test_muse_alone_scored_by_score_py(tmp_path):
+    ep = _ep("S4-small_seed1318434843_")
+    out = tmp_path / "muse.json"
+    muse.run_batch([ep], out, call=FakeCall("pass"))
+    b = score.baselines({ep.name: score.load_episode(ep)}, score.P1_FULL_SCALE, out)
+    assert b["muse_alone"]["dangerous_miss"]["primary"] == {"k": 0, "n": 1, "ci_low": 0.0, "ci_high": 0.7935}
+    assert b["muse_alone"]["dangerous_miss"]["secondary"]["k"] == 1
+
+
+def test_muse_alone_dry_run_projects_without_calling(capsys, monkeypatch):
+    monkeypatch.setattr(muse.client, "spark_json", lambda *a, **k: (_ for _ in ()).throw(AssertionError("called")))
+    p = muse.projection([_ep("S0_seed1184053442_"), _ep("S4-small_seed1318434843_")])
+    assert p["calls"] == 2 and p["input_tokens_est"] > 0 and p["usd_est"] > 0
+
+
+def test_spark_json_sends_temperature_only_when_given(tmp_path, monkeypatch):
+    import io
+    import json as js
+
+    class Opener:
+        def __init__(self):
+            self.bodies = []
+
+        def open(self, req, timeout=None):
+            self.bodies.append(js.loads(req.data))
+            return io.BytesIO(js.dumps({"choices": [{"message": {"content": '{"decision": "pass", "reason": "x"}'}}],
+                                        "usage": {}}).encode())
+
+    monkeypatch.setenv("MODEL_API_KEY", "fake-key-for-test")  # pragma: allowlist secret
+    monkeypatch.setenv("ZS_CREDITS", str(tmp_path / "credits.jsonl"))
+    op = Opener()
+    muse.client.spark_json([{"role": "user", "content": "x"}], muse.Decision, "t", opener=op, temperature=0)
+    muse.client.spark_json([{"role": "user", "content": "x"}], muse.Decision, "t", opener=op)
+    assert op.bodies[0]["temperature"] == 0 and "temperature" not in op.bodies[1]
