@@ -9,7 +9,7 @@ Fixed in Phase 2, extended at the start of Phase 3 (P3-2) so the console (`ui/`,
 - **Test-name guard (G10, new in P3):** `POST .../confirm` and `POST .../sign` with `by: "playwright-test"` are refused with **403** `{"error": "test_name_on_real_data"}` whenever the data dir is the real `/data`. That name is accepted only with a throwaway data dir (e.g. `/tmp/zs-ui-test`), for automated UI tests. Agents and scripts never confirm a plan or sign on real data.
 - Status: Phase 2 = every Phase 2 endpoint exists and returns its schema (`tests/test_api_contract.py`). Phase 3 implements every row below and tests each against this contract.
 
-Wording rule for every text field: the PROJECT.md "never say" list, checked with the pattern `\bsafe\b` plus the full list.
+Wording rule for every text field: PROJECT.md "never say" list, checked by `zerostate.wording`.
 
 **Runner names:** clients show the names `eval-operator`, `eval-verifier` and `eval-runner` (the benchmark runner's) as **"test harness"**, never as a person. The API returns the logged name unchanged.
 
