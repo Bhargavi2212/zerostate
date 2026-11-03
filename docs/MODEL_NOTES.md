@@ -14,3 +14,9 @@ Only measured results go here, with date and setup. This file feeds the README s
 - Display regions = SAM's box per display + 3 px. The first hand-drawn regions (wider margins) gave IoU 0.26 with SAM's f1 box, under `MIN_IOU` 0.3: they would have read "display not located".
 - **Camera check, 3 frames × 4 displays** (valves set through the operator at 25/50/75/10, 100/0/0/100 and 60/33/5/88 %, truth from the frame's sidecar, 1.9 s after capture): SAM locate → region match → Muse Spark read gave **12/12 within 1 %** (all exact). Idealised camera (renders the simulator's true state). Not the C7 measurement: that is the sealed 100-frame set.
 - Spend after these checks: 0.042 USD.
+
+## Nov 3 — Muse Voice Transcribe access (P2-5 "find, don't guess")
+- Documented at https://dev.meta.ai/docs/speech-to-text and https://dev.meta.ai/docs/api-reference/voice/transcribe (model list: https://dev.meta.ai/docs/models#muse-voice-transcribe). Model `muse-voice-transcribe-1.0`, `POST https://api.meta.ai/v1/asr/transcribe`, multipart (`request` JSON part + `audio` WAV part: mono 16-bit PCM, 16 or 24 kHz), mode `PUSH_TO_TALK`. Listed price 0.18 USD per hour of audio.
+- Probe with our key through zs-proxy: 1 s of silence → HTTP 200, `{"transcript": "", "audioDurationMs": 1040}`. The key has access, so the local open-weights fallback (D3) is not needed.
+- Muse Spark 1.3's own audio input is documented as "not fully supported" (dev.meta.ai models page): voice goes Transcribe → intent, never audio into Spark.
+- Accuracy is not measured yet: the 20-clip test (bar ≥ 18/20, 0 wrong-step mappings) needs the recorded clips.
