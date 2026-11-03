@@ -53,6 +53,98 @@ def test_session_list(page, ui_server):
     assert_never_green(page)
 
 
+def test_blocked_job_renders_recorded_session(page, ui_server):
+    open_job(page, ui_server, BLOCKED_EP)
+    data_track = page.locator("[data-track='Data-only track']").inner_text()
+    assert "BLOCKED: LIVE-HOLD: pressure rose 29.9 kPa" in data_track
+    assert "BLOCKED" in page.locator("[data-track='With-camera track']").inner_text()
+    strip = page.locator("#assumptions").inner_text()
+    assert "positive isolation upstream assumed" in strip and "plan check overridden" in strip
+    body = page.locator("body").inner_text()
+    assert "test harness" in page.locator("#steps-table").inner_text()
+    assert "eval-operator" not in body and "eval-runner" not in body
+    assert page.locator("tr[data-step='7'] td").nth(6).inner_text().endswith("FAIL")
+    page.locator("rect.band-hold").first.wait_for()  # charts redraw just after the stream's evaluations
+    assert page.locator(".chart").count() == 3
+    assert page.locator("rect.band-hold").count() >= 1 and page.locator("rect.band-vent").count() >= 1
+    assert page.locator("svg.plant g[data-node='f1']").count() == 1
+    assert "idealised camera (renders the simulator's true state)" in page.locator("#camera").inner_text()
+    assert page.locator("#findings-table tr.f-FAIL").count() >= 1
+    assert_never_green(page)
+
+
+def test_close_not_accepted_records_not_accepted(page, ui_server):
+    _, data = ui_server
+    open_job(page, ui_server, BLOCKED_EP)
+    button = page.locator("#sign-open")
+    assert button.inner_text() == "Close — not accepted…"
+    button.click()
+    dlg = page.locator("#name-dialog")
+    assert "NOT accepted" in dlg.inner_text() and "Accept and sign" not in dlg.inner_text()
+    page.fill("#dlg-name", TEST_NAME)
+    page.click("#dlg-submit")
+    page.wait_for_selector("#action-msg")
+    assert data.resolve() != Path("/data").resolve()
+    row = [r for r in inbox(data) if r["session"] == BLOCKED_EP and r["kind"] == "sign"][-1]
+    assert row["outcome"] == "not_accepted" and row["by"] == TEST_NAME
+
+
+def test_accept_and_sign_only_on_no_discrepancy(page, ui_server):
+    base, data = ui_server
+    page.goto(f"{base}/ui/#/")
+    sid = page.locator("#sessions tbody tr").filter(has_text="NO DISCREPANCY").first.get_attribute("data-session")
+    open_job(page, ui_server, sid)
+    assert NDF_TEXT in page.locator("[data-track='Data-only track']").inner_text()
+    assert NDF_TEXT in page.locator("[data-track='With-camera track']").inner_text()
+    assert_never_green(page)
+    page.click("#sign-open")
+    page.fill("#dlg-name", TEST_NAME)
+    page.click("#dlg-submit")
+    page.wait_for_selector("#action-msg")
+    row = [r for r in inbox(data) if r["session"] == sid and r["kind"] == "sign"][-1]
+    assert row["outcome"] == "accepted" and row["by"] == TEST_NAME
+
+
+def test_live_job_mark_verify_and_camera(page, ui_server):
+    _, data = ui_server
+    open_job(page, ui_server, "ui-live")
+    assert "Evaluating…" in page.locator("#verdict-banner").inner_text()
+    assert page.locator("#sign-open").inner_text() == "Close — not accepted…"
+    assert "test harness" in page.locator("tr[data-step='1'] .verified-by").inner_text()
+    page.click("tr[data-step='3'] [data-action='done']")
+    page.fill("#dlg-name", TEST_NAME)
+    page.click("#dlg-submit")
+    page.wait_for_selector("#action-msg")
+    assert {"session": "ui-live", "kind": "step_done", "k": 3, "by": TEST_NAME} in inbox(data)
+    # verify needs a different entered name from the marker
+    page.click("tr[data-step='2'] [data-action='verify']")
+    page.fill("#dlg-name", "eval-operator")
+    page.click("#dlg-submit")
+    assert "different name" in page.locator("#dlg-msg").inner_text()
+    page.fill("#dlg-name", TEST_NAME)
+    page.click("#dlg-submit")
+    page.wait_for_function("document.querySelector('#action-msg').textContent.includes('Queued')")
+    assert {"session": "ui-live", "kind": "step_verify", "k": 2, "by": TEST_NAME} in inbox(data)
+    cam = page.locator("#camera")
+    cam.locator("img.frame-img").wait_for()
+    assert cam.locator("svg.sam-box rect").count() == 1
+    text = cam.inner_text()
+    assert "idealised camera (renders the simulator's true state)" in text
+    assert "reading: 0.0 % open" in text and "feedback at read: 0.0 % open" in text
+
+
+def test_explain_cites_findings_as_links(page, ui_server):
+    open_job(page, ui_server, BLOCKED_EP)
+    page.locator(".explain-btn").first.click()
+    cite = page.locator("#explain-answer a.cite").first
+    cite.wait_for()
+    fid = cite.inner_text()
+    assert re.fullmatch(r"\d+:[A-Z-]+", fid) and cite.get_attribute("href") == f"#finding-{fid}"
+    assert page.locator(f"[id='finding-{fid}']").count() == 1
+    cite.click()
+    assert f"#/job/{BLOCKED_EP}" in page.url  # the link scrolls; it does not leave the job
+
+
 def test_unclear_cell_blocks_confirm_then_confirm(page, ui_server):
     base, data = ui_server
     page.goto(f"{base}/ui/#/new")
