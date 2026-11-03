@@ -198,6 +198,17 @@ def test_upload_shows_photo_and_transcript_side_by_side(page, ui_server, tmp_pat
     assert TRANSCRIPT in side.inner_text()
 
 
-@pytest.mark.skip(reason="waits for zerostate.wording")
 def test_never_say_over_rendered_text(page, ui_server):
-    pass
+    from zerostate.wording import hits
+    base, _ = ui_server
+    page.goto(f"{base}/ui/#/")
+    page.wait_for_selector("#sessions tbody tr")
+    texts = {"list": page.locator("body").inner_text()}
+    sids = page.eval_on_selector_all("#sessions tbody tr", "rs => rs.map(r => r.dataset.session)")
+    for sid in [*sids, "ui-live"]:
+        open_job(page, ui_server, sid)
+        texts[sid] = page.locator("body").inner_text()
+    page.goto(f"{base}/ui/#/new")
+    page.wait_for_selector("body")
+    texts["new"] = page.locator("body").inner_text()
+    assert {k: h for k, t in texts.items() if (h := hits(t))} == {}
