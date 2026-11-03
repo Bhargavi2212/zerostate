@@ -138,7 +138,7 @@ zerostate/
 â”‚   â”œâ”€â”€ sealed_hash_<batch>.txt    # committed SHA-256(salt + manifest) per batch, before its first scoring episode, then tag bench-freeze-<batch>
 â”‚   â”œâ”€â”€ claims.yaml                # claim id â†’ tests â†’ result key â†’ exact README sentence
 â”‚   â”œâ”€â”€ runner.py                  # runs on the host (sim via localhost:80, operator via docker exec); one episode: check router+IDS rules, note eve.json byte offset â†’ plant up â†’ operator â†’ faults â†’ zerostate â†’ record â†’ re-check rules (missing = episode invalid); IDS alerts counted after the offset (file shrank = rotated â†’ from 0)
-â”‚   â”œâ”€â”€ baselines/  gauge_rule.py  muse_alone.py
+â”‚   â”œâ”€â”€ baselines/gauge_rule.py      # measured pressure < 150 kPa and every measured flow <= its meter cutoff (1 % of full scale) at the last step mark, else block; scored by score.py
 â”‚   â”œâ”€â”€ plan_cases/make_cases.py   # PC0â€“PC6 from the P2 map + list by mutation; labels written before the checks run
 â”‚   â”œâ”€â”€ importer_set/              # 12 cases (6 texts, 6 rendered sheets) + gold lists, committed before any importer run: cases.yaml (gold), t01â€“t06.txt, s01â€“s06.png + s06.pdf, make_sheets.py
 â”‚   â”œâ”€â”€ frames_set/                # hash list + label hash only (frames outside git)
@@ -170,6 +170,8 @@ zerostate/
 â”‚   â”œâ”€â”€ test_camera.py             # fake models + Pillow fixtures: region matching, unreadable, freeze, LIVE-CAMERA, optional/required, data-only track untouched, status, two-track replay
 â”‚   â”œâ”€â”€ test_frame_service.py      # frame service pure parts: view allow-list, noise keeps size/format
 â”‚   â”œâ”€â”€ test_bundle.py             # episode bundle: export â†’ load â†’ schema validates; key-like strings refused
+â”‚   â”œâ”€â”€ test_score.py              # score.py on a fixture seal: both hazard definitions, windows, Wilson CIs, refused hash, INVALID entries, S1b note
+â”‚   â”œâ”€â”€ test_baselines.py          # gauge rule on committed p1 episodes and its scoring
 â”‚   â”œâ”€â”€ test_api_contract.py       # API (docs/API.md): every endpoint returns its schema, error codes, audit opened read-only, steps/sign only add inbox rows, voice never reaches sign
 â”‚   â”œâ”€â”€ test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
 â”‚   â”œâ”€â”€ test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
