@@ -20,8 +20,10 @@ services:
     networks:
       c-dmz-net:
         ipv4_address: 192.168.90.60
+      zs-internal:
+        ipv4_address: 172.30.0.10
     healthcheck:
-      test: ["CMD-SHELL", "iptables -S OUTPUT | grep -qx -- '-P OUTPUT DROP' && iptables -C OUTPUT -p tcp -d 192.168.95.2 --dport 502 -j ACCEPT"]
+      test: ["CMD-SHELL", "iptables -S OUTPUT | grep -qx -- '-P OUTPUT DROP' && iptables -C OUTPUT -p tcp -d 192.168.95.2 --dport 502 -j ACCEPT && iptables -C OUTPUT -p tcp -d 172.30.0.2 --dport 8888 -j ACCEPT"]
       interval: 5s
       retries: 3
       start_period: 5s
@@ -35,8 +37,25 @@ services:
     cap_drop: [ALL]
     depends_on:
       zerostate-net: {condition: service_healthy}
+    # MODEL_API_KEY comes from zerostate/.env (gitignored); compose runs from D:\grfics and would not read it otherwise.
+    env_file:
+      - path: ./zerostate/.env
+        required: false
+    environment:
+      ZS_BUDGET_USD: ${ZS_BUDGET_USD:-75}
     volumes:
       - zs-data:/data
+
+  # The only route to the Meta API: CONNECT api.meta.ai:443, nothing else. Its own uplink has internet;
+  # zs-internal has none.
+  zs-proxy:
+    build: {context: ./zerostate, dockerfile: deploy/proxy/Dockerfile}
+    image: zs-proxy:local
+    container_name: zs-proxy
+    networks:
+      zs-internal:
+        ipv4_address: 172.30.0.2
+      zs-uplink: {}
 
   # Eval tooling, not the product: performs isolation steps through the PLC's manual mode.
   zs-operator:
@@ -47,6 +66,14 @@ services:
     networks:
       c-dmz-net:
         ipv4_address: 192.168.90.70
+
+networks:
+  zs-internal:
+    internal: true  # no internet, no host ports: ZeroState <-> proxy and frame service only
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  zs-uplink: {}  # the proxy's way out
 
 volumes:
   zs-data:

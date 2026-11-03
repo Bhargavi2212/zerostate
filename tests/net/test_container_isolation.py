@@ -84,3 +84,35 @@ def test_no_effective_capabilities():
     with open("/proc/self/status") as f:
         cap_eff = next(line.split()[1] for line in f if line.startswith("CapEff:"))
     assert int(cap_eff, 16) == 0
+
+
+# ---------------------------------------------------------------- Phase 2: egress proxy (decision 14)
+PROXY = ("172.30.0.2", 8888)
+
+
+def via_proxy(request: bytes) -> str:
+    """Send one raw request to the proxy; return its status line."""
+    with socket.create_connection(PROXY, timeout=10) as s:
+        s.sendall(request)
+        return s.recv(4096).split(b"\r\n", 1)[0].decode(errors="replace")
+
+
+def test_proxy_tunnels_only_to_the_meta_api_with_tls_end_to_end():
+    import ssl
+
+    s = socket.create_connection(PROXY, timeout=10)
+    s.sendall(b"CONNECT api.meta.ai:443 HTTP/1.1\r\nHost: api.meta.ai:443\r\n\r\n")
+    assert b" 200" in s.recv(4096).split(b"\r\n", 1)[0]
+    tls = ssl.create_default_context().wrap_socket(s, server_hostname="api.meta.ai")  # handshake only, no API call
+    assert tls.version()
+    tls.close()
+
+
+@pytest.mark.parametrize("request_line", [
+    b"CONNECT example.com:443 HTTP/1.1\r\nHost: example.com:443\r\n\r\n",
+    b"CONNECT host.docker.internal:80 HTTP/1.1\r\nHost: host.docker.internal:80\r\n\r\n",
+    b"CONNECT api.meta.ai:80 HTTP/1.1\r\nHost: api.meta.ai:80\r\n\r\n",
+    b"GET http://example.com/ HTTP/1.1\r\nHost: example.com\r\n\r\n",
+])
+def test_proxy_refuses_everything_else(request_line):
+    assert " 403" in via_proxy(request_line)

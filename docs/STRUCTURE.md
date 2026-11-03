@@ -83,7 +83,7 @@ zerostate/
 │   │   └── freeze.py              # pixel-hash freeze detection (code)
 │   │                              # not built: align.py (lag is a measured threshold), redact.py (no people in simulator frames)
 │   ├── llm/
-│   │   ├── client.py              # Meta API calls; every call logged with tokens + $ to credits ledger
+│   │   ├── client.py              # the only Meta API caller: via zs-proxy (explicit), spark_json / sam_boxes, ledger /data/credits.jsonl, budget stop ZS_BUDGET_USD
 │   │   ├── prompts/               # one .md per prompt, versioned
 │   │   └── explain.py             # Phase 3: plain-language answer from logged findings only (never changes a verdict)
 │   ├── session.py                 # session lifecycle: warm-in → ready → steps (pending → evaluated) → verdict; continuous monitor; inbox/audit I/O
@@ -159,6 +159,7 @@ zerostate/
 │   ├── test_timescale_judge.py    # time-scale pass/fail criteria (eval/tools/timescale_test.py)
 │   ├── test_runner.py             # runner logic without the lab: seeded draws, router-rule order
 │   ├── test_published_replay.py   # C11 regression gate: every published P1 episode replays identically under today's rules
+│   ├── test_llm_client.py         # fake opener: box parsing, strict-JSON retry then fail, ledger, budget stop, key never logged
 │   ├── test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
 │   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
 │   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, settle before monitoring, UNKNOWN grace, stop
@@ -180,7 +181,7 @@ zerostate/
 | `src/zerostate` never imports `plants/` or `eval/` | tests/test_firewall.py |
 | No code in `src/zerostate` references GRFICS web API URL | tests/test_firewall.py |
 | No write path in any adapter | tests/test_readonly.py |
-| ZeroState container reaches only PLC:502 (no truth, host ports, DMZ peers, router, internet) | tests/net/test_container_isolation.py |
+| ZeroState container reaches only PLC:502, P2 OPC UA, the proxy (which tunnels only to api.meta.ai:443) and the frame service | tests/net/test_container_isolation.py |
 | No Modbus write from ZeroState's IP; IDS proven to see writes | deploy/check_ids.ps1 (9100001 = 0, 9100002 > 0 per episode) |
 | P1→P2 changes only plants/* | tests/test_plants_only_diff.py (CI) |
 | Only `plants/*/truth.py` and `eval/` read ground truth | tests/test_firewall.py |
@@ -226,7 +227,7 @@ zerostate/
 ## 7. What moves from D:\grfics into the repo
 - `zerostate_test.py` → reference only (kill test, Oct 27); not copied. Its lessons go to MODEL_NOTES.md.
 - `log_plant.py` → superseded by `adapters/` + `eval/runner.py`.
-- `credits_log.md` stays canonical at D:\grfics; `llm/client.py` appends to it.
+- `credits_log.md` stays canonical at D:\grfics; `llm/client.py` writes the container ledger `/data/credits.jsonl`, and `eval/tools/credits_report.py` appends a dated summary to `credits_log.md` after each live session.
 
 ## 8. Owner decisions needed
 Operator page tech — plain HTML/JS served by FastAPI (suggested, fastest) vs React. (Everything else is decided: PROJECT.md decisions 1–20.)
