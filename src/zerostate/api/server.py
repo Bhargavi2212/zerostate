@@ -162,12 +162,15 @@ def parse_intent(text: str, plan: dict | None) -> tuple[str, int | None, str]:
         if hit:
             return "step_done", k, f"{_step_text(hit[0])} Say confirm to mark it done, or cancel."
         return "unknown", None, f"There is no step {k} to mark. Which step is done?"
-    joined = set(toks) | {a + b for a, b in itertools.pairwise(toks)}
+    # a target is heard as itself, run together ("f 1" -> f1), or spoken as a word plus number ("feed one" -> f1)
+    joined = set(toks) | {a + b for a, b in itertools.pairwise(toks)} | {
+        a[0] + b for a, b in itertools.pairwise(toks) if b.isdigit() and not a.isdigit()}
     said = {st for st, ws in STATE_WORDS.items() if words & ws}
+    named = {_norm(t) for s in steps for t in _step_words(s)[0] if _norm(t) in joined}  # every plan valve the phrase names
     hits = []
     for s in steps:
         targets, state = _step_words(s)
-        if targets and state and all(_norm(t) in joined for t in targets) and said == {state}:
+        if targets and state and {_norm(t) for t in targets} == named and said == {state}:  # exactly this step's valves
             hits.append(s)
     if len(hits) == 1:
         return "step_done", hits[0]["k"], f"{_step_text(hits[0])} Say confirm to mark it done, or cancel."

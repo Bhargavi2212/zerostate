@@ -309,6 +309,14 @@ def test_voice_maps_a_step_only_from_its_number_or_every_target_and_state(env):
     assert inbox_rows(tmp) == []
 
 
+def test_voice_hears_a_target_spoken_as_word_and_number():
+    """P1 step 2 closes f1 and purge: "feed one" is heard as f1; naming only one of the two stays unknown."""
+    plan = yaml.safe_load((ROOT / "plants" / "p1_grfics" / "envelope.yaml").read_text(encoding="utf-8"))
+    assert server.parse_intent("feed one and purge closed", plan)[:2] == ("step_done", 2)
+    assert server.parse_intent("feed one closed", plan)[0] == "unknown"
+    assert server.parse_intent("purge open", plan)[:2] == ("step_done", 5)
+
+
 def test_voice_reads_back_only_and_can_never_reach_sign(env):
     client, tmp, _ = env
     r = client.post("/api/voice/command", json={"audio": "c2lnbiBvZmY="}).json()  # "sign off"
