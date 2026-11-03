@@ -52,7 +52,7 @@ zerostate/
 â”‚   â”‚   â”œâ”€â”€ plant_map.py           # PlantMap: nodes (source, vessel, valve, vent/bleed, relief, heater, instrument), pipes, plan_defaults
 â”‚   â”‚   â”œâ”€â”€ signal.py              # Signal{tag, value, quality, source_ts, recv_ts}
 â”‚   â”‚   â”œâ”€â”€ evidence.py            # Finding{rule_id, rule_version, status: PASS|FAIL|UNKNOWN, refs}, EvidenceTree
-â”‚   â”‚   â””â”€â”€ verdict.py             # Verdict enum: BLOCKED | ESCALATED | NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF (no SAFE)
+â”‚   â”‚   â””â”€â”€ verdict.py             # Verdict enum: BLOCKED | ESCALATED | NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF (no approval member)
 â”‚   â”œâ”€â”€ adapters/                  # read-only plant access
 â”‚   â”‚   â”œâ”€â”€ base.py                # ReadOnlyAdapter protocol: read(), subscribe(), history(). No write anywhere.
 â”‚   â”‚   â”œâ”€â”€ modbus.py              # pymodbus; function codes 1â€“4 only
@@ -89,6 +89,7 @@ zerostate/
 â”‚   â”‚   â””â”€â”€ explain.py             # Phase 3: plain-language answer from logged findings only (never changes a verdict)
 â”‚   â”œâ”€â”€ session.py                 # session lifecycle: warm-in â†’ ready â†’ steps (pending â†’ evaluated) â†’ verdict; continuous monitor; inbox/audit I/O
 â”‚   â”œâ”€â”€ gate.py                    # pure verdict policy: findings â†’ verdict, monotonic, signature closes, verdict stamping; no model judge
+│   ├── wording.py                 # the one never-say checker (PROJECT.md list + `\bsafe\b` + banned labels); `python -m zerostate.wording <files>`; eval, site and tests import it
 â”‚   â”œâ”€â”€ audit/
 â”‚   â”‚   â”œâ”€â”€ log.py                 # SQLite append-only, hash-chained rows
 â”‚   â”‚   â”œâ”€â”€ sign.py                # Ed25519 verdict signatures
@@ -153,7 +154,7 @@ zerostate/
 â”œâ”€â”€ tests/
 â”‚   â”œâ”€â”€ test_readonly.py           # no plant-protocol write call anywhere; only adapters/ import pymodbus/asyncua; no write*/set* methods in adapters
 â”‚   â”œâ”€â”€ test_firewall.py           # AST scan: src/zerostate imports nothing from plants/ or eval/, no GRFICS web URL
-â”‚   â”œâ”€â”€ test_models.py             # no SAFE; extra fields rejected; plan hash stable/changes; session edits don't touch plan hash
+â”‚   â”œâ”€â”€ test_models.py             # no approval member; extra fields rejected; plan hash stable/changes; session edits don't touch plan hash
 â”‚   â”œâ”€â”€ test_modbus_adapter.py     # in-process Modbus server: scaled values; server down â†’ BAD
 â”‚   â”œâ”€â”€ test_opcua_adapter.py      # in-process P2 server: values, StatusCode quality, SourceTimestamp â†’ STALE, down â†’ BAD; zs picks the adapter by protocol
 â”‚   â”œâ”€â”€ test_p2_server.py          # P2 server permission check: zerostate writes refused + logged, operator *.CMD only, timestamps advance
@@ -172,7 +173,8 @@ zerostate/
 â”‚   â”œâ”€â”€ test_bundle.py             # episode bundle: export â†’ load â†’ schema validates; key-like strings refused
 â”‚   â”œâ”€â”€ test_api_contract.py       # API (docs/API.md): every endpoint returns its schema, error codes, audit opened read-only, steps/sign only add inbox rows, voice never reaches sign
 â”‚   â”œâ”€â”€ test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
-â”‚   â”œâ”€â”€ test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
+â”‚   â”œâ”€â”€ test_gate.py               # no approval member; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
+│   ├── test_wording.py            # never-say checker: list matches PROJECT.md; docs/*.md and src/ string literals clean
 â”‚   â”œâ”€â”€ test_session.py            # warm-in, plan-hash refusal, pending, step order, verify, reopen, settle before monitoring, UNKNOWN grace, stop
 â”‚   â”œâ”€â”€ test_operator.py           # operator: setpoints before coil, readback mismatch aborts, manual off restores defaults
 â”‚   â”œâ”€â”€ conftest.py                # shared in-process Modbus server fixture (adapter + operator tests) + in-process P2 OPC UA server

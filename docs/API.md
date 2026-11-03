@@ -4,7 +4,7 @@ Fixed in Phase 2 so the Phase 3 console (`ui/`, served by the API) is UI work on
 
 Data access: the audit log is mounted **read-only** (`/audit`, SQLite `mode=ro`); the inbox, drafts and confirmed plans (`/data`) are read-write. The API never writes the audit log: human actions go into the inbox and the core session logs them. Status: Phase 2 = every endpoint exists and returns its schema (`tests/test_api_contract.py`); explain and voice are stubs until Phase 3.
 
-Wording rule for every text field: PROJECT.md "never say" list (no "safe", no "verified isolation").
+Wording rule for every text field: PROJECT.md "never say" list, checked by `zerostate.wording`.
 
 ## Plants and plans
 | Method + path | Request | Response |

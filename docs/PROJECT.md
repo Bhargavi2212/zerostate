@@ -12,7 +12,7 @@ Standing rule: it must work for any plant and any isolation, and be tested on mo
 Isolation kills people in two ways:
 1. **The plan or the point is wrong** — LyondellBasell 2021 (chosen isolation valve was itself pressurised, 2 killed), Williams Geismar 2013 (boxed-in vessel without relief, 2 killed), Pemex Deer Park 2024 (wrong flange ~5 ft from the isolated one, 2 killed), Formosa Illiopolis 2004 (wrong reactor), HSG253 case (pump isolated only in software).
 2. **The proof is wrong** — BP Amoco Augusta 2001 (plugged gauge read zero, 3 killed), Tosco Avon 1999 (passing valves, clogged drains, 4 killed), Giant Ciniza 2004 (valve open while believed closed), Milford Haven 1994 (display showed a failed-closed valve as open).
-Scale: LOTO is OSHA's #4 most-cited standard (FY2025, 2,177 citations); in a 100-incident study, 45% of maintenance-phase immediate causes were permit/isolation failures (AIChE GCPS 2022). In process plants, line opening is also governed by OSHA 1910.119(f)(4) (PSM safe work practices).
+Scale: LOTO is OSHA's #4 most-cited standard (FY2025, 2,177 citations); in a 100-incident study, 45% of maintenance-phase immediate causes were permit/isolation failures (AIChE GCPS 2022). In process plants, line opening is also governed by OSHA 1910.119(f)(4) (PSM work practices).
 Today's tools: permit/LOTO software records what was *declared*; camera AI checks PPE or that a lock is present; DCS copilots watch normal operation. We found no system that checks a declared isolation against live plant evidence (broad search, not proof — RESEARCH.md).
 
 ## What ZeroState does
@@ -20,7 +20,7 @@ Three layers of deterministic code; Meta models read, extract and explain, never
 1. **Plan check** — every path from every energy source to the work is closed by an isolation point; no isolation device on the live side of the boundary; no boxed-in volume with a heat source and no relief; no control-system-only isolation (OSHA 1910.147(b)); isolation type fits the hazard (HSG253: positive / proved / non-proved isolation); every proved isolation has a proving point and its bleed isn't tied into a pressurised header; tags exist and witnesses sit on the right side of the boundary.
 2. **Live evidence check** — each instrument is checked before it is trusted and again after the proof where a known disturbance makes that possible (alive, fresh, agrees with physics/redundancy, on the correct side); upstream pressure present so a hold test means something; hold test met criteria fixed before the run; valve command vs feedback; stale or frozen data never passes.
 3. **Process check** — steps in order, stop at the first failure; installer ≠ verifier ≠ prover; temporary de-isolation resets verification; missing evidence = not verified.
-Outputs only: `BLOCKED` (with reasons), `ESCALATED`, `NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF`. Never "safe". A human signs; the human try / test / bleed steps are unchanged.
+Outputs only: `BLOCKED` (with reasons), `ESCALATED`, `NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF`. No approval output. A human signs; the human try / test / bleed steps are unchanged.
 
 ## Design lineage
 The only standards-accepted automated isolation verifier is the electrical absence-of-voltage tester (NFPA 70E 120.6(7) in the 2021/2024 editions, 120.5(7) in 2018; listed to UL 1436). ZeroState **borrows its structure** — same steps as the human method, check the instrument before and after, prove the connection to the right point, fixed sequence that stops at the first failure, one positive state — but it is **not equivalent**: an AVT actively tests itself on a known source and is SIL-3 listed; ZeroState is read-only, can only observe disturbances that happen, and has no rating.
@@ -62,7 +62,7 @@ Approved Oct 31, 16:01 (Bhargavi delegated: "choose what's best to win"):
 6. Camera kept in product and demo; P1 camera results labelled "idealised", headline numbers are data-only.
 7. P2 go/no-go Nov 1 night; if no spec, submit P1 + plan-check set and say "tested on one live plant".
 8. GRFICS time ×10 (stated as compressed); 5 episodes per scenario + 15 clean per plant; benchmark overnight Nov 2. Fallback (decision 19): if ×10 destabilises the PLC loops, ×5; if still unstable, real time with 3 episodes per scenario + 10 clean.
-9. **Muse Spark importer is a MUST** (Meta tooling is 25% of the score, and "photo of an isolation sheet → blocked plan" is the strongest demo moment). To keep scope safe, Ed25519 signing and 3-read voting stay "should".
+9. **Muse Spark importer is a MUST** (Meta tooling is 25% of the score, and "photo of an isolation sheet → blocked plan" is the strongest demo moment). To keep scope in hand, Ed25519 signing and 3-read voting stay "should".
 10. No practitioner reviewer line unless Bhargavi finds one; not mentioned otherwise.
 11. ZeroState reads P1 from the DMZ through the GRFICS router (like the HMI does). The router can't filter Modbus by function code (its Suricata is IDS-only), so the read-only evidence is: no write code path + a Suricata alert rule for any Modbus write from ZeroState's IP + a test that the alert count is zero across all episodes. The same rule for the operator container's IP must fire every episode (positive control, decision 15).
 12. Licence: Apache-2.0 for our code; GRFICS patch stays GPL-3.0 in its own folder.
