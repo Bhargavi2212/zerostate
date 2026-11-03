@@ -139,3 +139,16 @@ def test_watchdog_skips_s0_beyond_ten_only_when_late():
     assert not bench.watchdog_skip(e, five, remaining=40, mean_wall_s=420, s0_valid=9)  # fewer than 10 S0 yet
     assert not bench.watchdog_skip({"scenario": "S1"}, five, remaining=40, mean_wall_s=420, s0_valid=12)
     assert not bench.watchdog_skip(e, datetime(2026, 11, 3, 1, 0), remaining=80, mean_wall_s=420, s0_valid=12)
+
+
+def test_batch_2_is_the_full_engine_set(tmp_path, monkeypatch):
+    monkeypatch.setattr(seal, "ROOT", tmp_path)
+    (tmp_path / "eval").mkdir()
+    seal.seal("2", tmp_path / "sealed")
+    entries = json.loads((tmp_path / "sealed" / "manifest_2.json").read_bytes())["entries"]
+    count = {}
+    for e in entries:
+        count[(e["plant"], e["scenario"])] = count.get((e["plant"], e["scenario"]), 0) + 1
+    assert count[("p1", "S0")] == 15 and all(count[("p1", s)] == 5 for s in ("S7", "S7-same", "S13", "S8"))
+    assert count[("plan", "PC0")] == 15 and all(count[("plan", f"PC{i}")] == 5 for i in range(1, 7))
+    assert len(entries) == 45 + 35

@@ -19,6 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
 MAX_ATTEMPTS = 2
+RUNNER_PLANTS = ("p1", "p2")  # "plan" entries (the plan-check set) are run by eval/plan_benchmark.py
 STOP_AFTER_INVALID_IN_A_ROW = 3
 WATCHDOG_FROM_HOUR, WATCHDOG_FINISH_BY_HOUR, WATCHDOG_KEEP_S0 = 5, 9, 10
 
@@ -118,6 +119,7 @@ def main() -> int:
     ap.add_argument("--salt", required=True)
     a = ap.parse_args()
     manifest = json.loads(Path(a.manifest).read_bytes())  # the runner checks it against the sealed hash
+    manifest = {**manifest, "entries": [e for e in manifest["entries"] if e["plant"] in RUNNER_PLANTS]}
     return run_batch(manifest, ROOT / "eval" / "results" / "bench" / a.batch / "progress.jsonl", a)
 
 
