@@ -74,6 +74,9 @@ def batch(tmp_path_factory):
     meta["faults"] = [{"set": {"f1_leak_pct": 0.8}}]
     meta["seed"] = 12345
     (leak / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+    t_fault = ep["truth"][0]["t"]  # the leak is present from the start: its fault event, as the runner logs it
+    (leak / "events.jsonl").write_text(json.dumps({"t": t_fault, "kind": "fault", "data": {"set": {"f1_leak_pct": 0.8}}}) + "\n",
+                                       encoding="utf-8")
 
     def leak_after_verdict(r):
         if r["t"] >= vt:
@@ -125,6 +128,16 @@ def test_wrong_batch_manifest_is_refused(tmp_path):
     m, s, h = _seal(tmp_path, [], batch="2")
     with pytest.raises(SystemExit, match="refused"):
         score.score("p1", m, s, tmp_path, hash_p=h)
+
+
+def test_a_scenario_fault_that_never_fired_leaves_the_episode_clean():
+    """Batch p1 S1 seed 260352266: blocked at step 1 (slow mode switch) before the fault's time. Truth: clean,
+    so its block is a false block, not an INVALID episode (DECISIONS Nov 3)."""
+    ep = score.load_episode(_episode("S1_seed260352266_20261103T030055"))
+    assert ep["fault_t"] is None and not score.faulty(ep)
+    r = score.score_episode(ep, FS)
+    assert r["label"]["primary"] == "clean" and r["verdict"] == "BLOCKED"
+    assert r["note"].startswith("fault never injected")
 
 
 def test_batch_keys_and_counts(batch):

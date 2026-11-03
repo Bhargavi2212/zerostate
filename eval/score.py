@@ -123,8 +123,10 @@ def verdict_time(ep: dict) -> float | None:
 
 
 def faulty(ep: dict) -> bool:
+    """A fault actually present: a logged fault event, or an operator variant (the operator does it, no event).
+    A scenario fault that never fired (the session ended before its time) leaves the plant clean."""
     sc = ep["meta"].get("scenario") or {}
-    return bool(sc.get("faults") or sc.get("operator"))
+    return ep["fault_t"] is not None or bool(sc.get("operator"))
 
 
 def drawn_leak(ep: dict) -> float | None:
@@ -293,6 +295,10 @@ def score_episode(ep: dict, fs: dict) -> dict:
         out["verdict_with_camera"] = ep["verdict"].get("verdict_with_camera") or cam[-1][1]
     if not out["match"]:
         out["note"] = mismatch_note(ep)
+    elif (ep["meta"].get("scenario") or {}).get("faults") and not out["fault"]:
+        first = first_finding(ep)
+        out["note"] = (f"fault never injected: the session ended ({v}) before the fault's time, so truth labels it clean "
+                       f"and a block counts as a false block; first finding: {f'{first[0]}: {first[1]}' if first else 'none'}")
     return out
 
 
