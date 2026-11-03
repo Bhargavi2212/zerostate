@@ -38,6 +38,7 @@ Instruments (noise ±0.1 % of span on every analog value):
 - Each volume: `dn/dt = Σ F_in − Σ F_out`, `P = n·R·T / V`. Boundary sources hold constant pressure.
 - Flow between two volumes through a valve at opening x %: `F = Cv · x/100 · sqrt(max(P_up² − P_dn², 0))` kmol/h, direction from high to low.
 - Cv values are chosen so venting F-210 from 2000 kPa to 102 kPa through VV-213 alone takes about 5 process-min.
+  Chosen (kmol/h per kPa, `model.py`): VV-213 0.035 (298.7 process-s), XV-201 / XV-203 / XV-204 / XV-231 0.1, BV-202 0.01, PSV-214 0.2.
 - PSV-214 opens fully above 2300 kPa, closes below 2200.
 - E-215 on: adds heat as a pressure rise term proportional to n (only used by plan cases; not in live scenarios).
 - **Analytic check (C12, implementation check, not realism):** venting F-210 to atmosphere gives `dP/dt = −(R·T·Cv / (100·V)) · x · sqrt(P² − Pa²)`, i.e. `P(t) = Pa·cosh(acosh(P0/Pa) − a·t)` with `a = R·T·Cv·x / (100·V·3600)` (per process-s, Cv per hour). Must agree within 2 % at ×30; otherwise stop and report.
