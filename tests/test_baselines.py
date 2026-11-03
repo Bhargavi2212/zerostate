@@ -97,7 +97,7 @@ def test_muse_alone_scored_by_score_py(tmp_path):
     out = tmp_path / "muse.json"
     muse.run_batch([ep], out, call=FakeCall("pass"))
     b = score.baselines({ep.name: score.load_episode(ep)}, score.P1_FULL_SCALE, out)
-    assert b["muse_alone"]["dangerous_miss"]["primary"] == {"k": 0, "n": 1, "ci_low": 0.0, "ci_high": 0.7935}
+    assert b["muse_alone"]["dangerous_miss"]["primary"] == {"k": 0, "n": 1, "ci_low": 0.0, "ci_high": 0.7935, "ci_high_pct": 79}
     assert b["muse_alone"]["dangerous_miss"]["secondary"]["k"] == 1
 
 

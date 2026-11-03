@@ -131,7 +131,7 @@ def test_batch_keys_and_counts(batch):
     s, _ = batch
     assert s["dangerous_miss"]["primary"]["k"] == 0 and s["dangerous_miss"]["primary"]["n"] == 4
     assert s["dangerous_miss"]["secondary"]["k"] == 1  # the passed 0.5 % leak, under 0.1 % only
-    assert set(s["dangerous_miss"]["secondary"]) == {"k", "n", "ci_low", "ci_high"}
+    assert set(s["dangerous_miss"]["secondary"]) == {"k", "n", "ci_low", "ci_high", "ci_high_pct"}
     assert s["false_blocks"]["k"] == 1 and s["false_blocks"]["n"] == 2
     assert (s["false_blocks"]["blocked"], s["false_blocks"]["escalated"]) == (1, 0)
     assert s["decided_on"]["k"] == s["decided_on"]["n"] == 4

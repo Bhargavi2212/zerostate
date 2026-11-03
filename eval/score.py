@@ -59,7 +59,7 @@ def wilson(k: int, n: int) -> tuple[float | None, float | None]:
 
 def rate(k: int, n: int) -> dict:
     lo, hi = wilson(k, n)
-    return {"k": k, "n": n, "ci_low": lo, "ci_high": hi}
+    return {"k": k, "n": n, "ci_low": lo, "ci_high": hi, "ci_high_pct": None if hi is None else round(hi * 100)}
 
 
 def show(r: dict) -> str:
@@ -300,10 +300,13 @@ def score_decisions(decisions: dict, eps: dict, fs: dict) -> dict:
     """A baseline's pass/block per episode, scored with the same hazard code: a pass at time t is a
     dangerous miss when a condition is met from t to the episode end."""
     answered = {n: d for n, d in decisions.items() if n in eps and d.get("answer") in ("pass", "block")}
-    out = {"dangerous_miss": {}, "unanswered": sorted(set(eps) - set(answered))}
+    out = {"dangerous_miss": {}, "unanswered": sorted(set(eps) - set(answered)), "whole_job_only": {}, "misses_by_scenario": {}}
+    whole = [n for n in answered if whole_job(eps[n])]
     for name, frac in DEFINITIONS.items():
-        k = sum(1 for n, d in answered.items() if d["answer"] == "pass" and conditions(eps[n], frac, fs, since=d["t"]))
-        out["dangerous_miss"][name] = rate(k, len(answered))
+        missed = [n for n, d in answered.items() if d["answer"] == "pass" and conditions(eps[n], frac, fs, since=d["t"])]
+        out["dangerous_miss"][name] = rate(len(missed), len(answered))
+        out["whole_job_only"][name] = rate(sum(n in whole for n in missed), len(whole))
+        out["misses_by_scenario"][name] = dict(Counter(eps[n]["meta"]["scenario"]["id"] for n in missed))
     clean = [n for n in answered if label(conditions(eps[n], DEFINITIONS["primary"], fs), faulty(eps[n])) == "clean"]
     out["false_blocks"] = rate(sum(1 for n in clean if answered[n]["answer"] == "block"), len(clean))
     out["passes"] = sum(1 for d in answered.values() if d["answer"] == "pass")
@@ -365,6 +368,7 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
         return sum(1 for r in among if pred(r))
 
     clean = [r for r in rows if r["label"]["primary"] == "clean"]
+    whole = [r for r, ep in zip(rows, chosen.values(), strict=True) if whole_job(ep)]
     fault_rows = [r for r in rows if r["fault"]]
     per_scenario = {}
     for r in rows:
@@ -426,6 +430,7 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
                          "blocked": count(lambda r: r["verdict"] == "BLOCKED", clean),
                          "escalated": count(lambda r: r["verdict"] == "ESCALATED", clean)},
         "decided_on": {"k": len(rows), "n": len(rows), "whole_job": sum(map(whole_job, chosen.values()))},
+        "whole_job_only": {d: rate(count(lambda r, d=d: r["dangerous_miss"][d], whole), len(whole)) for d in DEFINITIONS},
         "labels": {d: dict(Counter(r["label"][d] for r in rows)) for d in DEFINITIONS},
         "time_to_block_process_s": {s: {"n": len(v), "median": statistics.median(v), "min": min(v), "max": max(v)} for s, v in sorted(ttb.items())},
         "severity_at_release": {r["episode"]: r["severity_at_release"] for r in rows if "severity_at_release" in r},
@@ -475,7 +480,18 @@ def markdown(s: dict) -> str:
         d_on = b["decided_on"]
         L += [f"| Baseline {name}: decided on | {d_on['k']} of {d_on['n']} (whole job in {d_on['whole_job']}) |"]
         L += [f"| Baseline {name}: dangerous misses, {d} | {show(b['dangerous_miss'][d])} |" for d in DEFINITIONS]
+        L += [f"| Baseline {name}: {d} misses by scenario | "
+              + (", ".join(f"{sc} {k}" for sc, k in sorted(b["misses_by_scenario"][d].items())) or "none") + " |"
+              for d in DEFINITIONS]
         L += [f"| Baseline {name}: false blocks | {show(b['false_blocks'])} |"]
+    w = s["whole_job_only"]
+    L += ["", f"## Like for like: the {s['decided_on']['whole_job']} episodes where every system saw the whole job", "",
+          "In the other episodes ZeroState blocked early, the job stopped there, and a baseline judged only that early state.",
+          "", "| System | " + " | ".join(f"Dangerous misses, {d}" for d in DEFINITIONS) + " |",
+          "|---|" + "---|" * len(DEFINITIONS)]
+    L += ["| ZeroState | " + " | ".join(show(w[d]) for d in DEFINITIONS) + " |"]
+    L += [f"| Baseline {name} | " + " | ".join(show(b["whole_job_only"][d]) for d in DEFINITIONS) + " |"
+          for name, b in s["baselines"].items()]
     L += ["", "Labels from truth (descriptive for BLOCKED / ESCALATED):", ""]
     L += [f"- {d}: " + ", ".join(f"{k} {v}" for k, v in sorted(c.items())) for d, c in s["labels"].items()]
     L += ["", "## Per scenario", "", "| Scenario | n | BLOCKED | ESCALATED | NO_DISCREPANCY | match | notes |", "|---|---|---|---|---|---|---|"]
@@ -484,7 +500,7 @@ def markdown(s: dict) -> str:
     L += ["", "## Hold detection by drawn leak size (counts; n ≤ 5 per bin, so no rates)", "",
           "| Leak bin | n | BLOCKED | ESCALATED | NO_DISCREPANCY | LIVE-HOLD FAIL |", "|---|---|---|---|---|---|"]
     L += [f"| {b} | {x['n']} | {x['blocked']} | {x['escalated']} | {x['no_discrepancy']} | {x['hold_fail']} |" for b, x in s["hold_by_leak_bin"].items()]
-    L += ["", "## Time to block (process seconds from the fault event)", "", "| Scenario | n | median | min | max |", "|---|---|---|---|---|"]
+    L += ["", "## Time to first BLOCKED or ESCALATED (process seconds from the fault event; episodes with a logged fault event only)", "", "| Scenario | n | median | min | max |", "|---|---|---|---|---|"]
     L += [f"| {sc} | {x['n']} | {x['median']} | {x['min']} | {x['max']} |" for sc, x in s["time_to_block_process_s"].items()]
     L += ["", "## Severity at release (truth after NO_DISCREPANCY)", "", "| Episode | max pressure kPa | max isolated-line flow % of full scale |", "|---|---|---|"]
     L += [f"| {e} | {x['max_pressure_kpa']} | {x['max_isolated_flow_pct']} |" for e, x in s["severity_at_release"].items()]
