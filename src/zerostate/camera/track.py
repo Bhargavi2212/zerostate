@@ -116,14 +116,19 @@ class CameraTrack:
             while rows and rows[0][0] < now - KEEP_WALL_S:
                 rows.pop(0)
 
-    def due(self, now: float, marks: dict[int, float], steps: dict) -> list[dict]:
-        """Valve steps whose settle has elapsed: log a capture and return the jobs for the worker."""
+    def due(self, now: float, marks: dict[int, float], steps: dict, data_verdict=None) -> list[dict]:
+        """Valve steps whose settle has elapsed: log a capture and return the jobs for the worker. With
+        `camera: required`, a step valve without a mapped display is an UNKNOWN camera evaluation at once."""
         jobs = []
         for k, t_mark in sorted(marks.items()):
             st = steps[k]
             if k in self.triggered or st.kind not in CAMERA_KINDS or now < t_mark + st.settle_process_s / self.scale:
                 continue
             self.triggered.add(k)
+            if self.mode == "required":
+                for p in step_targets(st):
+                    if p not in self.points:
+                        self.record({"step": k, "point": None, "readings": [], "error": f"no display mapped for {p}"}, data_verdict)
             pts = {p: self.points[p] for p in step_targets(st) if p in self.points}
             if pts:
                 self.log.append(self.sid, "camera_capture", {"step": k, "points": sorted(pts)})

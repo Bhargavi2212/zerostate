@@ -271,7 +271,7 @@ def status_from_events(events: list[dict]) -> dict:
             out["verdict"], out["stamp"] = p["verdict"], p
         elif kind == "camera_capture":
             out["camera_pending"] += len(p["points"])
-        elif kind == "evaluation" and p["source"] == "camera" and p.get("step") is not None:
+        elif kind == "evaluation" and p["source"] == "camera" and p.get("point") is not None:  # answers a capture
             out["camera_pending"] -= 1
         elif kind == "signature":
             out["state"] = "closed"

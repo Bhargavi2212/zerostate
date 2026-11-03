@@ -158,11 +158,11 @@ def test_optional_unknown_is_ignored_required_unknown_escalates():
 
 # ---- the with-camera track beside a session ---------------------------------------------------
 class Rig:
-    def __init__(self, tmp_path, mode):
+    def __init__(self, tmp_path, mode, dmap=None):
         self.plan = PLAN.model_copy(update={"camera": mode})
         self.log = AuditLog(tmp_path / "audit.sqlite")
         self.s = Session("s1", self.plan, self.plan.content_hash(), PARAMS, SCALE, SPANS, self.log, now=0.0)
-        dmap = {"f1": ("default", F1_BOX), "purge": ("default", [300, 200, 380, 240])}
+        dmap = dmap or {"f1": ("default", F1_BOX), "purge": ("default", [300, 200, 380, 240])}
         self.cam = CameraTrack("s1", self.plan, PARAMS, self.log, dmap, SCALE)
         self.t, self.jobs = 0.0, []
 
@@ -175,7 +175,7 @@ class Rig:
             self.s.tick(self.t, sig, inbox)
             inbox = []
             self.cam.observe(self.t, sig)
-            self.jobs += self.cam.due(self.t, self.s.marks, self.s.steps)
+            self.jobs += self.cam.due(self.t, self.s.marks, self.s.steps, self.s.verdict)
 
     def status(self):
         return status_from_events(self.log.events("s1"))
@@ -280,3 +280,11 @@ def test_cli_camera_track_wiring(tmp_path, monkeypatch):
         assert st["verdict"] is None and st["verdict_with_camera"] == want and st["camera_pending"] == 0
         assert sum(e["kind"] == "evaluation" for e in log.events("s1")) == (0 if mode is None else 1)
         assert replay(log, "s1", PARAMS) == []
+
+def test_required_camera_escalates_a_valve_without_a_mapped_display(tmp_path):
+    r = Rig(tmp_path, "required", dmap={"f1": ("default", F1_BOX)})  # purge has no display in view
+    r.to_step_2()
+    st = r.status()
+    assert st["camera_pending"] == 1 and st["verdict_with_camera"] == "ESCALATED" and st["verdict"] is None
+    assert "no display mapped for purge" in str([e["payload"].get("note") for e in r.log.events("s1")])
+    assert replay(r.log, "s1", PARAMS) == []

@@ -135,7 +135,7 @@ def session_start(a) -> int:
                 s.tick(t, signals, inbox.take(a.session))
                 if cam is not None:  # never waits on the worker: the 4 Hz poll only queues and collects
                     cam.observe(t, signals)
-                    for job in cam.due(t, s.marks, s.steps):
+                    for job in cam.due(t, s.marks, s.steps, s.verdict):
                         jobs.put(job)
                     while not results.empty():
                         for res in results.get_nowait():
