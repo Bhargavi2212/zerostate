@@ -3,6 +3,7 @@ audit log, human actions only add inbox rows, and the voice route has no way to 
 tmp dirs only; model routes use a fake opener (never the Meta API)."""
 
 import hashlib
+import importlib.util
 import io
 import json
 import shutil
@@ -10,6 +11,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+import yaml
 from fastapi.testclient import TestClient
 from test_importer_gate import HEADER, P2_ROWS, FakeOpener, reply
 
@@ -329,3 +331,72 @@ def test_explain_stub(env):
     r = client.post("/api/sessions/s1/explain", json={"question": "why blocked?"}).json()
     assert set(r) == {"answer", "cites"} and isinstance(r["cites"], list)
 
+
+# ---- replay mode: recorded bundles, read-only ---------------------------------------------------------
+EPISODES = sorted(p for p in (ROOT / "eval" / "results" / "episodes").iterdir()
+                  if (p / "audit_export.json").exists() and not (p / "SUPERSEDED.md").exists())
+
+
+def export_bundles(out: Path, runs, plant_map=None):
+    spec = importlib.util.spec_from_file_location("export_bundle", ROOT / "eval" / "tools" / "export_bundle.py")
+    eb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(eb)
+    for run in runs:
+        eb.write(eb.build(run, plant_map), out / run.name)
+
+
+@pytest.fixture
+def replay_env(tmp_path, monkeypatch):
+    monkeypatch.delenv("MODEL_API_KEY", raising=False)
+    run = min((ROOT / "eval" / "results" / "episodes").glob("S4-small_seed21_*"))
+    pmap = yaml.safe_load((ROOT / "plants/p1_grfics/plant_map.yaml").read_text(encoding="utf-8"))
+    export_bundles(tmp_path / "bundles", [run], pmap)
+    app = server.create_app(tmp_path / "bundles", tmp_path / "no-audit.sqlite", tmp_path / "config", {},
+                            replay_dir=tmp_path / "bundles")
+    return TestClient(app), tmp_path, run
+
+
+def test_replay_serves_the_same_gets(replay_env):
+    client, tmp, run = replay_env
+    rows = client.get("/api/sessions").json()
+    assert [r["id"] for r in rows] == [run.name] and set(rows[0]) == SUMMARY_KEYS and rows[0]["verdict"] == "BLOCKED"
+    s = client.get(f"/api/sessions/{run.name}").json()
+    assert set(s) == DETAIL_KEYS and all(set(st) == STEP_KEYS for st in s["steps"]) and s["verdict"] == "BLOCKED"
+    logged = json.loads((run / "audit_export.json").read_text(encoding="utf-8"))
+    ids = [f"{e['id']}:{f['rule_id']}" for e in logged if e["kind"] == "evaluation" for f in e["payload"]["findings"]]
+    assert [f["id"] for f in s["findings"]] == ids  # the same finding ids as the live session
+    assert any(f["rule_id"] == "LIVE-HOLD" and f["status"] == "FAIL" for f in s["findings"])
+    assert s["steps"][0]["marked_t"] is not None and s["steps"][0]["result"] == "PASS"
+    assert "nodes" in client.get("/api/plants/p1_grfics/map").json()
+    body = client.get(f"/api/sessions/{run.name}/stream").text
+    kinds = [ln.split(": ", 1)[1] for ln in body.splitlines() if ln.startswith("event: ")]
+    assert kinds[0] == "session_start" and "finding" in kinds and "verdict" in kinds
+    assert client.get("/api/sessions/nope").status_code == 404
+    assert not (tmp / "no-audit.sqlite").exists()
+
+
+def test_replay_refuses_every_write(replay_env):
+    client, tmp, run = replay_env
+    sid = run.name
+    calls = [("/api/plans/import", {"data": {"route": "text", "plant": "p1_grfics", "text": "close f1"}}),
+             ("/api/plans/drafts/0123456789ab/confirm", {"json": {"by": "Owner", "role": "issuer"}}),
+             ("/api/sessions", {"json": {"plant": "p1_grfics", "plan_hash": "a" * 64, "by": "Owner"}}),
+             (f"/api/sessions/{sid}/steps/1/done", {"json": {"by": "A"}}),
+             (f"/api/sessions/{sid}/steps/1/verify", {"json": {"by": "B"}}),
+             (f"/api/sessions/{sid}/steps/1/reopen", {"json": {"by": "A", "reason": "r"}}),
+             (f"/api/sessions/{sid}/sign", {"json": {"by": "R", "role": "receiver"}}),
+             ("/api/voice/command", {"json": {"session": sid, "transcript": "step one done", "asr": "browser-speech"}})]
+    for path, kw in calls:
+        r = client.post(path, **kw)
+        assert r.status_code == 409 and r.json()["error"] == "replay", (path, r.text)
+    assert not (tmp / "bundles" / "inbox.sqlite").exists() and not (tmp / "bundles" / "drafts").exists()
+    assert client.post(f"/api/sessions/{sid}/explain", json={"question": "why?"}).status_code == 200
+
+
+def test_every_published_episode_loads_in_replay_mode(tmp_path):
+    export_bundles(tmp_path, EPISODES)
+    client = TestClient(server.create_app(tmp_path, tmp_path / "x.sqlite", tmp_path, {}, replay_dir=tmp_path))
+    assert {r["id"] for r in client.get("/api/sessions").json()} == {p.name for p in EPISODES}
+    for p in EPISODES:
+        s = client.get(f"/api/sessions/{p.name}").json()
+        assert s["verdict"] == json.loads((p / "verdict.json").read_text(encoding="utf-8")).get("verdict"), p.name

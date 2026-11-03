@@ -94,7 +94,7 @@ zerostate/
 â”‚   â”‚   â”œâ”€â”€ log.py                 # SQLite append-only, hash-chained rows
 â”‚   â”‚   â”œâ”€â”€ sign.py                # Ed25519 verdict signatures
 â”‚   â”‚   â””â”€â”€ replay.py              # re-run gate on a logged session, must reproduce the verdict
-â”‚   â””â”€â”€ api/                       # __init__.py + server.py
+â”‚   â””â”€â”€ api/                       # __init__.py + server.py + replay.py (bundles v1/v2 -> session events for `zs api --replay`)
 â”‚       â””â”€â”€ server.py              # FastAPI (zs-api, 127.0.0.1:8090): plans, drafts, sessions list/start/detail, SSE, camera evidence + saved frames, voice read-back, inbox actions; audit read-only; playwright-test guard
 â”œâ”€â”€ ui/                            # Phase 3 operator console (static, served by zs-api)
 â”‚   â”œâ”€â”€ index.html  style.css      # one page, ISA-101 greys; no framework, no build step, no CDN
@@ -180,7 +180,7 @@ zerostate/
 â”‚   â”œâ”€â”€ test_bundle.py             # episode bundle: export â†’ load â†’ schema validates; key-like strings refused
 â”‚   â”œâ”€â”€ test_score.py              # score.py on a fixture seal: both hazard definitions, windows, Wilson CIs, refused hash, INVALID entries, S1b note
 â”‚   â”œâ”€â”€ test_baselines.py          # gauge rule on committed p1 episodes; Muse alone with a fake client only (one call, temperature 0, pinned mapping, unavailable listed, dry run calls nothing); both scored by score.py
-â”‚   â”œâ”€â”€ test_api_contract.py       # API (docs/API.md): every endpoint returns its schema, error codes, audit opened read-only, steps/sign/start only add inbox rows, playwright-test refused on real /data, voice never reaches sign/verify/reopen
+â”‚   â”œâ”€â”€ test_api_contract.py       # API (docs/API.md): every endpoint returns its schema, error codes, audit opened read-only, steps/sign/start only add inbox rows, playwright-test refused on real /data, voice never reaches sign/verify/reopen; replay mode serves every published episode and refuses writes
 â”‚   â”œâ”€â”€ test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
 â”‚   â”œâ”€â”€ test_gate.py               # no approval member; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
 │   ├── test_wording.py            # never-say checker: list matches PROJECT.md; docs/*.md and src/ string literals clean

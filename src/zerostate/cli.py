@@ -255,8 +255,9 @@ def main(argv: list[str] | None = None) -> int:
     for p_ in (pi, pshow, pc):
         p_.add_argument("--map", help="plant_map.yaml (default /app/config/<plant>/plant_map.yaml)")
     api = sub.add_parser("api", help="HTTP API for the console (docs/API.md); the container publishes it on 127.0.0.1 only")
-    api.add_argument("--host", default="0.0.0.0")
+    api.add_argument("--host", help="default 0.0.0.0 in the container (published on 127.0.0.1 only); 127.0.0.1 with --replay")
     api.add_argument("--port", type=int, default=8090)
+    api.add_argument("--replay", metavar="BUNDLE_DIR", help="serve recorded bundles read-only: no lab, no audit log, no key")
     a = ap.parse_args(argv)
 
     if a.cmd == "api":
@@ -264,7 +265,11 @@ def main(argv: list[str] | None = None) -> int:
 
         from zerostate.api.server import create_app
 
-        uvicorn.run(create_app(_data(), _audit(), _config(), _thresholds()), host=a.host, port=a.port)
+        if a.replay:  # nothing is written in replay mode: the bundle dir stands in for the data dir
+            app = create_app(a.replay, Path(a.replay) / "no-audit.sqlite", _config(), {}, replay_dir=a.replay)
+        else:
+            app = create_app(_data(), _audit(), _config(), _thresholds())
+        uvicorn.run(app, host=a.host or ("127.0.0.1" if a.replay else "0.0.0.0"), port=a.port)
         return 0
 
     if a.cmd == "session" and a.action == "start":

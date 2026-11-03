@@ -4,7 +4,8 @@ Trust boundaries kept here:
 - no plant access: no adapter is imported; zs-api-net lets traffic out to the model proxy only;
 - the audit log is opened read-only (SQLite mode=ro): human actions go into the inbox and the core logs them;
 - the voice route only reads back; it never touches the inbox, so it can't mark a step, verify, reopen or sign;
-- the name `playwright-test` can't confirm or sign while the data dir is the real /data (G10).
+- the name `playwright-test` can't confirm or sign while the data dir is the real /data (G10);
+- replay mode (`zs api --replay <bundle_dir>`) serves recorded bundles; every write is 409 "replay".
 Explain is a stub until P3-4.
 """
 
@@ -28,6 +29,7 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, model_validator
 from starlette.exceptions import HTTPException
 
+from zerostate.api.replay import load_bundles
 from zerostate.audit.log import AuditLog
 from zerostate.importers import draft as dr
 from zerostate.importers.confirm import NotConfirmable, confirm, is_confirmed
@@ -174,6 +176,8 @@ async def voice_command(body: VoiceIn, request: Request) -> VoiceReply:
     """Reads back only: the console calls /steps/{k}/done after the person confirms. Nothing here writes
     the inbox or reaches /sign, verify or reopen (tests/test_api_contract.py checks this function's names)."""
     ctx = request.app.state
+    if ctx.replay:
+        raise Replay()
     if body.audio is not None:
         return VoiceReply(transcript="", asr=None, intent="unknown", k=None,
                           read_back="Audio transcription is not set up here; use the browser's speech recognition.")
@@ -281,14 +285,22 @@ def _name(value: str, what: str) -> str:
     return value
 
 
+class Replay(Exception):
+    pass
+
+
 class TestName(Exception):
     pass
 
 
 def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | Path, params: dict,
-               opener=None, poll_s: float = 1.0) -> FastAPI:
-    """params: thresholds for the plan checks; opener: model transport (tests pass a fake)."""
+               opener=None, poll_s: float = 1.0, replay_dir: str | Path | None = None) -> FastAPI:
+    """params: thresholds for the plan checks; opener: model transport (tests pass a fake);
+    replay_dir: serve the bundles under it read-only instead of the audit log."""
     data, audit, config = Path(data_dir), Path(audit_path), Path(config_dir)
+    recorded = load_bundles(replay_dir) if replay_dir is not None else None
+    bundles = {sid: r["bundle"] for sid, r in recorded.items()} if recorded is not None else None
+    replay_events = {sid: r["events"] for sid, r in (recorded or {}).items()}
     app = FastAPI(title="ZeroState API")
 
     app.add_exception_handler(HTTPException, lambda r, e: _err(e.status_code, {400: "bad_input", 404: "not_found", 409: "conflict"}.get(e.status_code, "error"), e.detail))
@@ -297,15 +309,22 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
     app.add_exception_handler(FileNotFoundError, lambda r, e: _err(404, "not_found", e))
     app.add_exception_handler(ValueError, lambda r, e: _err(400, "bad_input", e))
     app.add_exception_handler(ModelUnavailable, lambda r, e: _err(503, "model_unavailable", e))
+    app.add_exception_handler(Replay, lambda r, e: _err(409, "replay", "replay mode serves recorded sessions read-only"))
     app.add_exception_handler(TestName, lambda r, e: _err(403, "test_name_on_real_data",
                                                           f"`{TEST_NAME}` may confirm or sign only with a throwaway data dir"))
 
     def writable(by: str | None = None) -> None:
+        if bundles is not None:
+            raise Replay()
         if by is not None and by.strip() == TEST_NAME and data.resolve() == REAL_DATA.resolve():
             raise TestName()
 
     def plant_map(plant: str) -> PlantMap:
-        p = config / _name(plant, "plant") / "plant_map.yaml"
+        _name(plant, "plant")
+        for b in (bundles or {}).values():
+            if b.get("plant") == plant and b.get("plant_map"):
+                return PlantMap.model_validate(b["plant_map"])
+        p = config / plant / "plant_map.yaml"
         if not p.exists():
             raise HTTPException(404, f"no plant {plant}")
         return PlantMap.model_validate(yaml.safe_load(p.read_text(encoding="utf-8-sig")))
@@ -328,20 +347,23 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
 
     def events(sid: str) -> list[dict]:
         _name(sid, "session")
-        ev = read_log(lambda log: log.events(sid))
+        ev = replay_events.get(sid) if bundles is not None else read_log(lambda log: log.events(sid))
         if not ev:
             raise HTTPException(404, f"no session {sid}")
         return ev
 
     def summaries() -> list[dict]:
-        def q(log):
-            rows = log.db.execute(f"SELECT id, ts, session, kind, payload_json FROM events WHERE kind IN "
-                                  f"({','.join('?' * len(SUMMARY_KINDS))}) ORDER BY id", SUMMARY_KINDS).fetchall()
-            g: dict[str, list] = {}
-            for rid, ts, sid, kind, pj in rows:
-                g.setdefault(sid, []).append({"id": rid, "ts": ts, "session": sid, "kind": kind, "payload": json.loads(pj)})
-            return g
-        groups = read_log(q) or {}
+        if bundles is not None:
+            groups = replay_events
+        else:
+            def q(log):
+                rows = log.db.execute(f"SELECT id, ts, session, kind, payload_json FROM events WHERE kind IN "
+                                      f"({','.join('?' * len(SUMMARY_KINDS))}) ORDER BY id", SUMMARY_KINDS).fetchall()
+                g: dict[str, list] = {}
+                for rid, ts, sid, kind, pj in rows:
+                    g.setdefault(sid, []).append({"id": rid, "ts": ts, "session": sid, "kind": kind, "payload": json.loads(pj)})
+                return g
+            groups = read_log(q) or {}
         out = [summary(sid, ev) for sid, ev in groups.items()]
         return sorted(out, key=lambda s: s["started"] or 0, reverse=True)
 
@@ -354,6 +376,7 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
             inbox.db.close()
         return {"queued": True}
 
+    app.state.replay = bundles is not None
     app.state.detail = lambda sid: detail(sid, events(sid))
 
     @app.get("/api/plants/{plant}/map")
@@ -439,7 +462,7 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
         return detail(sid, events(sid))
 
     @app.get("/api/sessions/{sid}/stream")
-    async def stream(sid: str, request: Request):
+    async def stream(sid: str, request: Request, speed: float | None = None):
         events(sid)
         signals = data / "runs" / sid / "signals.jsonl"
 
@@ -449,6 +472,17 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
             for f in e["payload"].get("findings", []) if e["kind"] == "evaluation" else []:
                 out += f"event: finding\ndata: {json.dumps({**f, 'id': finding_id(e['id'], f['rule_id']), 'eval_id': e['id']})}\n\n"
             return out
+
+        async def replayed():
+            ev, prev = events(sid), None
+            for e in ev:
+                if speed and prev is not None and e["t"] is not None:
+                    await asyncio.sleep(max(0.0, (e["t"] - prev) / speed))
+                prev = e["t"] if e["t"] is not None else prev
+                if e["kind"] in STREAM_KINDS:
+                    yield sse(e)
+                if await request.is_disconnected():
+                    return
 
         def poll(last_id: int, offset: int) -> tuple[list[dict], bytes | None, int]:
             new = [e for e in events(sid) if e["id"] > last_id]
@@ -474,7 +508,7 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
                     return
                 await asyncio.sleep(poll_s)
 
-        return StreamingResponse(live(), media_type="text/event-stream")
+        return StreamingResponse(replayed() if bundles is not None else live(), media_type="text/event-stream")
 
     def camera_eval(sid: str, eval_id: int) -> tuple[dict, list[dict]]:
         ev = events(sid)
@@ -483,10 +517,14 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
         if e is None:
             raise HTTPException(404, f"no camera evaluation {eval_id} in {sid}")
         p = e["payload"]
-        return e, p.get("readings") or []
+        readings = p.get("readings")
+        if readings is None:  # a bundle keeps readings in `camera`: one burst per step and point
+            readings = [c for c in (x["payload"] for x in ev if x["kind"] == "camera_reading")
+                        if c.get("step") == p.get("step") and c.get("point") == p.get("point")]
+        return e, readings
 
     def frame_path(sid: str, sha: str | None) -> Path | None:
-        if not sha or not SHA.fullmatch(sha):
+        if bundles is not None or not sha or not SHA.fullmatch(sha):
             return None
         p = data / "frames" / sid / f"{sha}.jpg"
         return p if p.exists() else None
