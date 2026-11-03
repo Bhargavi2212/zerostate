@@ -139,7 +139,7 @@ Label everywhere: **"idealised camera (renders the simulator's true state)"**.
 - The stream sends the recorded events in order, then ends; `?speed=N` paces them at N × recorded time.
 - **Every write returns 409 `{"error": "replay", "detail": ...}`**: import, draft edit, confirm, session start, done, verify, reopen, sign; voice too (there is no live step to mark). Explain is the only POST served.
 - Explain works only with the key (503 without it); nothing else needs one.
-- It is the README's main "run it" path, the Playwright fixture and the explain-check harness.
+- It is the README's main "run it" path, the Playwright fixture and the explain-check harness. Sample bundles are committed: `zs api --replay eval/results/bench/p1` then open `http://127.0.0.1:8090/ui/`.
 
 ## Errors
 JSON `{error, detail}` with 400 (bad input), 403 (`test_name_on_real_data`), 404 (unknown id), 409 (draft not confirmable / session state / `replay`), 503 (model unavailable or over budget: the API keeps working without model features).
