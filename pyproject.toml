@@ -25,7 +25,7 @@ dependencies = [
 zs = "zerostate.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "pre-commit", "detect-secrets", "httpx"]
+dev = ["pytest", "ruff", "pre-commit", "detect-secrets", "httpx", "playwright"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -38,6 +38,7 @@ testpaths = ["tests"]
 markers = [
     "net: runs inside the zerostate container against the live lab",
     "live: runs on the host against the running lab (docker exec, localhost:80)",
+    "ui: Playwright tests of the console (ui/) in headless Chromium against tests/ui/fake_api.py",
 ]
 addopts = "-m 'not net and not live'"
 

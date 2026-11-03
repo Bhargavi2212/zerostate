@@ -96,6 +96,11 @@ zerostate/
 â”‚   â””â”€â”€ api/                       # __init__.py + server.py
 â”‚       â””â”€â”€ server.py              # FastAPI (zs-api, 127.0.0.1:8090): plans, drafts, sessions, SSE, inbox actions; audit read-only
 â”œâ”€â”€ ui/                            # Phase 3 operator console (static, served by zs-api)
+â”‚   â”œâ”€â”€ index.html  style.css      # one page, ISA-101 greys; no framework, no build step, no CDN
+â”‚   â”œâ”€â”€ app.js  lib.js             # router (#/ sessions, #/new, #/job/<id>) + session list; DOM/API helpers, verdict wording, "test harness" names
+â”‚   â”œâ”€â”€ intake.js                  # screen A: Type/Upload/CSV import, editable draft table, plan check, Confirm dialog
+â”‚   â”œâ”€â”€ job.js                     # screens B + C: assumptions strip, two-track banner, steps, findings, camera panel, explain, sign; SSE
+â”‚   â””â”€â”€ plant.js  chart.js         # SVG plant view laid out from the plant map; evidence charts with vent/hold windows shaded
 â”œâ”€â”€ site/                          # Phase 3 public replay viewer + results (Vercel, static, reads committed bundles only)
 â”œâ”€â”€ plants/                        # TEST PLANTS. Never imported by src/zerostate.
 â”‚   â”œâ”€â”€ frame_service/             # zs-frames: headless Chromium renders the 3D view; GET /frame?view=<views.yaml name> only;
@@ -184,6 +189,8 @@ zerostate/
 â”‚   â”‚                              # tests/checks/synth.py: synthetic P1 windows (vent model, 4 Hz polls) for rule tests
 â”‚   â”‚                              # tests/checks/plan_synth.py: small hand-built plant maps and plans for the plan-rule tests
 â”‚   â”‚                              # tests/checks/synth_p2.py: P2 plan + windows sampled from plants/p2_gasline/model.py (4 Hz, x30)
+â”‚   â”œâ”€â”€ ui/                        # marker `ui`: Playwright (headless Chromium) on the console, against tests/ui/fake_api.py
+â”‚   â”‚                              # (real plan/draft routes + recorded bench sessions as SessionDetail) on a throwaway data dir
 â”‚   â””â”€â”€ fixtures/                  # small recorded episodes for offline tests
 â””â”€â”€ scripts/
     â””â”€â”€ modbus_scan.py             # Phase 0: map GRFICS registers (read-only)
