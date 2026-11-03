@@ -95,7 +95,7 @@ zerostate/
 â”‚   â”‚   â”œâ”€â”€ sign.py                # Ed25519 verdict signatures
 â”‚   â”‚   â””â”€â”€ replay.py              # re-run gate on a logged session, must reproduce the verdict
 â”‚   â””â”€â”€ api/                       # __init__.py + server.py + replay.py (bundles v1/v2 -> session events for `zs api --replay`)
-â”‚       â””â”€â”€ server.py              # FastAPI (zs-api, 127.0.0.1:8090): plans, drafts, sessions list/start/detail, SSE, camera evidence + saved frames, voice read-back, inbox actions; audit read-only; playwright-test guard
+â”‚       â””â”€â”€ server.py              # FastAPI (zs-api, 127.0.0.1:8090): plans, drafts, sessions list/start/detail, SSE, camera evidence + saved frames, voice read-back, inbox actions; serves ui/ at /ui/; audit read-only; playwright-test guard
 â”œâ”€â”€ ui/                            # Phase 3 operator console (static, served by zs-api)
 â”‚   â”œâ”€â”€ index.html  style.css      # one page, ISA-101 greys; no framework, no build step, no CDN
 â”‚   â”œâ”€â”€ app.js  lib.js             # router (#/ sessions, #/new, #/job/<id>) + session list; DOM/API helpers, verdict wording, "test harness" names

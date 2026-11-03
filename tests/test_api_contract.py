@@ -393,6 +393,14 @@ def test_replay_refuses_every_write(replay_env):
     assert client.post(f"/api/sessions/{sid}/explain", json={"question": "why?"}).status_code == 200
 
 
+def test_console_is_served_at_ui_live_and_in_replay(env, replay_env):
+    for client in (env[0], replay_env[0]):
+        page = client.get("/ui/")
+        assert page.status_code == 200 and "text/html" in page.headers["content-type"]
+        assert client.get("/ui/app.js").status_code == 200
+        assert client.get("/", follow_redirects=False).headers["location"] == "/ui/"
+
+
 def test_every_published_episode_loads_in_replay_mode(tmp_path):
     export_bundles(tmp_path, EPISODES)
     client = TestClient(server.create_app(tmp_path, tmp_path / "x.sqlite", tmp_path, {}, replay_dir=tmp_path))

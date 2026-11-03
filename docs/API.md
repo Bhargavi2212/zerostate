@@ -13,6 +13,9 @@ Wording rule for every text field: PROJECT.md "never say" list, checked by `zero
 
 **Runner names:** clients show the names `eval-operator`, `eval-verifier` and `eval-runner` (the benchmark runner's) as **"test harness"**, never as a person. The API returns the logged name unchanged.
 
+## Console
+`GET /ui/` serves the console's static files (`ui/`; in the image `/app/ui`, `ZS_UI`) in live and replay mode; `GET /` redirects there. The console uses relative asset paths and calls the absolute `/api/...` routes below.
+
 ## Ids
 - **Session id** = episode id = folder name (`[A-Za-z0-9_-]{1,64}`).
 - **Evaluation id** (`eval_id`) = the audit-log row id of the `evaluation` event.

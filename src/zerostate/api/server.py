@@ -14,6 +14,7 @@ import hashlib
 import io
 import itertools
 import json
+import os
 import re
 import secrets
 import sqlite3
@@ -25,7 +26,8 @@ from typing import Annotated, Literal
 import yaml
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, model_validator
 from starlette.exceptions import HTTPException
 
@@ -294,9 +296,11 @@ class TestName(Exception):
 
 
 def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | Path, params: dict,
-               opener=None, poll_s: float = 1.0, replay_dir: str | Path | None = None) -> FastAPI:
+               opener=None, poll_s: float = 1.0, replay_dir: str | Path | None = None,
+               ui_dir: str | Path | None = None) -> FastAPI:
     """params: thresholds for the plan checks; opener: model transport (tests pass a fake);
-    replay_dir: serve the bundles under it read-only instead of the audit log."""
+    replay_dir: serve the bundles under it read-only instead of the audit log;
+    ui_dir: the console's static files, served at /ui/ (default ZS_UI, else ui/ in this repo)."""
     data, audit, config = Path(data_dir), Path(audit_path), Path(config_dir)
     recorded = load_bundles(replay_dir) if replay_dir is not None else None
     bundles = {sid: r["bundle"] for sid, r in recorded.items()} if recorded is not None else None
@@ -603,4 +607,9 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
         return {"answer": "Explanations arrive with P3-4; see the logged findings.", "cites": []}
 
     app.post("/api/voice/command", response_model=VoiceReply)(voice_command)
+
+    ui = Path(ui_dir or os.environ.get("ZS_UI") or Path(__file__).parents[3] / "ui")
+    if ui.is_dir():  # the console: relative assets, calls to absolute /api/...
+        app.get("/", include_in_schema=False)(lambda: RedirectResponse("/ui/"))
+        app.mount("/ui", StaticFiles(directory=ui, html=True), name="ui")
     return app
