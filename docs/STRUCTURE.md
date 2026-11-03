@@ -80,11 +80,12 @@ zerostate/
 │   │   ├── client.py              # fetches frames from the frame service (172.30.0.3:8080; no truth)
 │   │   ├── locate.py              # SAM 3.1 boxes matched to display_map regions
 │   │   ├── read.py                # crop + upscale, single Muse Spark read (3-read voting is a should)
-│   │   └── freeze.py              # pixel-hash freeze detection (code)
+│   │   ├── freeze.py              # freeze detection in code: average hash of each display region (frame noise defeats an exact pixel hash)
+│   │   └── track.py               # the with-camera track: worker-thread bursts (3 frames, 2 s apart), camera_reading / camera evaluation / with_camera verdict events
 │   │                              # not built: align.py (lag is a measured threshold), redact.py (no people in simulator frames)
 │   ├── llm/
 │   │   ├── client.py              # the only Meta API caller: via zs-proxy (explicit), spark_json / sam_boxes, ledger /data/credits.jsonl, budget stop ZS_BUDGET_USD
-│   │   ├── prompts/               # one .md per prompt, versioned (import_list_v1.md: list from text; transcribe_sheet_v1.md: verbatim sheet transcript for the photo route)
+│   │   ├── prompts/               # one .md per prompt, versioned (import_list_v1.md: list from text; transcribe_sheet_v1.md: verbatim sheet transcript for the photo route; read_display_v1.md: one display crop -> {value, readable})
 │   │   └── explain.py             # Phase 3: plain-language answer from logged findings only (never changes a verdict)
 │   ├── session.py                 # session lifecycle: warm-in → ready → steps (pending → evaluated) → verdict; continuous monitor; inbox/audit I/O
 │   ├── gate.py                    # pure verdict policy: findings → verdict, monotonic, signature closes, verdict stamping; no model judge
@@ -98,7 +99,8 @@ zerostate/
 ├── site/                          # Phase 3 public replay viewer + results (Vercel, static, reads committed bundles only)
 ├── plants/                        # TEST PLANTS. Never imported by src/zerostate.
 │   ├── frame_service/             # zs-frames: headless Chromium renders the 3D view; GET /frame?view=<views.yaml name> only;
-│   │                              # JPEG + noise; truth sidecar to a volume ZeroState never mounts (eval only); views.yaml, display_map.yaml
+│   │                              # JPEG + noise; truth sidecar to a volume ZeroState never mounts (eval only)
+│   │                              # server.py, Dockerfile, views.yaml (named views), display_map.yaml (view -> display region -> point; copied into the zerostate image as config)
 │   ├── p1_grfics/
 │   │   ├── envelope.yaml          # reactor maintenance plan (hand-written live plan); declares "positive isolation upstream assumed"
 │   │   ├── plant_map.yaml         # Phase 2: P1 plant graph for the plan checks (expected: BLOCKED by PLAN-SOFTWARE + PLAN-TYPE)
@@ -165,6 +167,8 @@ zerostate/
 │   ├── test_runner.py             # runner logic without the lab: seeded draws, router-rule order
 │   ├── test_published_replay.py   # C11 regression gate: every published P1 episode replays identically under today's rules
 │   ├── test_llm_client.py         # fake opener: box parsing, strict-JSON retry then fail, ledger, budget stop, key never logged
+│   ├── test_camera.py             # fake models + Pillow fixtures: region matching, unreadable, freeze, LIVE-CAMERA, optional/required, data-only track untouched, status, two-track replay
+│   ├── test_frame_service.py      # frame service pure parts: view allow-list, noise keeps size/format
 │   ├── test_bundle.py             # episode bundle: export → load → schema validates; key-like strings refused
 │   ├── test_api_contract.py       # API (docs/API.md): every endpoint returns its schema, error codes, audit opened read-only, steps/sign only add inbox rows, voice never reaches sign
 │   ├── test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog

@@ -3,6 +3,7 @@ thresholds, and report any finding or verdict that comes out different."""
 
 from zerostate import gate
 from zerostate.audit.log import AuditLog
+from zerostate.checks.live import camera
 from zerostate.checks.plan import run_plan_checks
 from zerostate.checks.process import PROC_RULES
 from zerostate.models.envelope import IsolationPlan
@@ -22,8 +23,14 @@ def replay(log: AuditLog, session: str, params: dict) -> list[str]:
         mismatches.append("logged plan does not match its logged hash")
     steps = {s.k: s for s in plan.steps}
     verdict, step_passed, process_ok = None, {}, True  # sessions before the process rules have no process evaluation
+    cam = None  # the camera's contribution to the with-camera track; never touches `verdict` (data-only)
     for e in events:
         p = e["payload"]
+        if e["kind"] == "verdict" and p.get("track") == "with_camera":
+            want = gate.worsen(verdict, cam)
+            if p["verdict"] != (want.value if want else None):
+                mismatches.append(f"event {e['id']} (with-camera verdict): replay {want} != logged {p['verdict']}")
+            continue
         if e["kind"] == "verdict" and p.get("source") in ("warm_in", "monitor_error"):  # not from a window
             verdict = gate.worsen(verdict, Verdict(p["verdict"]))
             continue
@@ -31,6 +38,17 @@ def replay(log: AuditLog, session: str, params: dict) -> list[str]:
             for j in p["pending"]:
                 step_passed.pop(j, None)
         if e["kind"] != "evaluation":
+            continue
+        if p["source"] == "camera":  # re-run LIVE-CAMERA on the logged readings and feedback window
+            f = camera.check(p["readings"], p["feedback"], params, p.get("previous", []), p["tag"])
+            got, logged = (f.rule_id, f.status.value, f.message), tuple(p["findings"][0][k] for k in ("rule_id", "status", "message"))
+            if got != logged:
+                mismatches.append(f"event {e['id']} (camera, step {p['step']}): replay {got} != logged {logged}")
+            cam = gate.worsen(cam, camera.contribution(f.status, plan.camera))
+            with_cam = gate.worsen(verdict, cam)
+            if ((cam.value if cam else None), (with_cam.value if with_cam else None)) != (p["verdict_after"], p["with_camera_after"]):
+                mismatches.append(f"event {e['id']} (camera): replay {cam}/{with_cam} != logged "
+                                  f"{p['verdict_after']}/{p['with_camera_after']}")
             continue
         if p["source"] == "plan":  # re-run on the logged map; a plan evaluation never changes the verdict
             m = PlantMap.model_validate(p["map"])

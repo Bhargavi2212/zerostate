@@ -48,8 +48,12 @@ def _load(name, folder=P1):
 
 faults, truth, seal = _load("faults"), _load("truth"), _load("seal", ROOT / "eval")
 # What the zerostate image holds (deploy/Dockerfile), as (key prefix, path in the image, path here, glob).
-CODE_SPEC = [("src/", "src/zerostate", "src/zerostate", "**/*.py"), ("src/", "src/zerostate", "src/zerostate", "**/*.yaml"),
-             *[("config/", "config/p1_grfics", "plants/p1_grfics", f) for f in ("modbus_map.yaml", "envelope.yaml", "thresholds.yaml")]]
+CODE_SPEC = [*[("src/", "src/zerostate", "src/zerostate", f"**/*.{ext}") for ext in ("py", "yaml", "md")],
+             *[("config/", "config/p1_grfics", "plants/p1_grfics", f) for f in ("modbus_map.yaml", "envelope.yaml", "thresholds.yaml")],
+             ("config/frame_service/", "config/frame_service", "plants/frame_service", "display_map.yaml")]
+FRAMES_URL = "http://172.30.0.3:8080"  # zs-frames on zs-internal, as ZeroState sees it
+FIRST_FRAME = ("import urllib.request as u; r = u.urlopen('http://localhost:8080/frame?view=default', timeout=100); "
+               "print('ok' if r.read(2) == b'\\xff\\xd8' else 'bad')")
 
 
 class EpisodeInvalid(Exception):
@@ -243,8 +247,8 @@ def postflight(offset, scenario) -> dict:
 
 # ---------------------------------------------------------------- episode
 class Episode:
-    def __init__(self, scenario: dict, seed: int, out: Path, scoring: bool = False):
-        self.sc, self.seed, self.out, self.scoring = scenario, seed, out, scoring
+    def __init__(self, scenario: dict, seed: int, out: Path, scoring: bool = False, camera: bool = False):
+        self.sc, self.seed, self.out, self.scoring, self.camera = scenario, seed, out, scoring, camera
         self.rng = random.Random(seed)
         self.faults = [draw(f, self.rng) for f in scenario.get("faults", [])]  # steps, onsets, severities
         self.plan_path = P1 / "envelope.yaml"
@@ -325,6 +329,24 @@ class Episode:
             act("set", t, str(step.required_state))
         return self.evaluated(j)
 
+    def frames_ready(self, timeout_wall_s: float = 300) -> None:
+        """After a simulator recreate the frame service's page points at a dead scene: restart it and wait
+        for its first frame (the page load takes views.yaml's load_wait_s)."""
+        sh("docker", "restart", "zs-frames")
+        end = time.time() + timeout_wall_s
+        while time.time() < end:
+            if sh("docker", "exec", "zs-frames", "python", "-c", FIRST_FRAME, check=False, timeout=150).strip() == "ok":
+                return
+            time.sleep(5)
+        raise EpisodeInvalid("frame service gave no frame after the simulator restart")
+
+    def camera_settled(self, timeout_wall_s: float = 180) -> None:
+        """Before stop: let every started camera burst be read and evaluated (a timeout leaves it pending)."""
+        end = time.time() + timeout_wall_s
+        while self.status().get("camera_pending", 0) > 0 and time.time() < end:
+            self.fire_due()
+            time.sleep(1)
+
     def log_event(self, kind, data):
         with open(self.out / "events.jsonl", "a", encoding="utf-8") as fh:
             fh.write(json.dumps({"t": time.time(), "kind": kind, "data": data}) + "\n")
@@ -351,10 +373,13 @@ class Episode:
         if st.get("zs_patch_version") != "p1-1" or float(st.get("zs_time_scale")) != float(self.scale):
             raise EpisodeInvalid(f"simulator patch/scale wrong: {st.get('zs_patch_version')} x{st.get('zs_time_scale')}")
         self.warm_up()
+        if self.camera:
+            self.frames_ready()
         threading.Thread(target=self.truth_logger, daemon=True).start()
         plan_hash = self.plan.content_hash()
         self.session_started = True
-        sh("docker", "exec", "-d", "-u", "zs", "zerostate", "zs", "session", "start",
+        cam_env = ["-e", f"ZS_FRAMES_URL={FRAMES_URL}"] if self.camera else []
+        sh("docker", "exec", "-d", "-u", "zs", *cam_env, "zerostate", "zs", "session", "start",
            "--plan", "/app/config/p1_grfics/envelope.yaml", "--plan-hash", plan_hash, "--session", self.sid)
         time.sleep(1)
         st = self.wait(lambda st: st["state"] == "ready", 60)
@@ -396,6 +421,8 @@ class Episode:
         if st["verdict"] not in TERMINAL:
             time.sleep(30 / self.scale)
         self.fire_due()
+        if self.camera:
+            self.camera_settled()
         zs("session", "stop", self.sid, "--by", "eval-runner")
         time.sleep(1)
         self.stop_truth.set()
@@ -406,6 +433,8 @@ class Episode:
         result = {"scenario": self.sc["id"], "seed": self.seed, "expected": self.sc["expected"],
                   "verdict": final["verdict"], "match": final["verdict"] in self.sc["expected"],
                   "valid": post["valid"], "problems": post["problems"], "stamp": final["stamp"], "steps": final["steps"]}
+        if self.camera:  # the with-camera track, reported separately (idealised camera on P1)
+            result |= {"verdict_with_camera": final.get("verdict_with_camera"), "camera_pending": final.get("camera_pending")}
         (self.out / "verdict.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
         (self.out / "ids.json").write_text(json.dumps(post["ids"], indent=1), encoding="utf-8")
         return result
@@ -442,11 +471,13 @@ def main() -> int:
     ap.add_argument("--batch", help="sealed batch (scoring seeds only), e.g. p1")
     ap.add_argument("--manifest", help="sealed manifest, kept outside the repo")
     ap.add_argument("--salt", help="sealed salt, kept outside the repo")
+    ap.add_argument("--camera", action="store_true",
+                    help="zs-frames in use: restart it after each simulator recreate, pass ZS_FRAMES_URL, wait for camera reads")
     a = ap.parse_args()
-    scenario = yaml.safe_load((ROOT / "eval" / "scenarios" / f"{a.scenario}.yaml").read_text(encoding="utf-8"))
+    scenario =yaml.safe_load((ROOT / "eval" / "scenarios" / f"{a.scenario}.yaml").read_text(encoding="utf-8"))
     out = ROOT / "runs" / f"{a.scenario}_seed{a.seed}_{datetime.now(UTC):%Y%m%dT%H%M%S}"
     scoring = a.seed not in TUNING_SEEDS
-    ep = Episode(scenario, a.seed, out, scoring)
+    ep = Episode(scenario, a.seed, out, scoring, camera=a.camera)
     problem = seed_problem(a.seed, ep.plan.content_hash())
     if scoring and not problem:
         problem = scoring_problem(a.batch, a.manifest, a.salt, a.scenario, a.seed)
@@ -454,10 +485,11 @@ def main() -> int:
         raise SystemExit(problem)
     out.mkdir(parents=True)
     images = {n: sh("docker", "inspect", "--format", "{{.Image}}", n, check=False).strip()
-              for n in ("simulation", "zerostate", "zs-operator", "plc")}
+              for n in ("simulation", "zerostate", "zs-operator", "plc", *(["zs-frames"] if a.camera else []))}
     (out / "meta.json").write_text(json.dumps({"scenario": scenario, "seed": a.seed, "faults": ep.faults,
                                                "process_time_scale": ep.scale, "images": images,
-                                               "plan_hash": ep.plan.content_hash(), "batch": a.batch if scoring else None},
+                                               "plan_hash": ep.plan.content_hash(), "batch": a.batch if scoring else None,
+                                               "camera": a.camera},
                                               indent=1), encoding="utf-8")
     try:
         result = ep.run()

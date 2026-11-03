@@ -72,6 +72,7 @@ class Session:
         self.t_start = now
         self.state = "warming_in"
         self.verdict: Verdict | None = None
+        self.camera_verdict: Verdict | None = None  # set by the with-camera track (cli.py); only recorded at signing
         self.closed = self.stopped = False
         self.buffer: dict[str, list] = {t: [] for t in self.witnesses}
         self.latest: dict[str, Signal] = {}
@@ -227,8 +228,10 @@ class Session:
             self._process_evaluation(k)
         elif kind == "sign":
             self.closed = True  # only a human signature closes a session
+            with_cam = gate.worsen(self.verdict, self.camera_verdict)
             self.log.append(self.sid, "signature", {"by": msg.get("by"), "role": msg.get("role"), "note": msg.get("note"),
-                                                    "verdict_at_signing": self.verdict.value if self.verdict else None})
+                                                    "verdict_at_signing": self.verdict.value if self.verdict else None,
+                                                    "verdict_with_camera_at_signing": with_cam.value if with_cam else None})
         elif kind == "stop":
             self.stopped = True
             self.log.append(self.sid, "session_stopped", {"by": msg.get("by"), "signed": False,
@@ -285,8 +288,11 @@ class Session:
 
 
 def status_from_events(events: list[dict]) -> dict:
-    """What `zs status` shows, derived only from the audit log."""
-    out = {"state": "warming_in", "steps": {}, "verdict": None, "stamp": None, "refused": []}
+    """What `zs status` shows, derived only from the audit log. `verdict` is the data-only track;
+    `verdict_with_camera` worsens it by the camera's own verdict events (track with_camera), if any."""
+    out = {"state": "warming_in", "steps": {}, "verdict": None, "stamp": None, "refused": [],
+           "verdict_with_camera": None, "camera_pending": 0}
+    camera = None
     for e in events:
         p, kind = e["payload"], e["kind"]
         if kind == "ready":
@@ -303,8 +309,14 @@ def status_from_events(events: list[dict]) -> dict:
             out["steps"][p["step"]] = "FAIL" if "FAIL" in st else "UNKNOWN" if ("UNKNOWN" in st or not st) else "PASS"
         elif kind == "evaluation" and p["source"] == "process" and any(f["status"] == "FAIL" for f in p["findings"]):
             out["steps"][p["step"]] = "FAIL"
+        elif kind == "verdict" and p.get("track") == "with_camera":
+            camera, out["stamp_with_camera"] = p["verdict"], p
         elif kind == "verdict":
             out["verdict"], out["stamp"] = p["verdict"], p
+        elif kind == "camera_capture":
+            out["camera_pending"] += len(p["points"])
+        elif kind == "evaluation" and p["source"] == "camera" and p.get("point") is not None:  # answers a capture
+            out["camera_pending"] -= 1
         elif kind == "signature":
             out["state"] = "closed"
             out["signature"] = p
@@ -314,4 +326,6 @@ def status_from_events(events: list[dict]) -> dict:
         start = next(e for e in events if e["kind"] == "session_start")
         final = next(s["k"] for s in start["payload"]["plan"]["steps"] if s["kind"] == "final")
         out["steps"][final] = "PASS"
+    with_cam = gate.worsen(Verdict(out["verdict"]) if out["verdict"] else None, Verdict(camera) if camera else None)
+    out["verdict_with_camera"] = with_cam.value if with_cam else None
     return out

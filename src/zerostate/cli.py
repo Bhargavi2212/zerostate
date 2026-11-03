@@ -7,7 +7,9 @@ copied into the image under /app/config/<plant>/); the map's `protocol` picks th
 import argparse
 import json
 import os
+import queue
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -87,6 +89,23 @@ def open_adapter(map_path: str | Path):
     return OpcUaReadOnly(map_path) if proto == "opcua" else ModbusReadOnly(map_path)
 
 
+def camera_track(s, plan, log, scale, override):
+    """The with-camera track, only when the plan declares a camera. With ZS_FRAMES_URL set: a worker thread
+    captures and reads; without it: one UNKNOWN camera evaluation is logged (it escalates the with-camera
+    track only when the camera is required). Camera code is imported here only, never on the data-only path."""
+    if not plan.camera:
+        return None, None, None
+    from zerostate.camera import track as ct
+
+    if not os.environ.get("ZS_FRAMES_URL"):
+        ct.CameraTrack(s.sid, plan, s.params, log, {}, scale, override).no_service()
+        return None, None, None
+    dmap = ct.load_display_map(os.environ.get("ZS_DISPLAY_MAP", str(_config() / "frame_service" / "display_map.yaml")))
+    cam, jobs, results = ct.CameraTrack(s.sid, plan, s.params, log, dmap, scale, override), queue.Queue(), queue.Queue()
+    threading.Thread(target=ct.worker, args=(jobs, results), daemon=True, name="camera").start()
+    return cam, jobs, results
+
+
 def session_start(a) -> int:
     log = AuditLog(_audit())
     if log.events(a.session):
@@ -111,6 +130,7 @@ def session_start(a) -> int:
     inbox = Inbox(_data() / "inbox.sqlite")
     run_dir = _data() / "runs" / a.session
     run_dir.mkdir(parents=True, exist_ok=True)
+    cam, jobs, results = camera_track(s, plan, log, adapter.map.process_time_scale, a.plan_check_override)
     with open(run_dir / "signals.jsonl", "a", encoding="utf-8") as out:
         try:
             while not (s.closed or s.stopped):
@@ -118,6 +138,14 @@ def session_start(a) -> int:
                 signals = adapter.read()
                 out.write(json.dumps({"t": t, **{k: [v.value, v.raw, v.quality.value] for k, v in signals.items()}}) + "\n")
                 s.tick(t, signals, inbox.take(a.session))
+                if cam is not None:  # never waits on the worker: the 4 Hz poll only queues and collects
+                    cam.observe(t, signals)
+                    for job in cam.due(t, s.marks, s.steps, s.verdict):
+                        jobs.put(job)
+                    while not results.empty():
+                        for res in results.get_nowait():
+                            cam.record(res, s.verdict)
+                    s.camera_verdict = cam.verdict
                 time.sleep(max(0.0, POLL_WALL_S - (time.time() - t)))
         except Exception as e:
             s.fail(f"{type(e).__name__}: {e}")
@@ -221,6 +249,10 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  step {k}: {v}")
             for r in (s["stamp"] or {}).get("reasons", []):
                 print(f"  reason: {r}")
+            if "stamp_with_camera" in s or s["camera_pending"]:
+                print(f"  with camera: {s['verdict_with_camera'] or '-'}  (camera reads pending: {s['camera_pending']})")
+                for r in s.get("stamp_with_camera", {}).get("reasons", []):
+                    print(f"  camera reason: {r}")
             if (s["stamp"] or {}).get("plan_check_override"):
                 print(f"  plan-check override: {s['stamp']['plan_check_override']}")
         return 0
