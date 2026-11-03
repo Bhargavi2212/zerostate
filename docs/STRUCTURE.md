@@ -120,16 +120,18 @@ zerostate/
 │   ├── tools/timescale_test.py    # Phase 1: time-scale stability runs (×1 / ×10 / ×5) → results/timescale_<date>.json
 │   ├── tools/vent_fidelity.py     # Phase 1 rev 3: manual-mode vent at ×1 vs chosen scale vs physics → results/vent_fidelity_<date>.json
 │   ├── tools/smoke_table.py       # Phase 1: smoke table from runs/<episode>/ → results/smoke_p1_<date>.md
-│   ├── seal.py                    # draws tune/score seed ranges; writes manifest OUTSIDE repo; commits SHA-256(salt+manifest)
-│   ├── sealed_hash.txt            # committed hash only
+│   ├── seal.py                    # one sealed batch: scoring seeds ≥ 10000 from os.urandom, shuffled; manifest + salt OUTSIDE the repo (D:\grfics\sealed\)
+│   ├── sealed_hash_<batch>.txt    # committed SHA-256(salt + manifest) per batch, before its first scoring episode, then tag bench-freeze-<batch>
 │   ├── claims.yaml                # claim id → tests → result key → exact README sentence
 │   ├── runner.py                  # runs on the host (sim via localhost:80, operator via docker exec); one episode: check router+IDS rules, note eve.json byte offset → plant up → operator → faults → zerostate → record → re-check rules (missing = episode invalid); IDS alerts counted after the offset (file shrank = rotated → from 0)
 │   ├── baselines/  gauge_rule.py  muse_alone.py
 │   ├── plan_cases/                # generated envelopes with planted errors; labels in sealed manifest
-│   ├── plan_benchmark.py  run_benchmark.py  read_accuracy.py  p2_validation.py  importer_accuracy.py
+│   ├── run_benchmark.py           # loops runner.py over a sealed manifest: resumable, one retry, stops after 3 INVALID in a row, 05:00 watchdog
+│   ├── plan_benchmark.py  read_accuracy.py  p2_validation.py  importer_accuracy.py
 │   ├── score.py                   # opens seal, compares to truth, Wilson CIs
 │   ├── claims_audit.py            # reads claims.yaml: tests exist + pass, result keys exist, README sentence matches
 │   └── results/                   # committed outputs (json + md) with commit hash: timescale_<date>.json, smoke_p1_<date>.md, …
+│       ├── bench/<batch>/<episode>/  # scoring episodes of a sealed batch (+ progress.jsonl); same files as episodes/
 │       └── episodes/<episode>/    # per-episode audit_export, verdict, meta, ids, events, truth.jsonl.gz: anyone can replay and re-score
 ├── tests/
 │   ├── test_readonly.py           # no plant-protocol write call anywhere; only adapters/ import pymodbus/asyncua; no write*/set* methods in adapters
@@ -141,6 +143,7 @@ zerostate/
 │   ├── test_modbus_scan.py        # scan script offset check
 │   ├── test_timescale_judge.py    # time-scale pass/fail criteria (eval/tools/timescale_test.py)
 │   ├── test_runner.py             # runner logic without the lab: seeded draws, router-rule order
+│   ├── test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
 │   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words (judge + refusals: Phase 2)
 │   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, settle before monitoring, UNKNOWN grace, stop
 │   ├── test_operator.py           # operator: setpoints before coil, readback mismatch aborts, manual off restores defaults

@@ -8,8 +8,8 @@ repos:
     hooks:
       - id: detect-secrets
         args: ["--baseline", ".secrets.baseline"]
-        # generated episode logs: SHA-256 plan/chain hashes and image digests, no config or keys
-        exclude: ^eval/results/episodes/
+        # generated episode and benchmark logs: SHA-256 plan/chain hashes and image digests, no config or keys
+        exclude: ^eval/results/(episodes|bench)/
   - repo: local
     hooks:
       - id: pytest
