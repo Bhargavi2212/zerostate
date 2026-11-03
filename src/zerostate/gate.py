@@ -1,5 +1,5 @@
 """Verdict policy (pure). Findings -> verdict; the verdict only gets worse on its own; only a human
-signature closes a session (session.py). The Phase 2 model judge plugs in here and may only add a block."""
+signature closes a session (session.py). No model judge: no model output can produce a pass or remove a block."""
 
 from zerostate.checks.live import RULES
 from zerostate.models.envelope import IsolationPlan, Step

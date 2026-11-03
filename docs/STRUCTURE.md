@@ -11,6 +11,7 @@ Status: revised Oct 31 2026 after independent review. Every file below has one j
 GRFICS publishes to Windows: simulation :80 (web/3D view + truth `/data/index.php`), PLC web :8080 (OpenPLC), EWS :6080, HMI :6081, kali :6088, caldera :8888, router :51820/udp. The PLC (192.168.95.2, Modbus) and simulation (192.168.95.45) are on `b-ics-net`; the HMI sits on `c-dmz-net` (192.168.90.x) behind the GRFICS router (192.168.95.200 / 192.168.90.200).
 → ZeroState runs as a container in the network namespace of a helper `zerostate-net`, which sits on `c-dmz-net` only (192.168.90.60), no bridge network, reading the PLC through the router. It can reach only the PLC's Modbus port: router rule + the helper's egress allowlist; ZeroState itself has no capabilities (decision 16). Read-only evidence: no write path + Suricata write-alert rule = 0, with a positive control from the operator container at .70 (decisions 11, 15). Started with a compose override (`deploy/docker-compose.zerostate.yml`), never by editing Fortiphyd's file.
 Register map is known from source (ARCHITECTURE §1.2); Phase 0 confirms it, the address offset and the placeholder values with a live read-only scan.
+Phase 2 adds three allowed destinations, each with a net test: P2's OPC UA server (192.168.95.50:4840, through the router), the model proxy (172.30.0.2:8888) and the frame service (172.30.0.3:8080), both on the internal network `zs-internal` (no internet).
 Paths ZeroState must NOT reach: GRFICS :80 `/data/index.php`, the simulator socket :55555, remote I/O, PLC web :8080, `host.docker.internal`, other DMZ hosts, the router itself, the internet. Tested from inside the container.
 
 ## 2. Tree
@@ -28,6 +29,8 @@ zerostate/
 ├── .secrets.baseline              # detect-secrets baseline
 ├── docs/
 │   ├── PROJECT.md  ARCHITECTURE.md  EVAL.md  CLAIMS.md  RESEARCH.md  STRUCTURE.md
+│   ├── API.md                     # Phase 2: HTTP API contract (plans, sessions, explain, voice) the Phase 3 console builds on
+│   ├── BUNDLE.md                  # Phase 2: episode bundle schema the public replay viewer reads
 │   ├── DECISIONS.md               # dated log: decision, options, why, who approved
 │   ├── specs/                     # PHASE_<n>.md specs + PHASE_<n>_GATE.md outputs
 │   └── MODEL_NOTES.md             # measured behaviour of Meta models (feeds README section)
@@ -35,16 +38,18 @@ zerostate/
 │   ├── docker-compose.zerostate.yml   # zerostate-net + zerostate (+ operator, frame service, egress proxy, p2 in later phases)
 │   ├── Dockerfile                     # zerostate runtime image (python:3.13-slim, no capabilities, joins zerostate-net)
 │   ├── Dockerfile.net                 # zerostate-net helper image (alpine + iptables)
-│   ├── net_setup.sh                   # helper: route via router, OUTPUT allowlist (PLC:502 only), IPv6 drop, then sleep
+│   ├── net_setup.sh                   # helper: route via router, OUTPUT allowlist (PLC:502, P2 OPC UA :4840, proxy :8888, frames :8080), IPv6 drop, then sleep
+│   ├── api_net.sh                     # zs-api-net helper: OUTPUT allowlist = proxy only (+ replies to 127.0.0.1:8090)
 │   ├── apply_router_rules.ps1         # idempotent router FORWARD rules + Suricata rule install; prints/checks chain order
 │   ├── check_ids.ps1                  # counts sid 9100001 (ZeroState, must be 0) and 9100002 (operator, must be >0 per episode)
 │   ├── suricata_zerostate.rules       # Modbus-write alert for .60 (ZeroState) and .70 (operator positive control)
-│   └── egress/                        # Phase 2: proxy container; only allowed destination is the Meta API host
+│   └── proxy/                         # zs-proxy: tinyproxy, CONNECT api.meta.ai:443 only (Dockerfile, tinyproxy.conf, filter)
 ├── src/zerostate/                 # THE PRODUCT. Must never import plants/ or eval/.
 │   ├── __init__.py  version.py    # semantic version stamped on every verdict
 │   ├── config.py                  # loads settings + threshold YAMLs; rejects unknown keys
 │   ├── models/                    # pydantic data types (no logic)
-│   │   ├── envelope.py            # IsolationPlan (frozen, hashed: WorkScope, EnergySource, IsolationPoint, ProvingPoint, Segment, Witness, Relation, Assumption, HoldTest) + SessionState (statuses, Signature, step log; refs plan hash)
+│   │   ├── envelope.py            # IsolationPlan (frozen, hashed: WorkScope, EnergySource, IsolationPoint, ProvingPoint, Segment, Witness, Relation, Assumption, HoldTest, Step, camera) + IsolationList (authored) + SessionState (statuses, Signature, step log; refs plan hash)
+│   │   ├── plant_map.py           # PlantMap: nodes (source, vessel, valve, vent/bleed, relief, heater, instrument), pipes, plan_defaults
 │   │   ├── signal.py              # Signal{tag, value, quality, source_ts, recv_ts}
 │   │   ├── evidence.py            # Finding{rule_id, rule_version, status: PASS|FAIL|UNKNOWN, refs}, EvidenceTree
 │   │   └── verdict.py             # Verdict enum: BLOCKED | ESCALATED | NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF (no SAFE)
@@ -55,46 +60,49 @@ zerostate/
 │   │   ├── replay.py              # plays a recorded episode (offline tests, re-scoring)
 │   │   ├── freshness.py           # noise-loss staleness (wall clock), placeholder detection, dead source group
 │   │   └── pi_web.py              # stretch
-│   ├── importers/
-│   │   ├── csv_import.py          # SAP WCM / Maximo-style isolation list + tag map → draft envelope
-│   │   ├── muse_import.py         # PDF/image of P&ID or isolation sheet → draft envelope (Muse Spark)
-│   │   └── confirm.py             # human confirmation → plan hash + signature; unconfirmed = unusable
+│   ├── importers/                 # every route → IsolationList draft; a person confirms
+│   │   ├── csv_import.py          # SAP WCM / Maximo-style isolation export, exact parse, no model
+│   │   ├── text_import.py         # typed text → Muse Spark strict JSON (extract only; unclear = null)
+│   │   ├── image_import.py        # sheet photo / PDF page 1 (pypdfium2) → Muse Spark strict JSON
+│   │   ├── draft.py               # /data/drafts/<id>.json → build.merge → plan checks; nulls block confirmation
+│   │   └── confirm.py             # a person confirms → plan hash + record (plants/<p>/confirmed.yaml or /data/plans/); agents never run it
 │   ├── graph/
-│   │   ├── build.py               # envelope → networkx graph
-│   │   └── segments.py            # valve-bounded segment labelling (WNTR-style, own code)
+│   │   ├── build.py               # plant map → networkx graph; merge(map, list) → IsolationPlan (deterministic)
+│   │   └── regions.py             # energised region given the closed points (one helper for the plan rules)
 │   ├── checks/                    # one file per rule; file name = rule ID suffix (PLAN-PATHS → plan/paths.py);
 │   │   │                          # each exports RULE_ID, RULE_VERSION, check(...) -> Finding
 │   │   ├── plan/   paths.py liveside.py boxedin.py software.py type.py proving.py mapping.py
-│   │   ├── live/   quality.py alive.py relation.py upstream.py hold.py valve.py camera.py   # CUSUM lives in relation.py; __init__.py: window helpers + RULES registry
+│   │   ├── live/   quality.py alive.py relation.py upstream.py hold.py valve.py camera.py   # CUSUM lives in relation.py; __init__.py: window helpers; camera.py feeds only the with-camera track
 │   │   └── process/ sequence.py independence.py reset.py
 │   ├── thresholds/default.yaml    # versioned generic thresholds; plant thresholds live with the plant (plants/<p>/thresholds.yaml → /app/config/<p>/), never in src/
-│   ├── cli.py                     # `zs` console script: session start/stop, status, step done, sign, audit verify/export, replay
+│   ├── cli.py                     # `zs`: session start/stop, status, step done/verify/reopen, sign, plan import/show/confirm, audit verify/export, replay, api; camera worker thread
 │   ├── camera/
-│   │   ├── client.py              # receives frames from the frame service (no truth)
-│   │   ├── locate.py              # SAM 3.1 boxes
-│   │   ├── read.py                # crop+upscale, Muse Spark ×3, agreement
-│   │   ├── freeze.py              # pixel-hash freeze detection (code)
-│   │   ├── align.py               # camera↔data lag estimate and windowing
-│   │   └── redact.py              # blur people before anything is stored or sent
+│   │   ├── client.py              # fetches frames from the frame service (172.30.0.3:8080; no truth)
+│   │   ├── locate.py              # SAM 3.1 boxes matched to display_map regions
+│   │   ├── read.py                # crop + upscale, single Muse Spark read (3-read voting is a should)
+│   │   └── freeze.py              # pixel-hash freeze detection (code)
+│   │                              # not built: align.py (lag is a measured threshold), redact.py (no people in simulator frames)
 │   ├── llm/
 │   │   ├── client.py              # Meta API calls; every call logged with tokens + $ to credits ledger
 │   │   ├── prompts/               # one .md per prompt, versioned
-│   │   ├── explain.py             # plain-language reason per finding
-│   │   └── judge.py               # optional second judge: may add a block, never remove one
+│   │   └── explain.py             # Phase 3: plain-language answer from logged findings only (never changes a verdict)
 │   ├── session.py                 # session lifecycle: warm-in → ready → steps (pending → evaluated) → verdict; continuous monitor; inbox/audit I/O
-│   ├── gate.py                    # pure verdict policy: findings → verdict, monotonic, signature closes, verdict stamping (Phase 1); judge (Phase 2)
+│   ├── gate.py                    # pure verdict policy: findings → verdict, monotonic, signature closes, verdict stamping; no model judge
 │   ├── audit/
 │   │   ├── log.py                 # SQLite append-only, hash-chained rows
 │   │   ├── sign.py                # Ed25519 verdict signatures
 │   │   └── replay.py              # re-run gate on a logged session, must reproduce the verdict
 │   └── api/
-│       └── server.py              # FastAPI: sessions, live evidence (SSE), sign-off endpoint
-├── ui/                            # operator screen (static HTML/JS served by api; tech: owner check §8)
+│       └── server.py              # FastAPI (zs-api, 127.0.0.1:8090): plans, drafts, sessions, SSE, inbox actions; audit read-only
+├── ui/                            # Phase 3 operator console (static, served by zs-api)
+├── site/                          # Phase 3 public replay viewer + results (Vercel, static, reads committed bundles only)
 ├── plants/                        # TEST PLANTS. Never imported by src/zerostate.
-│   ├── frame_service/             # separate container: captures 3D view, adds noise/lag/occlusion,
-│   │                              # emits frames; stamps truth beside frames for eval only
+│   ├── frame_service/             # zs-frames: headless Chromium renders the 3D view; GET /frame?view=<views.yaml name> only;
+│   │                              # JPEG + noise; truth sidecar to a volume ZeroState never mounts (eval only); views.yaml, display_map.yaml
 │   ├── p1_grfics/
-│   │   ├── envelope.yaml          # reactor maintenance plan; declares "positive isolation upstream assumed"
+│   │   ├── envelope.yaml          # reactor maintenance plan (hand-written live plan); declares "positive isolation upstream assumed"
+│   │   ├── plant_map.yaml         # Phase 2: P1 plant graph for the plan checks (expected: BLOCKED by PLAN-SOFTWARE + PLAN-TYPE)
+│   │   ├── confirmed.yaml         # plan hashes confirmed by a person (written by `zs plan confirm` run by the owner, never by an agent)
 │   │   ├── relations.yaml         # GRFICS physics as data (valve-flow laws, Patm floor)
 │   │   ├── modbus_map.yaml        # process_time_scale + tag → host/table/address/scale/freshness (from Phase 0 scan)
 │   │   ├── scan_<date>.json       # Phase 0 live scan output (addresses, offset, placeholder values)
@@ -107,16 +115,20 @@ zerostate/
 │   │   └── patch/                 # GPL-3.0: transmitter noise (~0.1% span) + low-flow cutoff (realism; GRFICS already clamps), valve-feedback faults,
 │   │                              # zero-position leak term, time scale; Dockerfile.derived, LICENSE, README listing every change
 │   ├── p2_gasline/
-│   │   ├── SPEC.md                # geometry, gas, valves, sensors, OPC UA node names, physics equations + sources
-│   │   ├── model.py               # physics (ideal gas vessel/line, ISA-75 valve flow)
-│   │   ├── server.py              # asyncua OPC UA server publishing sensors
-│   │   ├── envelope.yaml  relations.yaml  opcua_nodes.yaml
-│   │   ├── operator.py  faults.py  truth.py
+│   │   ├── SPEC.md                # gas, equipment, valves, sensors, OPC UA nodes, physics + analytic check (committed before code)
+│   │   ├── plant_map.yaml  isolation_list.yaml  confirmed.yaml   # the plan = map + list (also the plan-check set's base)
+│   │   ├── opcua_map.yaml  thresholds.yaml   # protocol: opcua; tags, spans, freshness; P2 thresholds (tuned on P2 tuning seeds)
+│   │   ├── model.py               # physics (isothermal N2 volumes, gas valve law), pure
+│   │   ├── server.py              # asyncua server at 192.168.95.50:4840; users zerostate (read) / operator (*.CMD); write-attempt log
+│   │   ├── faults.py  truth.py    # via docker exec on a unix socket inside the container, never the network (eval only)
 │   │   ├── Dockerfile
 │   │   └── validation/            # analytic blowdown comparison → overlay PNG + error %
 │   └── p3_wntr/                   # stretch
 ├── eval/
-│   ├── scenarios/                 # S0–S12, PC0–PC6 as YAML (plant, fault, onset range, severity range, expected verdicts)
+│   ├── scenarios/                 # P1 S0–S12 as YAML (plant, fault, onset range, severity range, expected verdicts); p2/ for P2
+│   ├── tools/credits_report.py    # copies /data/credits.jsonl out of the container → dated summary in D:\grfics\credits_log.md
+│   ├── tools/export_bundle.py     # episode → bundle.json.gz (docs/BUNDLE.md)
+│   ├── tools/capture_frames.py    # frames set: operator sets random valve positions, frames + truth sidecars outside git
 │   ├── tools/timescale_test.py    # Phase 1: time-scale stability runs (×1 / ×10 / ×5) → results/timescale_<date>.json
 │   ├── tools/vent_fidelity.py     # Phase 1 rev 3: manual-mode vent at ×1 vs chosen scale vs physics → results/vent_fidelity_<date>.json
 │   ├── tools/smoke_table.py       # Phase 1: smoke table from runs/<episode>/ → results/smoke_p1_<date>.md
@@ -125,7 +137,10 @@ zerostate/
 │   ├── claims.yaml                # claim id → tests → result key → exact README sentence
 │   ├── runner.py                  # runs on the host (sim via localhost:80, operator via docker exec); one episode: check router+IDS rules, note eve.json byte offset → plant up → operator → faults → zerostate → record → re-check rules (missing = episode invalid); IDS alerts counted after the offset (file shrank = rotated → from 0)
 │   ├── baselines/  gauge_rule.py  muse_alone.py
-│   ├── plan_cases/                # generated envelopes with planted errors; labels in sealed manifest
+│   ├── plan_cases/make_cases.py   # PC0–PC6 from the P2 map + list by mutation; labels written before the checks run
+│   ├── importer_set/              # 12 cases (6 texts, 6 rendered sheets) + gold lists, committed before any importer run; make_sheets.py
+│   ├── frames_set/                # hash list + label hash only (frames outside git)
+│   ├── voice_test.py              # 20 clips (outside git) → transcript → intent; expected intents committed
 │   ├── run_benchmark.py           # loops runner.py over a sealed manifest: resumable, one retry, stops after 3 INVALID in a row, 05:00 watchdog
 │   ├── plan_benchmark.py  read_accuracy.py  p2_validation.py  importer_accuracy.py
 │   ├── score.py                   # opens seal, compares to truth, Wilson CIs
@@ -144,7 +159,7 @@ zerostate/
 │   ├── test_timescale_judge.py    # time-scale pass/fail criteria (eval/tools/timescale_test.py)
 │   ├── test_runner.py             # runner logic without the lab: seeded draws, router-rule order
 │   ├── test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
-│   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words (judge + refusals: Phase 2)
+│   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
 │   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, settle before monitoring, UNKNOWN grace, stop
 │   ├── test_operator.py           # operator: setpoints before coil, readback mismatch aborts, manual off restores defaults
 │   ├── conftest.py                # shared in-process Modbus server fixture (adapter + operator tests)
@@ -155,8 +170,7 @@ zerostate/
 │   │                              # tests/checks/synth.py: synthetic P1 windows (vent model, 4 Hz polls) for rule tests
 │   └── fixtures/                  # small recorded episodes for offline tests
 └── scripts/
-    ├── modbus_scan.py             # Phase 0: map GRFICS registers (read-only)
-    └── capture_frames.py
+    └── modbus_scan.py             # Phase 0: map GRFICS registers (read-only)
 ```
 
 ## 3. Boundaries (enforced by tests, not by convention)
@@ -170,7 +184,9 @@ zerostate/
 | P1→P2 changes only plants/* | tests/test_plants_only_diff.py (CI) |
 | Only `plants/*/truth.py` and `eval/` read ground truth | tests/test_firewall.py |
 | Every check exports RULE_ID + RULE_VERSION and has a pass and a fail test | tests/checks/ + claims_audit |
-| Every LLM call goes through `llm/client.py` and is logged with cost | test + grep in claims_audit |
+| Every LLM call goes through `llm/client.py` and is logged with cost | tests/test_firewall.py (only llm/client.py names the Meta host) + claims_audit |
+| The data-only verdict path imports no model or camera code | tests/test_firewall.py |
+| Only a person confirms a plan | CLAUDE.md rule; confirmations carry name, role, date in confirmed.yaml and the audit log |
 | No secret in repo | .gitignore + pre-commit secret scan |
 
 ## 4. Claim → code → proof map
@@ -184,7 +200,7 @@ zerostate/
 | C7 camera reading | camera/*, plants/frame_service | read_accuracy |
 | C8 lying feedback | checks/live/relation, valve, camera | S8 |
 | C9 stale data never passes | adapters/freshness, checks/live/quality | test_freshness, test_quality + S12 |
-| C10 gate rules | models/verdict, gate, llm/judge | test_gate |
+| C10 gate rules | models/verdict, gate, session (two tracks) | test_gate, test_firewall |
 | C11 hash chain + replay | audit/* | test_audit_chain, test_replay |
 | C12 P2 implementation check | plants/p2_gasline/model | p2_validation |
 | C13 process rules | checks/process/* | test_sequence, test_independence, test_reset + S7 |
