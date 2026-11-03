@@ -27,7 +27,11 @@ def row_hash(ts: str, session: str, kind: str, payload_json: str, prev_hash: str
 
 
 class AuditLog:
-    def __init__(self, path: str | Path):
+    def __init__(self, path: str | Path, read_only: bool = False):
+        """read_only: SQLite opens the file with mode=ro, so any write raises (the API's view of the log)."""
+        if read_only:
+            self.db = sqlite3.connect(Path(path).resolve().as_uri() + "?mode=ro", uri=True, isolation_level=None, timeout=10)
+            return
         self.db = sqlite3.connect(str(path), isolation_level=None, timeout=10)
         self.db.executescript(SCHEMA)
 

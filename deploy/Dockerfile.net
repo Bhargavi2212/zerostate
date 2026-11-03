@@ -1,5 +1,5 @@
 FROM alpine:3.20
 RUN apk add --no-cache iptables ip6tables iproute2
-COPY deploy/net_setup.sh /net_setup.sh
-RUN chmod +x /net_setup.sh
+COPY deploy/net_setup.sh deploy/api_net.sh /
+RUN chmod +x /net_setup.sh /api_net.sh
 CMD ["/net_setup.sh"]
