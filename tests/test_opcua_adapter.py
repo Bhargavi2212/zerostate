@@ -32,7 +32,7 @@ def local_map(tmp_path, url):
 def adapter(p2_server, tmp_path, monkeypatch):
     url, plant, _ = p2_server
     plant.control({"request": "updates", "on": True})
-    monkeypatch.setenv("ZS_OPCUA_PASSWORD", P2_USERS["zerostate"])
+    monkeypatch.setenv("P2_PASSWORD_ZEROSTATE", P2_USERS["zerostate"])
     a = OpcUaReadOnly(local_map(tmp_path, url))
     yield a, plant
     a.close()
@@ -84,7 +84,7 @@ def test_server_down_or_wrong_user_gives_bad(tmp_path, monkeypatch, p2_server):
     a = OpcUaReadOnly(local_map(tmp_path, f"opc.tcp://127.0.0.1:{port}/"), timeout=0.5)
     assert {v.quality for v in a.read(["PT-211", "XV-201.FB"]).values()} == {Quality.BAD}
     a.close()
-    monkeypatch.setenv("ZS_OPCUA_PASSWORD", "wrong")
+    monkeypatch.setenv("P2_PASSWORD_ZEROSTATE", "wrong")
     b = OpcUaReadOnly(local_map(tmp_path, p2_server[0]), timeout=1)
     s = b.read(["PT-211"])
     b.close()

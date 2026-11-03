@@ -3,7 +3,7 @@
 Same contract as modbus.py: read(tags) -> {tag: Signal}. Quality comes from the StatusCode (Bad -> BAD,
 Uncertain -> UNKNOWN), freshness from the SourceTimestamp (missing or older than max_age_wall_s -> STALE)
 on top of the noise-loss rule in freshness.py, which sees each value quantised to 16 bits of its span
-like a Modbus register. The password comes from the environment only (ZS_OPCUA_PASSWORD).
+like a Modbus register. The password comes from the environment only (P2_PASSWORD_ZEROSTATE, the same name the P2 server reads: one name per secret).
 """
 
 import os
@@ -80,7 +80,7 @@ class OpcUaReadOnly:
         if self._client is None:
             c = Client(self.map.endpoint, timeout=self.timeout, sync_wrapper_timeout=3 * self.timeout)
             c.set_user(self.map.user)
-            c.set_password(os.environ.get("ZS_OPCUA_PASSWORD", ""))
+            c.set_password(os.environ.get("P2_PASSWORD_ZEROSTATE", ""))
             try:
                 c.connect()
             except BaseException:
