@@ -143,6 +143,15 @@ def _step_text(s: dict) -> str:
     return f"Step {s['k']}: {what}" + (f" {state}" if state else "") + "."
 
 
+def voice_keywords(plan: dict | None) -> list[str]:
+    """Muse Voice Transcribe `keywords` (terms it might mishear): the fixed command words plus the plan's valve
+    names. Biases hearing only; parse_intent still needs exact words, so nothing matches loosely."""
+    fixed = {w for ws in WORDS.values() for w in ws} | {"step", "done", "mark", "complete", "why", "blocked"}
+    fixed |= {w for ws in STATE_WORDS.values() for w in ws}
+    valves = {t for s in (plan or {}).get("steps", []) for t in _step_words(s)[0]}
+    return sorted(fixed | valves)
+
+
 def parse_intent(text: str, plan: dict | None) -> tuple[str, int | None, str]:
     """(intent, k, read_back). A step only from its number, or from a phrase naming ALL its targets and its
     state; anything else is `unknown` with a clarifying question, never a guess at a step."""

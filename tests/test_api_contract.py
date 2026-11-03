@@ -317,6 +317,13 @@ def test_voice_hears_a_target_spoken_as_word_and_number():
     assert server.parse_intent("purge open", plan)[:2] == ("step_done", 5)
 
 
+def test_voice_keywords_are_command_words_and_plan_valves_only():
+    plan = yaml.safe_load((ROOT / "plants" / "p1_grfics" / "envelope.yaml").read_text(encoding="utf-8"))
+    kw = server.voice_keywords(plan)
+    assert {"confirm", "cancel", "status", "repeat", "step", "done", "closed", "open", "f1", "purge", "product"} <= set(kw)
+    assert server.parse_intent("conform", plan)[0] == "unknown"  # keywords bias hearing only: the parser stays exact
+
+
 def test_voice_reads_back_only_and_can_never_reach_sign(env):
     client, tmp, _ = env
     r = client.post("/api/voice/command", json={"audio": "c2lnbiBvZmY="}).json()  # "sign off"

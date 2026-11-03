@@ -135,11 +135,12 @@ def sam_boxes(image: bytes, prompt: str, purpose: str, opener=None) -> list[dict
     _record(SAM, purpose, PRICE["sam_per_image"], images=1, wall_s=round(time.monotonic() - t0, 2))
     return parse_boxes(text)
 
-def transcribe(wav: bytes, purpose: str, opener=None) -> str:
+def transcribe(wav: bytes, purpose: str, opener=None, keywords: list[str] | None = None) -> str:
     """Muse Voice Transcribe, push-to-talk, on a mono 16-bit PCM WAV (16 or 24 kHz): the transcript text.
-    Multipart per dev.meta.ai/docs/api-reference/voice/transcribe; billed per whole second of audio."""
+    Multipart per dev.meta.ai/docs/api-reference/voice/transcribe; billed per whole second of audio.
+    `keywords`: terms the model might mishear (a list of strings; the only shape the API accepts)."""
     boundary = "zs" + os.urandom(12).hex()
-    req = json.dumps({"model": ASR, "mode": "PUSH_TO_TALK", "audioEncoding": "WAV"}).encode()
+    req = json.dumps({"model": ASR, "mode": "PUSH_TO_TALK", "audioEncoding": "WAV", **({"keywords": keywords} if keywords else {})}).encode()
     body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"request\"\r\nContent-Type: application/json\r\n\r\n".encode()
             + req + f"\r\n--{boundary}\r\nContent-Disposition: form-data; name=\"audio\"; filename=\"clip.wav\"\r\n"
             "Content-Type: audio/wav\r\n\r\n".encode() + wav + f"\r\n--{boundary}--\r\n".encode())

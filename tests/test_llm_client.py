@@ -108,3 +108,9 @@ def test_transcribe_sends_multipart_wav_and_logs_seconds(env):
     row = json.loads(env.read_text(encoding="utf-8").splitlines()[-1])
     assert row["model"] == "muse-voice-transcribe-1.0" and row["audio_ms"] == 2900 and row["usd"] == round(2 * 0.18 / 3600, 6)
     assert KEY not in env.read_text(encoding="utf-8")
+
+
+def test_transcribe_sends_keywords_as_a_list_of_strings(env):
+    op = FakeOpener({"transcript": "purge open", "audioDurationMs": 1000})
+    client.transcribe(b"RIFFfakewav", "voice_test", opener=op, keywords=["confirm", "purge"])
+    assert b'"keywords": ["confirm", "purge"]' in op.requests[0].data

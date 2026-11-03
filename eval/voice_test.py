@@ -12,7 +12,7 @@ from pathlib import Path
 
 import yaml
 
-from zerostate.api.server import parse_intent
+from zerostate.api.server import parse_intent, voice_keywords
 from zerostate.llm import client
 
 ROOT = Path(__file__).parents[1]
@@ -27,20 +27,24 @@ def judge(clip: dict, intent: str, k: int | None) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--clips", type=Path, required=True)
+    ap.add_argument("--keywords", action="store_true", help="send voice_keywords(plan) to Transcribe (run 2 on)")
+    ap.add_argument("--config-commit", help="the commit that fixed this setting before the clips were recorded")
     ap.add_argument("--out", type=Path, default=ROOT / "eval" / "results" / f"voice_{date.today().isoformat()}.json")
     a = ap.parse_args()
     spec = yaml.safe_load((ROOT / "eval" / "voice_expected.yaml").read_text(encoding="utf-8"))
     plan = yaml.safe_load((ROOT / spec["plan"]).read_text(encoding="utf-8"))
+    keywords = voice_keywords(plan) if a.keywords else None
     rows = []
     for clip in spec["clips"]:
         wav = (a.clips / clip["file"]).with_suffix(".wav")
-        text = client.transcribe(wav.read_bytes(), "voice_test")
+        text = client.transcribe(wav.read_bytes(), "voice_test", keywords=keywords)
         intent, k, read_back = parse_intent(text, plan)
         rows.append({**clip, "transcript": text, "got": {"intent": intent, "k": k}, "read_back": read_back,
                      **judge(clip, intent, k)})
         print(f"{clip['file']:<18} {text!r:<40} -> {intent} {k if k is not None else ''}  {'OK' if rows[-1]['correct'] else 'MISS'}")
     correct, wrong = sum(r["correct"] for r in rows), sum(r["wrong_step"] for r in rows)
-    out = {"asr": client.ASR, "route": "transcribe -> zerostate.api.server.parse_intent (rules, no model)",
+    out = {"asr": client.ASR, "route": "transcribe -> zerostate.api.server.parse_intent (rules, no model)", "keywords": keywords,
+           "config_commit": a.config_commit,
            "n": len(rows), "correct": correct, "wrong_step": wrong,
            "bar_met": correct >= 18 and wrong == 0, "clips": rows}
     a.out.write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
