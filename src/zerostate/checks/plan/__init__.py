@@ -27,10 +27,11 @@ def finding(rule_id: str, rule_version: str, status: FindingStatus, message: str
 
 
 from zerostate.checks.plan import (  # helpers above must be defined first
+    liveside,
     paths,
 )
 
-PLAN_RULES = {m.RULE_ID: m for m in (paths,)}
+PLAN_RULES = {m.RULE_ID: m for m in (paths, liveside)}
 
 
 def run_plan_checks(plan: IsolationPlan, m: PlantMap, params: dict) -> list[Finding]:
