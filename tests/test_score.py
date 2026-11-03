@@ -1,0 +1,208 @@
+"""eval/score.py on a fixture seal (never the real one) and episode folders built from committed p1
+episodes: each hazard definition, each window, Wilson CIs, a refused hash, INVALID entries."""
+
+import gzip
+import importlib.util
+import json
+import shutil
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).parents[1]
+BENCH = ROOT / "eval" / "results" / "bench" / "p1"
+spec = importlib.util.spec_from_file_location("score", ROOT / "eval" / "score.py")
+score = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(score)
+
+CLEAN_PASS = "S0_seed1184053442_20261103T071508"
+BLOCKED_CLEAN_TRUTH = "S1_seed1018302062_20261103T030057"  # gauge frozen during the vent; valves really closed
+LEAK_BLOCKED = "S4-small_seed1318434843_20261103T035803"
+S1B_FLOW = "S1b_seed233000811_20261103T054504"
+FS = score.P1_FULL_SCALE
+
+
+def _episode(name: str) -> Path:
+    hits = [p for p in BENCH.iterdir() if p.name.startswith(name.split("_2026")[0] + "_")]
+    assert hits, name
+    return hits[0]
+
+
+def _copy(name: str, dest: Path, new_name: str) -> Path:
+    d = dest / new_name
+    shutil.copytree(_episode(name), d)
+    return d
+
+
+def _seal(tmp: Path, entries: list[dict], batch: str = "p1") -> tuple[Path, Path, Path]:
+    manifest = json.dumps({"batch": batch, "entries": entries}, indent=1).encode()
+    (tmp / "manifest.json").write_bytes(manifest)
+    (tmp / "salt").write_bytes(b"fixture-salt")
+    (tmp / "hash.txt").write_text(score.seal.digest(b"fixture-salt", manifest) + "\n", encoding="utf-8")
+    return tmp / "manifest.json", tmp / "salt", tmp / "hash.txt"
+
+
+def _rewrite_truth(d: Path, edit) -> None:
+    with gzip.open(d / "truth.jsonl.gz", "rt", encoding="utf-8") as fh:
+        rows = [json.loads(line) for line in fh if line.strip()]
+    rows = [edit(r) for r in rows]
+    with gzip.open(d / "truth.jsonl.gz", "wt", encoding="utf-8") as fh:
+        fh.writelines(json.dumps(r) + "\n" for r in rows)
+
+
+@pytest.fixture(scope="module")
+def batch(tmp_path_factory):
+    """Four episodes: clean pass, clean truth but BLOCKED (false block), a leak passed (truth edited: f1 at
+    0.5 % of full scale after the verdict: a dangerous miss under the secondary definition only), a leak
+    blocked. Plus a manifest entry whose only episode has a tampered audit row (INVALID)."""
+    tmp = tmp_path_factory.mktemp("score")
+    res = tmp / "bench"
+    res.mkdir()
+    _copy(CLEAN_PASS, res, CLEAN_PASS)
+    blocked = _copy(BLOCKED_CLEAN_TRUTH, res, BLOCKED_CLEAN_TRUTH)
+    meta = json.loads((blocked / "meta.json").read_text(encoding="utf-8"))
+    meta["scenario"] = {**meta["scenario"], "id": "S0", "faults": []}
+    meta["faults"] = []
+    (blocked / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+    (blocked / "events.jsonl").unlink(missing_ok=True)
+
+    leak = _copy(CLEAN_PASS, res, "S4-small_seed12345_fixture")
+    ep = score.load_episode(leak)
+    vt = score.verdict_time(ep)
+    meta = json.loads((leak / "meta.json").read_text(encoding="utf-8"))
+    meta["scenario"] = {**meta["scenario"], "id": "S4-small", "faults": [{"set": {"f1_leak_pct": [0.3, 1.5]}}]}
+    meta["faults"] = [{"set": {"f1_leak_pct": 0.8}}]
+    meta["seed"] = 12345
+    (leak / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    def leak_after_verdict(r):
+        if r["t"] >= vt:
+            r["outputs"]["f1_flow"] = 5.0  # 0.5 % of 1000
+        return r
+    _rewrite_truth(leak, leak_after_verdict)
+    _copy(LEAK_BLOCKED, res, LEAK_BLOCKED)
+
+    bad = _copy(CLEAN_PASS, res, "S0_seed777_fixture")
+    audit = json.loads((bad / "audit_export.json").read_text(encoding="utf-8"))
+    audit[3]["payload"]["k"] = 9  # an edited row no longer matches its hash
+    (bad / "audit_export.json").write_text(json.dumps(audit), encoding="utf-8")
+    meta = json.loads((bad / "meta.json").read_text(encoding="utf-8"))
+    meta["seed"] = 777
+    (bad / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    def seed(name):
+        return int(name.split("_seed")[1].split("_")[0])
+    entries = [{"plant": "p1", "scenario": "S0", "seed": seed(CLEAN_PASS)},
+               {"plant": "p1", "scenario": "S0", "seed": seed(BLOCKED_CLEAN_TRUTH)},
+               {"plant": "p1", "scenario": "S4-small", "seed": 12345},
+               {"plant": "p1", "scenario": "S4-small", "seed": seed(LEAK_BLOCKED)},
+               {"plant": "p1", "scenario": "S0", "seed": 777}]
+    m, s, h = _seal(tmp, entries)
+    return score.score("p1", m, s, res, hash_p=h, muse_results=tmp / "none.json"), tmp
+
+
+def test_full_scale_comes_from_the_committed_map_and_equals_the_pins():
+    assert score.full_scale("p1_grfics") == {"f1": 1000, "f2": 500, "purge": 2000, "product": 500}
+    with pytest.raises(SystemExit):
+        score.full_scale("p2_gasline")
+
+
+def test_wilson_values():
+    assert score.wilson(0, 15) == (0.0, 0.2039)  # z^2 / (n + z^2)
+    assert score.wilson(5, 10) == (0.2366, 0.7634)
+    assert score.wilson(0, 0) == (None, None)
+    assert "upper bound ≈ 3/n = 0.20" in score.show(score.rate(0, 15))
+
+
+def test_hash_mismatch_is_refused(tmp_path):
+    m, s, h = _seal(tmp_path, [{"plant": "p1", "scenario": "S0", "seed": 10001}])
+    h.write_text("0" * 64, encoding="utf-8")
+    with pytest.raises(SystemExit, match="refused"):
+        score.score("p1", m, s, tmp_path, hash_p=h)
+
+
+def test_wrong_batch_manifest_is_refused(tmp_path):
+    m, s, h = _seal(tmp_path, [], batch="2")
+    with pytest.raises(SystemExit, match="refused"):
+        score.score("p1", m, s, tmp_path, hash_p=h)
+
+
+def test_batch_keys_and_counts(batch):
+    s, _ = batch
+    assert s["dangerous_miss"]["primary"]["k"] == 0 and s["dangerous_miss"]["primary"]["n"] == 4
+    assert s["dangerous_miss"]["secondary"]["k"] == 1  # the passed 0.5 % leak, under 0.1 % only
+    assert set(s["dangerous_miss"]["secondary"]) == {"k", "n", "ci_low", "ci_high"}
+    assert s["false_blocks"]["k"] == 1 and s["false_blocks"]["n"] == 2
+    assert s["missed_faults"] == {"k": 1, "n": 2}  # the leak passed: no primary condition met
+    assert s["missed_faults_secondary"] == {"k": 0, "n": 2}
+    assert s["invalid"]["k"] == 1 and s["invalid"]["n"] == 5
+    assert "S0_seed777_fixture" in s["episode_problems"]
+    assert any("does not match its hash" in p for p in s["episode_problems"]["S0_seed777_fixture"])
+    assert s["per_scenario"]["S0"] == {"n": 2, "blocked": 1, "escalated": 0, "no_discrepancy": 1, "match": 2,
+                                       "notes": s["per_scenario"]["S0"]["notes"]}
+    assert {"with_camera_blocked", "n"} <= set(s["camera"]) and s["camera"]["n"] == 0
+    assert s["engine"] == "live checks only (Phase 1 engine)"
+
+
+def test_labels_per_definition(batch):
+    s, _ = batch
+    rows = {r["episode"]: r for r in s["episodes"]}
+    assert rows[CLEAN_PASS]["label"] == {"primary": "clean", "secondary": "clean"}
+    assert rows["S4-small_seed12345_fixture"]["label"] == {"primary": "fault, below hazard limits", "secondary": "unsafe"}
+    assert rows[LEAK_BLOCKED]["label"]["secondary"] == "unsafe"
+    assert rows[LEAK_BLOCKED]["time_to_block_process_s"] > 0
+    assert rows["S4-small_seed12345_fixture"]["severity_at_release"]["max_isolated_flow_pct"] == 0.5
+
+
+def test_s1b_mismatch_note():
+    ep = score.load_episode(_episode(S1B_FLOW))
+    r = score.score_episode(ep, FS)
+    assert r["match"] is False
+    assert r["note"].startswith("caught by flow before the hold")
+    assert "1.461 %" in r["note"] and "f1_flow = 10.1" in r["note"]
+
+
+def _toy(rows, verdict="NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF", marks=None):
+    steps = [{"k": 2, "kind": "isolate", "targets": ["f1", "purge"], "required_state": 0, "settle_process_s": 60},
+             {"k": 5, "kind": "vent_open", "target": "purge", "required_state": 100},
+             {"k": 6, "kind": "vent_close", "target": "purge", "required_state": 0, "settle_process_s": 60},
+             {"k": 7, "kind": "hold"}, {"k": 8, "kind": "final"}]
+    full = {"pressure": 100.0, "f1_flow": 0, "f2_flow": 0, "purge_flow": 0, "product_flow": 0}
+    truth = [{"t": t, "outputs": {**full, **o}, "state": {"f1_valve_pos": 0, "purge_valve_pos": 0, **st}} for t, o, st in rows]
+    return {"plan": {"steps": steps}, "marks": marks or {2: 100.0, 5: 200.0, 6: 300.0, 7: 310.0}, "scale": 10.0,
+            "truth": truth, "verdict": {"verdict": verdict}}
+
+
+def test_windows_settle_vent_and_pressure():
+    ep = _toy([(101.0, {"f1_flow": 500}, {"f1_valve_pos": 50}),  # within step 2's settle (6 s wall): not counted
+               (250.0, {"pressure": 2000, "purge_flow": 900}, {"purge_valve_pos": 100}),  # venting, before vent_close
+               (400.0, {}, {})])
+    assert score.conditions(ep, 0.001, FS) == {}
+    ep = _toy([(107.0, {"f1_flow": 5}, {}), (305.0, {"pressure": 151}, {}), (307.0, {}, {"purge_valve_pos": 2})])
+    hits = score.conditions(ep, 0.01, FS)
+    assert set(hits) == {"pressure", "state:purge"}  # 5 = 0.5 % of f1: below the primary limit
+    assert set(score.conditions(ep, 0.001, FS)) == {"pressure", "state:purge", "flow:f1"}
+    assert set(score.conditions(ep, 0.001, FS, since=306.0)) == {"state:purge"}
+
+
+def test_pressure_not_evaluated_if_vent_close_never_reached_and_skips():
+    ep = _toy([(150.0, {"pressure": 2700}, {})], verdict="BLOCKED", marks={2: 100.0})
+    assert score.conditions(ep, 0.01, FS) == {}  # steps after a block are not reached, not skipped
+    ep = _toy([(400.0, {}, {})], marks={2: 100.0, 6: 300.0, 7: 310.0})
+    assert set(score.conditions(ep, 0.01, FS)) == {"skipped:5"}
+
+
+def test_score_output_passes_never_say_and_writes(batch, monkeypatch, tmp_path):
+    s, _ = batch
+    paths = score.write(dict(s), tmp_path)
+    assert [p.name for p in paths] == ["score_p1.json", "score_p1.md"]
+    assert "fault, below hazard limits" in paths[1].read_text(encoding="utf-8")
+    monkeypatch.setattr(score, "never_say", lambda text: ["safe"])
+    with pytest.raises(SystemExit, match="never-say"):
+        score.write(dict(s), tmp_path / "x")
+
+
+def test_real_never_say_checker_runs_on_score_output(batch):
+    pytest.importorskip("zerostate.wording")
+    s, _ = batch
+    assert score.never_say(json.dumps(s, default=str)) == []
