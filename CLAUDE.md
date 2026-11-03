@@ -24,6 +24,8 @@ These are trust boundaries. Minimum code is fine; skipping them or their tests i
 - Audit log is append-only and hash-chained.
 - Every rule exports RULE_ID + RULE_VERSION and has one passing and one failing test.
 - Every test named in docs/CLAIMS.md must exist.
+- **Only a person confirms a plan.** Agents never run `zs plan confirm`, never call the API confirm endpoint, and never write or edit `plants/*/confirmed.yaml`. The eval runner never confirms. When a plan changes, stop and ask the owner to confirm it.
+- The data-only verdict path (gate, live/plan/process checks except checks/live/camera.py, session's data track) imports nothing from `llm/` or `camera/`.
 
 ## Don't
 - Don't add dependencies not listed in the spec without saying why in the commit.

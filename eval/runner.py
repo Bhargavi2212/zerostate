@@ -11,6 +11,7 @@ operator writes). Episodes are pre-registered by seed and replayable from logs.
 
 import argparse
 import importlib.util
+import inspect
 import json
 import os
 import random
@@ -38,14 +39,17 @@ TUNING_SEEDS = range(1000)  # anything else is a scoring seed
 BENCHMARK_PLAN_HASH = "89adfcf4fbb0a8e2b058c02ceed5d879d0a72312da92024bf967c8aec14f2a92"  # pragma: allowlist secret
 
 
-def _load(name):
-    spec = importlib.util.spec_from_file_location(name, P1 / f"{name}.py")
+def _load(name, folder=P1):
+    spec = importlib.util.spec_from_file_location(name, folder / f"{name}.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
 
 
-faults, truth = _load("faults"), _load("truth")
+faults, truth, seal = _load("faults"), _load("truth"), _load("seal", ROOT / "eval")
+# What the zerostate image holds (deploy/Dockerfile), as (key prefix, path in the image, path here, glob).
+CODE_SPEC = [("src/", "src/zerostate", "src/zerostate", "**/*.py"), ("src/", "src/zerostate", "src/zerostate", "**/*.yaml"),
+             *[("config/", "config/p1_grfics", "plants/p1_grfics", f) for f in ("modbus_map.yaml", "envelope.yaml", "thresholds.yaml")]]
 
 
 class EpisodeInvalid(Exception):
@@ -88,6 +92,56 @@ def seed_problem(seed: int, plan_hash: str) -> str | None:
     if seed not in TUNING_SEEDS and plan_hash != BENCHMARK_PLAN_HASH:
         return f"scoring seed {seed} refused: plan hash {plan_hash[:12]} is not the benchmark plan {BENCHMARK_PLAN_HASH[:12]}"
     return None
+
+
+def git(*args) -> tuple[int, str]:
+    r = subprocess.run(["git", *args], check=False, capture_output=True, text=True, timeout=60, cwd=ROOT)
+    return r.returncode, r.stdout.strip()
+
+
+def scoring_problem(batch: str | None, manifest_p, salt_p, scenario: str, seed: int) -> str | None:
+    """A scoring seed runs only from its sealed batch, on that batch's frozen tag, with nothing edited."""
+    if not (batch and manifest_p and salt_p):
+        return f"scoring seed {seed} needs --batch, --manifest and --salt"
+    manifest, h = seal.load(manifest_p, salt_p)
+    sealed = ROOT / "eval" / f"sealed_hash_{batch}.txt"
+    if not sealed.exists() or sealed.read_text(encoding="utf-8").strip() != h:
+        return f"manifest and salt do not match eval/sealed_hash_{batch}.txt"
+    if {"plant": "p1", "scenario": scenario, "seed": seed} not in manifest["entries"]:
+        return f"{scenario} seed {seed} is not in the sealed {batch} manifest"
+    rc, tag = git("rev-parse", f"refs/tags/bench-freeze-{batch}^{{commit}}")
+    head = git("rev-parse", "HEAD")[1]
+    if rc != 0 or head != tag:
+        return f"HEAD {head[:12]} is not bench-freeze-{batch}"
+    if git("diff", "--quiet", "HEAD")[0] != 0:
+        return "tracked files differ from the frozen tag"
+    return None
+
+
+def fingerprint(spec) -> dict:
+    """sha256 per file, line endings normalised. Runs here and, sent as source, inside the container."""
+    import hashlib
+    import pathlib
+    out = {}
+    for prefix, root, pattern in spec:
+        for p in sorted(pathlib.Path(root).glob(pattern)):
+            if "__pycache__" not in p.parts:
+                out[prefix + p.relative_to(root).as_posix()] = hashlib.sha256(p.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+    return out
+
+
+def code_problem() -> str | None:
+    """The running zerostate image must hold exactly this tree's product code and P1 config."""
+    here = fingerprint([(pre, str(ROOT / local), pat) for pre, _, local, pat in CODE_SPEC])
+    spec = [(pre, img, pat) for pre, img, _, pat in CODE_SPEC]
+    script = inspect.getsource(fingerprint) + f"\nimport json\nprint(json.dumps(fingerprint({spec!r})))\n"
+    r = subprocess.run(["docker", "exec", "-i", "-w", "/app", "zerostate", "python", "-"], input=script,
+                       check=False, capture_output=True, text=True, timeout=60)
+    if r.returncode != 0:
+        return f"could not fingerprint the zerostate container: {r.stderr.strip()[:200]}"
+    there = json.loads(r.stdout)
+    diff = sorted(k for k in here.keys() | there.keys() if here.get(k) != there.get(k))
+    return f"zerostate container code differs from this tree: {diff[:5]}" if diff else None
 
 
 def vent_start_problem(p_kpa: float | None) -> str | None:
@@ -140,12 +194,13 @@ def ids_counts(offset: tuple[int, str]) -> dict:
 PUBLISH = ("audit_export.json", "verdict.json", "meta.json", "ids.json", "events.jsonl")
 
 
-def publish(run: Path) -> Path:
-    """Copy what anyone needs to replay and score an episode into eval/results/episodes/ (committed);
-    truth is gzipped. signals.jsonl stays in runs/ (it is the same data the audit windows carry)."""
+def publish(run: Path, results: Path = ROOT / "eval" / "results" / "episodes") -> Path:
+    """Copy what anyone needs to replay and score an episode into eval/results/ (committed; scoring
+    episodes go to bench/<batch>/); truth is gzipped. signals.jsonl stays in runs/ (it is the same data
+    the audit windows carry)."""
     import gzip
     import shutil
-    dest = ROOT / "eval" / "results" / "episodes" / run.name
+    dest = results / run.name
     dest.mkdir(parents=True, exist_ok=True)
     for name in PUBLISH:
         if (run / name).exists():
@@ -188,8 +243,8 @@ def postflight(offset, scenario) -> dict:
 
 # ---------------------------------------------------------------- episode
 class Episode:
-    def __init__(self, scenario: dict, seed: int, out: Path):
-        self.sc, self.seed, self.out = scenario, seed, out
+    def __init__(self, scenario: dict, seed: int, out: Path, scoring: bool = False):
+        self.sc, self.seed, self.out, self.scoring = scenario, seed, out, scoring
         self.rng = random.Random(seed)
         self.faults = [draw(f, self.rng) for f in scenario.get("faults", [])]  # steps, onsets, severities
         self.plan_path = P1 / "envelope.yaml"
@@ -271,6 +326,8 @@ class Episode:
     # run ------------------------------------------------------------------
     def run(self) -> dict:
         s = str(self.scale)
+        if self.scoring and (problem := code_problem()):
+            raise EpisodeInvalid(problem)
         pre = preflight()
         env = {**os.environ, "ZS_TIME_SCALE": s}
         subprocess.run([*COMPOSE, "up", "-d", "--force-recreate", "--no-deps", "simulation"], cwd=GRFICS, env=env,
@@ -362,18 +419,26 @@ def main() -> int:
     ap.add_argument("--plant", default="p1", choices=["p1"])
     ap.add_argument("--scenario", required=True)
     ap.add_argument("--seed", type=int, required=True)
+    ap.add_argument("--batch", help="sealed batch (scoring seeds only), e.g. p1")
+    ap.add_argument("--manifest", help="sealed manifest, kept outside the repo")
+    ap.add_argument("--salt", help="sealed salt, kept outside the repo")
     a = ap.parse_args()
     scenario = yaml.safe_load((ROOT / "eval" / "scenarios" / f"{a.scenario}.yaml").read_text(encoding="utf-8"))
     out = ROOT / "runs" / f"{a.scenario}_seed{a.seed}_{datetime.now(UTC):%Y%m%dT%H%M%S}"
-    ep = Episode(scenario, a.seed, out)
-    if problem := seed_problem(a.seed, ep.plan.content_hash()):
+    scoring = a.seed not in TUNING_SEEDS
+    ep = Episode(scenario, a.seed, out, scoring)
+    problem = seed_problem(a.seed, ep.plan.content_hash())
+    if scoring and not problem:
+        problem = scoring_problem(a.batch, a.manifest, a.salt, a.scenario, a.seed)
+    if problem:
         raise SystemExit(problem)
     out.mkdir(parents=True)
     images = {n: sh("docker", "inspect", "--format", "{{.Image}}", n, check=False).strip()
               for n in ("simulation", "zerostate", "zs-operator", "plc")}
     (out / "meta.json").write_text(json.dumps({"scenario": scenario, "seed": a.seed, "faults": ep.faults,
                                                "process_time_scale": ep.scale, "images": images,
-                                               "plan_hash": ep.plan.content_hash()}, indent=1), encoding="utf-8")
+                                               "plan_hash": ep.plan.content_hash(), "batch": a.batch if scoring else None},
+                                              indent=1), encoding="utf-8")
     try:
         result = ep.run()
     except EpisodeInvalid as e:
@@ -383,7 +448,7 @@ def main() -> int:
         ep.cleanup()
         raise
     (out / "verdict.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
-    publish(out)
+    publish(out, ROOT / "eval" / "results" / "bench" / a.batch if scoring else ROOT / "eval" / "results" / "episodes")
     print(json.dumps(result, indent=1))
     return 0 if result.get("valid") and result.get("match") else 1
 

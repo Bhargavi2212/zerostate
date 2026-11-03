@@ -1,3 +1,4 @@
 *.sh text eol=lf
 *.rules text eol=lf
 *.patch text eol=lf
+deploy/proxy/* text eol=lf
