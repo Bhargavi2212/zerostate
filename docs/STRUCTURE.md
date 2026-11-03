@@ -125,7 +125,7 @@ zerostate/
 │   │   └── validation/            # analytic blowdown comparison → blowdown_overlay.svg (stdlib, no plot dependency); error % in eval/results/p2_validation_<date>.json
 │   └── p3_wntr/                   # stretch
 ├── eval/
-│   ├── scenarios/                 # P1 S0–S12 (S7 skip, S7-same same verifier) as YAML (plant, fault, onset range, severity range, expected verdicts); p2/ for P2
+│   ├── scenarios/                 # P1 S0–S13 (S7 skip, S7-same same verifier, S13 reopen) as YAML (plant, fault, onset range, severity range, expected verdicts); p2/ for P2
 │   ├── tools/credits_report.py    # copies /data/credits.jsonl out of the container → dated summary in D:\grfics\credits_log.md
 │   ├── tools/export_bundle.py     # episode → bundle.json.gz (docs/BUNDLE.md)
 │   ├── tools/capture_frames.py    # frames set: operator sets random valve positions, frames + truth sidecars outside git
@@ -168,7 +168,7 @@ zerostate/
 │   ├── test_bundle.py             # episode bundle: export → load → schema validates; key-like strings refused
 │   ├── test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
 │   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
-│   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, settle before monitoring, UNKNOWN grace, stop
+│   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, verify, reopen, settle before monitoring, UNKNOWN grace, stop
 │   ├── test_operator.py           # operator: setpoints before coil, readback mismatch aborts, manual off restores defaults
 │   ├── conftest.py                # shared in-process Modbus server fixture (adapter + operator tests) + in-process P2 OPC UA server
 │   ├── test_audit_chain.py  test_replay.py  test_importer_gate.py  test_plants_only_diff.py

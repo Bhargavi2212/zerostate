@@ -1,0 +1,7 @@
+id: S13
+title: f1 reopened for an inch-and-test after the block-in, closed again, not verified again
+real_case: temporary de-isolation (ETUG)
+expected: [BLOCKED]  # PROC-RESET: step 2 not verified again by a second person after step 2 was reopened
+operator: reopen_test
+reopen_after: 4
+reopen_step: 2

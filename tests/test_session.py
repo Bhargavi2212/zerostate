@@ -53,13 +53,24 @@ def until_evaluated(d, k, limit_wall_s=120):
         self.run(POLL, [{"kind": "step_verify", "k": k, "by": by}])
 
 
-def clean_run(d, verifier="op2", skip_verify=()):
+def clean_run(d, verifier="op2", skip_verify=(), reopen_f1=None):
+    """reopen_f1: None, or whether the inch-and-test of f1 after the isolation is verified again."""
     d.run(2)
     for k in range(1, VENT):  # mode, then close f1, f2, product, purge
         d.mark(k, lambda ps: steady(pressure=2700.0))
         until_evaluated(d, k)
         if PLAN.steps[k - 1].kind == "isolate" and k not in skip_verify:
             d.verify(k, verifier)  # a second person checks each isolate step (PROC-INDEPENDENCE)
+    if reopen_f1 is not None:
+        d.run(POLL, [{"kind": "step_reopen", "k": 2, "by": "op", "reason": "inch and test f1"}])
+        d.fn, d.fn_t0 = (lambda ps: steady(pressure=2700.0, f1_valve_pos=20.0, f1_cmd=20.0, f1_flow=200.0)), d.t
+        d.run(5)
+        st = d.status()
+        assert 2 not in st["steps"] and st["verdict"] is None  # f1 open on purpose: pending, not monitored
+        d.mark(2, lambda ps: steady(pressure=2700.0))  # closed again
+        until_evaluated(d, 2)
+        if reopen_f1:
+            d.verify(2, verifier)
     d.mark(VENT, vent)
     until_evaluated(d, VENT)
     d.run(25)  # like the runner: keep venting until the vent target (~366 process-s from 2700 kPa)
@@ -108,6 +119,34 @@ def test_missing_verify_at_final_escalates_instead_of_no_discrepancy(tmp_path):
     assert st["stamp"]["reasons"] == ["PROC-INDEPENDENCE: isolate steps not verified by a second person: 3"]
     assert "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF" not in [e["payload"]["verdict"] for e in d.log.events("s1") if e["kind"] == "verdict"]
     assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_reopen_done_again_and_verified_again_completes_and_replays(tmp_path):
+    d = Driver(tmp_path)
+    clean_run(d, reopen_f1=True)
+    assert d.status()["verdict"] == "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+    assert [e["payload"]["pending"] for e in d.log.events("s1") if e["kind"] == "step_reopen"] == [[2]]
+    assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_reopen_not_verified_again_never_reaches_no_discrepancy(tmp_path):
+    d = Driver(tmp_path)
+    clean_run(d, reopen_f1=False)
+    st = d.status()
+    assert st["verdict"] == "BLOCKED"
+    assert st["stamp"]["reasons"] == ["PROC-RESET: step 2 not verified again by a second person after step 2 was reopened"]
+    assert "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF" not in [e["payload"]["verdict"] for e in d.log.events("s1") if e["kind"] == "verdict"]
+    assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_reopen_refused_before_its_mark_and_after_a_verdict(tmp_path):
+    d = Driver(tmp_path)
+    d.run(2)
+    d.run(POLL, [{"kind": "step_reopen", "k": 2, "by": "op", "reason": "test"}])
+    assert d.status()["refused"][-1]["reason"] == "step 2 not marked done yet"
+    clean_run(d)
+    d.run(POLL, [{"kind": "step_reopen", "k": 2, "by": "op", "reason": "test"}])
+    assert d.status()["refused"][-1]["reason"].startswith("verdict is already NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF")
 
 
 def test_warm_in_timeout_escalates(tmp_path):

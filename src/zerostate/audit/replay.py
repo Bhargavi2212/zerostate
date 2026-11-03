@@ -27,6 +27,9 @@ def replay(log: AuditLog, session: str, params: dict) -> list[str]:
         if e["kind"] == "verdict" and p.get("source") in ("warm_in", "monitor_error"):  # not from a window
             verdict = gate.worsen(verdict, Verdict(p["verdict"]))
             continue
+        if e["kind"] == "step_reopen":  # these steps must pass again before the plan completes
+            for j in p["pending"]:
+                step_passed.pop(j, None)
         if e["kind"] != "evaluation":
             continue
         if p["source"] == "plan":  # re-run on the logged map; a plan evaluation never changes the verdict

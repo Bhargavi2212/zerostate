@@ -13,7 +13,7 @@ from pathlib import Path
 from zerostate import gate
 from zerostate.audit.log import AuditLog
 from zerostate.checks.plan import PLAN_RULES, run_plan_checks
-from zerostate.checks.process import PROC_RULES, run_process_checks, sequence
+from zerostate.checks.process import PROC_RULES, reset, run_process_checks, sequence
 from zerostate.models.envelope import IsolationPlan, step_targets
 from zerostate.models.evidence import Window
 from zerostate.models.plant_map import PlantMap
@@ -185,9 +185,9 @@ class Session:
 
     def _handle(self, now: float, msg: dict) -> None:
         kind = msg["kind"]
-        if kind in ("step_done", "step_verify"):
+        if kind in ("step_done", "step_verify", "step_reopen"):
             k, by, why = int(msg["k"]), msg.get("by"), None
-            verb = "mark" if kind == "step_done" else "verify"
+            verb = {"step_done": "mark", "step_verify": "verify", "step_reopen": "reopen"}[kind]
             if self.state != "ready":
                 why = f"session is {self.state}"
             elif self.verdict in TERMINAL:
@@ -196,14 +196,25 @@ class Session:
                 why = f"there is no step {k} to {verb}"
             elif verb == "mark" and k in self.marks:
                 why = f"step {k} already marked"
-            elif verb == "verify" and k not in self.marks:
+            elif verb != "mark" and k not in self.marks:
                 why = f"step {k} not marked done yet"
+            elif verb == "reopen" and self.verdict is not None:  # never lift a verdict: the monitor judges the opening
+                why = f"verdict is already {self.verdict.value}: start a new session to check the isolation again"
             if why:
                 self.log.append(self.sid, "step_refused", {"k": k, "by": by, "reason": why} | ({"action": verb} if verb != "mark" else {}))
                 return
             if verb == "verify":  # judged by PROC-INDEPENDENCE: the verifier must not be the one who marked it
                 self.actions.append({"kind": "verify", "k": k, "by": by})
                 self.log.append(self.sid, "step_verify", {"k": k, "by": by})
+                self._process_evaluation(k)
+                return
+            if verb == "reopen":  # inch and test: its points and the steps relying on them go back to pending
+                pending = [j for j in reset.dependents(self.plan, k) if j in self.marks]
+                for j in pending:
+                    self.marks.pop(j)
+                    self.evaluated.pop(j, None)
+                self.actions.append({"kind": "reopen", "k": k, "by": by, "reason": msg.get("reason")})
+                self.log.append(self.sid, "step_reopen", {"k": k, "by": by, "reason": msg.get("reason"), "pending": pending})
                 self._process_evaluation(k)
                 return
             # out of order or early: logged and judged by PROC-SEQUENCE (FAIL -> BLOCKED), never acted on
@@ -282,6 +293,9 @@ def status_from_events(events: list[dict]) -> dict:
             out["state"] = "ready"
         elif kind == "step_done":
             out["steps"][p["k"]] = "pending"
+        elif kind == "step_reopen":
+            for j in p["pending"]:
+                out["steps"].pop(j, None)  # back to pending: absent until marked again
         elif kind == "step_refused":
             out["refused"].append(p)
         elif kind == "evaluation" and p["source"] == "step":

@@ -311,6 +311,20 @@ class Episode:
     def evaluated(self, k: int) -> dict:
         return self.wait(lambda st: evaluated(st, k), 900 / self.scale + 120)
 
+    def reopen_test(self, j: int) -> dict:
+        """S13 inch and test: reopen step j (declared first), open its first point a little, close it
+        again and re-mark the step, but nobody verifies it again."""
+        step = next(s for s in self.plan.steps if s.k == j)
+        target = step_targets(step)[0]
+        zs("step", "reopen", self.sid, str(j), "--by", "eval-operator", "--reason", f"inch and test {target}")
+        self.wait(lambda st: str(j) not in st["steps"], 30)
+        act("set", target, "20")
+        time.sleep(10 / self.scale + 2)
+        self.mark(j)
+        for t in step_targets(step):
+            act("set", t, str(step.required_state))
+        return self.evaluated(j)
+
     def log_event(self, kind, data):
         with open(self.out / "events.jsonl", "a", encoding="utf-8") as fh:
             fh.write(json.dumps({"t": time.time(), "kind": kind, "data": data}) + "\n")
@@ -372,6 +386,8 @@ class Episode:
             st = self.evaluated(k)
             if step.kind == "isolate" and st["verdict"] not in TERMINAL:  # a second person checks it (PROC-INDEPENDENCE)
                 zs("step", "verify", self.sid, str(k), "--by", "eval-operator" if variant == "same_verifier" else "eval-verifier")
+            if variant == "reopen_test" and k == self.sc["reopen_after"] and st["verdict"] not in TERMINAL:
+                st = self.reopen_test(self.sc["reopen_step"])
             if step.kind == "vent_open" and st["verdict"] not in TERMINAL:
                 # keep venting until the plan's vent target (rolling mean); mark on regardless, like a hurried human
                 act("wait-pressure-below", str(self.plan.vent_target_kpa_abs), "--mean-of", "8",
