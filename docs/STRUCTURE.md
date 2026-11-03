@@ -125,7 +125,7 @@ zerostate/
 │   │   └── validation/            # analytic blowdown comparison → blowdown_overlay.svg (stdlib, no plot dependency); error % in eval/results/p2_validation_<date>.json
 │   └── p3_wntr/                   # stretch
 ├── eval/
-│   ├── scenarios/                 # P1 S0–S12 as YAML (plant, fault, onset range, severity range, expected verdicts); p2/ for P2
+│   ├── scenarios/                 # P1 S0–S12 (S7 skip, S7-same same verifier) as YAML (plant, fault, onset range, severity range, expected verdicts); p2/ for P2
 │   ├── tools/credits_report.py    # copies /data/credits.jsonl out of the container → dated summary in D:\grfics\credits_log.md
 │   ├── tools/export_bundle.py     # episode → bundle.json.gz (docs/BUNDLE.md)
 │   ├── tools/capture_frames.py    # frames set: operator sets random valve positions, frames + truth sidecars outside git

@@ -138,10 +138,12 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("status")
     p.add_argument("session")
     p.add_argument("--json", action="store_true")
-    sd = sub.add_parser("step").add_subparsers(dest="action", required=True).add_parser("done")
-    sd.add_argument("session")
-    sd.add_argument("k", type=int)
-    sd.add_argument("--by", required=True)
+    sp = sub.add_parser("step").add_subparsers(dest="action", required=True)
+    for name in ("done", "verify"):  # verify: a second person confirms an isolate step (PROC-INDEPENDENCE)
+        sd = sp.add_parser(name)
+        sd.add_argument("session")
+        sd.add_argument("k", type=int)
+        sd.add_argument("--by", required=True)
     sg = sub.add_parser("sign")
     sg.add_argument("session")
     sg.add_argument("--by", required=True)
@@ -181,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
         if a.cmd == "session":
             inbox.put(a.session, "stop", by=a.by)
         elif a.cmd == "step":
-            inbox.put(a.session, "step_done", k=a.k, by=a.by)
+            inbox.put(a.session, f"step_{a.action}", k=a.k, by=a.by)
         else:
             inbox.put(a.session, "sign", by=a.by, role=a.role, note=a.note)
         return 0

@@ -34,6 +34,9 @@ class Driver:
             self.fn, self.fn_t0 = fn, self.t
         self.run(POLL, [{"kind": "step_done", "k": k, "by": "op"}])
 
+    def verify(self, k, by="op2"):
+        self.run(POLL, [{"kind": "step_verify", "k": k, "by": by}])
+
     def status(self):
         return status_from_events(self.log.events("s1"))
 
@@ -46,11 +49,17 @@ def until_evaluated(d, k, limit_wall_s=120):
     raise AssertionError(f"step {k} never evaluated")
 
 
-def clean_run(d):
+    def verify(self, k, by="op2"):
+        self.run(POLL, [{"kind": "step_verify", "k": k, "by": by}])
+
+
+def clean_run(d, verifier="op2", skip_verify=()):
     d.run(2)
     for k in range(1, VENT):  # mode, then close f1, f2, product, purge
         d.mark(k, lambda ps: steady(pressure=2700.0))
         until_evaluated(d, k)
+        if PLAN.steps[k - 1].kind == "isolate" and k not in skip_verify:
+            d.verify(k, verifier)  # a second person checks each isolate step (PROC-INDEPENDENCE)
     d.mark(VENT, vent)
     until_evaluated(d, VENT)
     d.run(25)  # like the runner: keep venting until the vent target (~366 process-s from 2700 kPa)
@@ -74,6 +83,31 @@ def test_clean_session_reaches_no_discrepancy_and_replays(tmp_path):
     assert st["stamp"]["assumptions"] == ["positive isolation upstream assumed"]
     assert replay(d.log, "s1", PARAMS) == []
     assert d.log.verify() == (True, None)
+
+
+def test_installer_verifying_own_step_blocks(tmp_path):
+    d = Driver(tmp_path)
+    d.run(2)
+    d.verify(1)  # nothing marked yet: refused and logged
+    assert d.status()["refused"][-1] == {"k": 1, "by": "op2", "reason": "step 1 not marked done yet", "action": "verify"}
+    for k in (1, 2):
+        d.mark(k)
+        until_evaluated(d, k)
+    d.verify(2, by="op")  # the one who marked it
+    st = d.status()
+    assert st["verdict"] == "BLOCKED" and st["steps"][2] == "FAIL"
+    assert st["stamp"]["reasons"] == ["PROC-INDEPENDENCE: step 2 verified by op, the person who marked it done"]
+    assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_missing_verify_at_final_escalates_instead_of_no_discrepancy(tmp_path):
+    d = Driver(tmp_path)
+    clean_run(d, skip_verify=(3,))
+    st = d.status()
+    assert st["verdict"] == "ESCALATED"
+    assert st["stamp"]["reasons"] == ["PROC-INDEPENDENCE: isolate steps not verified by a second person: 3"]
+    assert "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF" not in [e["payload"]["verdict"] for e in d.log.events("s1") if e["kind"] == "verdict"]
+    assert replay(d.log, "s1", PARAMS) == []
 
 
 def test_warm_in_timeout_escalates(tmp_path):

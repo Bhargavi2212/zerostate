@@ -129,10 +129,11 @@ class Session:
             "verdict_after": new.value if new else None})
         self._set_verdict(new, findings, evidence["source"])
 
-    def _process_evaluation(self, k: int) -> None:
+    def _process_evaluation(self, k: int) -> FindingStatus:
         """Process rules over every step action so far, logged with that action list so replay re-runs them."""
         findings = run_process_checks(self.plan, self.actions, self.params)
         self._log_evaluation({"source": "process", "step": k, "rules": list(PROC_RULES), "actions": list(self.actions)}, findings)
+        return gate.combine(findings)
 
     # ---- the tick ------------------------------------------------------------------------------
     def tick(self, now: float, signals: dict[str, Signal], inbox: list[dict]) -> None:
@@ -184,18 +185,26 @@ class Session:
 
     def _handle(self, now: float, msg: dict) -> None:
         kind = msg["kind"]
-        if kind == "step_done":
+        if kind in ("step_done", "step_verify"):
             k, by, why = int(msg["k"]), msg.get("by"), None
+            verb = "mark" if kind == "step_done" else "verify"
             if self.state != "ready":
                 why = f"session is {self.state}"
             elif self.verdict in TERMINAL:
                 why = f"verdict is already {self.verdict.value}"
             elif k not in self.steps or self.steps[k].kind == "final":
-                why = f"step {k} is not a step to mark"
-            elif k in self.marks:
+                why = f"there is no step {k} to {verb}"
+            elif verb == "mark" and k in self.marks:
                 why = f"step {k} already marked"
+            elif verb == "verify" and k not in self.marks:
+                why = f"step {k} not marked done yet"
             if why:
-                self.log.append(self.sid, "step_refused", {"k": k, "by": by, "reason": why})
+                self.log.append(self.sid, "step_refused", {"k": k, "by": by, "reason": why} | ({"action": verb} if verb != "mark" else {}))
+                return
+            if verb == "verify":  # judged by PROC-INDEPENDENCE: the verifier must not be the one who marked it
+                self.actions.append({"kind": "verify", "k": k, "by": by})
+                self.log.append(self.sid, "step_verify", {"k": k, "by": by})
+                self._process_evaluation(k)
                 return
             # out of order or early: logged and judged by PROC-SEQUENCE (FAIL -> BLOCKED), never acted on
             action = {"kind": "mark", "k": k, "by": by, "evaluated": sorted(self.evaluated)}
@@ -224,6 +233,9 @@ class Session:
             self.evaluated[k] = gate.combine(findings)
             passed = {j: st == FindingStatus.PASS for j, st in self.evaluated.items()}
             done = gate.completes_plan(self.plan, passed, k)
+            if done:  # the process rules get the last word before the plan can complete (e.g. a verify missing)
+                self.actions.append({"kind": "final"})
+                done = self._process_evaluation(k) == FindingStatus.PASS
             self._record_evaluation("step", k, step.checks, window, findings, completes=done)
             if done:  # the final step needs no mark: it is "every step above passed"
                 final = next(s.k for s in self.plan.steps if s.kind == "final")

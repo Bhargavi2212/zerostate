@@ -370,6 +370,8 @@ class Episode:
             elif step.kind == "vent_open":
                 act("set", step.target, str(step.required_state))
             st = self.evaluated(k)
+            if step.kind == "isolate" and st["verdict"] not in TERMINAL:  # a second person checks it (PROC-INDEPENDENCE)
+                zs("step", "verify", self.sid, str(k), "--by", "eval-operator" if variant == "same_verifier" else "eval-verifier")
             if step.kind == "vent_open" and st["verdict"] not in TERMINAL:
                 # keep venting until the plan's vent target (rolling mean); mark on regardless, like a hurried human
                 act("wait-pressure-below", str(self.plan.vent_target_kpa_abs), "--mean-of", "8",
