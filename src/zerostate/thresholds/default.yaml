@@ -1,6 +1,6 @@
 # Generic live-check thresholds. Plant files (plants/<p>/thresholds.yaml) may override existing keys only.
 # Every name ends in its unit: _process_s, _wall_s, _kpa, _pct, _per_process_s or _samples.
-version: "3"
+version: "4"  # v4: final_mean_process_s added (LIVE-HOLD v3)
 # LIVE-QUALITY (QARTOD gross range / rate of change / spike, own code; rate + spike only on pressure and level)
 pressure_min_kpa: 50
 pressure_max_kpa: 3200
@@ -15,6 +15,7 @@ flow_cutoff_pct: 1
 valve_check_process_s: 10
 # LIVE-HOLD (the stricter of this and the plan's hold_test.max_rise_kpa applies)
 hold_max_rise_kpa: 5
+final_mean_process_s: 30  # v4: residual-pressure plans: depressurised = mean of the final vent's last 30 process-s
 # LIVE-ALIVE
 vent_check_process_s: 120
 alive_purge_open_pct: 50

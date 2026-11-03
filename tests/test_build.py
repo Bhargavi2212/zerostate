@@ -107,3 +107,14 @@ def test_replay_reports_a_changed_plan_finding(tmp_path):
     d.log.append("s2", "session_start", d.log.events("s1")[0]["payload"])
     d.log.append("s2", "evaluation", payload)
     assert any("(plan)" in m for m in replay(d.log, "s2", PARAMS))
+
+
+def test_merged_p2_plan_has_the_steps_the_p2_rules_were_tested_on():
+    """graph/build.py (P2-2) and the P2 rule tests (checks/synth_p2.py, P2-6) must describe one plan."""
+    from checks.synth_p2 import PLAN
+
+    m = PlantMap.model_validate(yaml.safe_load((P2 / "plant_map.yaml").read_text(encoding="utf-8")))
+    lst = IsolationList.model_validate(yaml.safe_load((P2 / "isolation_list.yaml").read_text(encoding="utf-8")))
+    plan, problems = merge(m, lst)
+    assert problems == []
+    assert [s.model_dump() for s in plan.steps] == [s.model_dump() for s in PLAN.steps]

@@ -1,0 +1,12 @@
+{
+ "commit": "56d4cb8",
+ "p0_kpa_abs": 2000.0,
+ "end_kpa_abs": 102.0,
+ "cv_vv213": 0.035,
+ "volume_m3": 2.0,
+ "step_process_s": 1.5,
+ "vent_process_s": 298.75,
+ "max_error_pct": 0.0129,
+ "limit_pct": 2.0,
+ "pass": true
+}

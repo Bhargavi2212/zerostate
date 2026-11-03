@@ -122,7 +122,7 @@ zerostate/
 │   │   ├── server.py              # asyncua server at 192.168.95.50:4840; users zerostate (read) / operator (*.CMD); write-attempt log
 │   │   ├── faults.py  truth.py    # via docker exec on a unix socket inside the container, never the network (eval only)
 │   │   ├── Dockerfile
-│   │   └── validation/            # analytic blowdown comparison → overlay PNG + error %
+│   │   └── validation/            # analytic blowdown comparison → blowdown_overlay.svg (stdlib, no plot dependency); error % in eval/results/p2_validation_<date>.json
 │   └── p3_wntr/                   # stretch
 ├── eval/
 │   ├── scenarios/                 # P1 S0–S12 as YAML (plant, fault, onset range, severity range, expected verdicts); p2/ for P2
@@ -153,6 +153,9 @@ zerostate/
 │   ├── test_firewall.py           # AST scan: src/zerostate imports nothing from plants/ or eval/, no GRFICS web URL
 │   ├── test_models.py             # no SAFE; extra fields rejected; plan hash stable/changes; session edits don't touch plan hash
 │   ├── test_modbus_adapter.py     # in-process Modbus server: scaled values; server down → BAD
+│   ├── test_opcua_adapter.py      # in-process P2 server: values, StatusCode quality, SourceTimestamp → STALE, down → BAD; zs picks the adapter by protocol
+│   ├── test_p2_server.py          # P2 server permission check: zerostate writes refused + logged, operator *.CMD only, timestamps advance
+│   ├── test_p2_model.py  test_p2_validation.py   # P2 physics (travel, limit switches, faults, noise, scenario keys); C12 < 2 %
 │   ├── test_freshness.py          # placeholder, STALE, constant_ok_raw, dead group (injectable clock)
 │   ├── test_plant_map.py          # map loads; every plan tag exists in the map
 │   ├── test_build.py              # merge deterministic, never invents a value; P2 plan passes every plan rule, P1 BLOCKED by SOFTWARE + TYPE; plan check at session start (refuse / override) and its replay
@@ -167,13 +170,14 @@ zerostate/
 │   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
 │   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, settle before monitoring, UNKNOWN grace, stop
 │   ├── test_operator.py           # operator: setpoints before coil, readback mismatch aborts, manual off restores defaults
-│   ├── conftest.py                # shared in-process Modbus server fixture (adapter + operator tests)
+│   ├── conftest.py                # shared in-process Modbus server fixture (adapter + operator tests) + in-process P2 OPC UA server
 │   ├── test_audit_chain.py  test_replay.py  test_importer_gate.py  test_plants_only_diff.py
 │   ├── net/test_container_isolation.py   # run inside container: only PLC:502 reachable; truth, host ports, DMZ, router, internet not; app can't change net config
 │   ├── checks/                    # test_<rule>.py per rule (test_paths.py … test_reset.py), a passing and a failing case each; test_timescale_invariance.py
 │   ├── live/                      # marker `live`, run from the host against the lab: test_patch.py, test_operator_net.py
 │   │                              # tests/checks/synth.py: synthetic P1 windows (vent model, 4 Hz polls) for rule tests
 │   │                              # tests/checks/plan_synth.py: small hand-built plant maps and plans for the plan-rule tests
+│   │                              # tests/checks/synth_p2.py: P2 plan + windows sampled from plants/p2_gasline/model.py (4 Hz, x30)
 │   └── fixtures/                  # small recorded episodes for offline tests
 └── scripts/
     └── modbus_scan.py             # Phase 0: map GRFICS registers (read-only)

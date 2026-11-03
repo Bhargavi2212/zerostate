@@ -15,6 +15,7 @@ dependencies = [
     "networkx==3.5",
     "pypdfium2==4.30.0",
     "Pillow==11.3.0",
+    "asyncua==1.1.6",
 ]
 
 [project.scripts]

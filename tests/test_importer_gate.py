@@ -173,7 +173,7 @@ def lab(tmp_path, monkeypatch):
 
     def no_lab(*_a, **_k):
         raise ReachedAdapter  # past every refusal: would now open the plant connection
-    monkeypatch.setattr(cli, "ModbusReadOnly", no_lab)
+    monkeypatch.setattr(cli, "open_adapter", no_lab)  # the gate must refuse before any plant access
     plan_hash = IsolationPlan.model_validate(yaml.safe_load(plan_file.read_text())).content_hash()
     return plan_file, plan_hash, tmp_path
 
