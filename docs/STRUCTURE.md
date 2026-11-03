@@ -158,6 +158,7 @@ zerostate/
 │   ├── test_modbus_scan.py        # scan script offset check
 │   ├── test_timescale_judge.py    # time-scale pass/fail criteria (eval/tools/timescale_test.py)
 │   ├── test_runner.py             # runner logic without the lab: seeded draws, router-rule order
+│   ├── test_published_replay.py   # C11 regression gate: every published P1 episode replays identically under today's rules
 │   ├── test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
 │   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
 │   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, settle before monitoring, UNKNOWN grace, stop
