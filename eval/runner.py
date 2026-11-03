@@ -349,6 +349,8 @@ class Episode:
             if st["verdict"] in TERMINAL or step.kind == "final":
                 break
             k = step.k
+            if variant == "skip_step" and k == self.sc["skip_step"]:
+                continue  # S7: a hurried operator skips step k and marks k+1 right after k-1's evaluation
             if step.kind == "vent_open" and (problem := vent_start_problem(self.last_pressure)):
                 raise EpisodeInvalid(problem)
             self.schedule(k, None)  # faults tied to "before step k"

@@ -84,17 +84,44 @@ def test_warm_in_timeout_escalates(tmp_path):
     assert "instruments not verified live" in st["stamp"]["reasons"][0]
 
 
-def test_marks_refused_before_ready_and_out_of_order(tmp_path):
+def test_mark_before_ready_refused_and_pending_is_not_a_verdict(tmp_path):
     d = Driver(tmp_path, quality=lambda t, tag: "UNKNOWN" if t < 1 else "GOOD")
     d.mark(1)
     assert d.status()["refused"][0]["reason"].startswith("session is warming_in")
     d.run(2)
-    d.mark(2)
-    assert "next step is 1" in d.status()["refused"][-1]["reason"]
+    d.mark(1)
+    d.mark(1)  # a repeated mark is refused, not a sequence fault
+    assert d.status()["refused"][-1]["reason"] == "step 1 already marked"
+    assert d.status()["verdict"] is None  # pending is not a verdict
+    assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_mark_while_previous_step_pending_blocks(tmp_path):
+    d = Driver(tmp_path)
+    d.run(2)
     d.mark(1)
     d.mark(2)  # step 1 still pending
-    assert d.status()["refused"][-1]["reason"] == "previous step not evaluated yet"
-    assert d.status()["verdict"] is None  # pending is not a verdict
+    st = d.status()
+    assert st["verdict"] == "BLOCKED" and st["steps"][2] == "FAIL"
+    assert st["stamp"]["reasons"] == ["PROC-SEQUENCE: step 2 marked before step 1 was verified"]
+    assert 2 not in d.s.marks  # logged and judged, never evaluated as a step
+
+
+def test_skipped_step_blocks_and_replays(tmp_path):
+    d = Driver(tmp_path)
+    d.run(2)
+    for k in (1, 2):
+        d.mark(k)
+        until_evaluated(d, k)
+    d.mark(4)  # step 3 skipped
+    st = d.status()
+    assert st["verdict"] == "BLOCKED"
+    assert st["stamp"]["reasons"] == ["PROC-SEQUENCE: step 4 marked before step 3 was verified"]
+    done = [e["payload"] for e in d.log.events("s1") if e["kind"] == "step_done"]
+    assert done[-1] == {"k": 4, "by": "op", "out_of_order": True}
+    assert replay(d.log, "s1", PARAMS) == []
+    d.mark(3)  # after a terminal verdict marks stay refused
+    assert d.status()["refused"][-1]["reason"] == "verdict is already BLOCKED"
 
 
 def test_monitor_ignores_a_valve_still_settling_but_blocks_after(tmp_path):

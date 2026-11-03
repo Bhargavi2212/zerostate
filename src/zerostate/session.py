@@ -13,6 +13,7 @@ from pathlib import Path
 from zerostate import gate
 from zerostate.audit.log import AuditLog
 from zerostate.checks.plan import PLAN_RULES, run_plan_checks
+from zerostate.checks.process import PROC_RULES, run_process_checks, sequence
 from zerostate.models.envelope import IsolationPlan, step_targets
 from zerostate.models.evidence import Window
 from zerostate.models.plant_map import PlantMap
@@ -75,6 +76,7 @@ class Session:
         self.buffer: dict[str, list] = {t: [] for t in self.witnesses}
         self.latest: dict[str, Signal] = {}
         self.marks: dict[int, float] = {}
+        self.actions: list[dict] = []  # every accepted step action, in order: what the process rules read
         self.evaluated: dict[int, FindingStatus] = {}
         self.unknown_since: float | None = None
         self.last_monitor = now
@@ -117,12 +119,20 @@ class Session:
             self.log.append(self.sid, "verdict", {"source": source, **gate.stamp(new, self.plan, self.params["version"], findings, self.override)})
 
     def _record_evaluation(self, source: str, k: int, rules, window: Window, findings, only=None, completes=False):
+        self._log_evaluation({"source": source, "step": k, "rules": list(rules), "only": only,
+                              "window": window.model_dump(mode="json")}, findings, completes)
+
+    def _log_evaluation(self, evidence: dict, findings, completes=False) -> None:
         new = gate.next_verdict(self.verdict, findings, completes)
         self.log.append(self.sid, "evaluation", {
-            "source": source, "step": k, "rules": list(rules), "only": only, "window": window.model_dump(mode="json"),
-            "thresholds_version": self.params["version"], "findings": [f.model_dump(mode="json") for f in findings],
+            **evidence, "thresholds_version": self.params["version"], "findings": [f.model_dump(mode="json") for f in findings],
             "verdict_after": new.value if new else None})
-        self._set_verdict(new, findings, source)
+        self._set_verdict(new, findings, evidence["source"])
+
+    def _process_evaluation(self, k: int) -> None:
+        """Process rules over every step action so far, logged with that action list so replay re-runs them."""
+        findings = run_process_checks(self.plan, self.actions, self.params)
+        self._log_evaluation({"source": "process", "step": k, "rules": list(PROC_RULES), "actions": list(self.actions)}, findings)
 
     # ---- the tick ------------------------------------------------------------------------------
     def tick(self, now: float, signals: dict[str, Signal], inbox: list[dict]) -> None:
@@ -175,20 +185,26 @@ class Session:
     def _handle(self, now: float, msg: dict) -> None:
         kind = msg["kind"]
         if kind == "step_done":
-            k, why = int(msg["k"]), None
+            k, by, why = int(msg["k"]), msg.get("by"), None
             if self.state != "ready":
                 why = f"session is {self.state}"
             elif self.verdict in TERMINAL:
                 why = f"verdict is already {self.verdict.value}"
-            elif any(m not in self.evaluated for m in self.marks):
-                why = "previous step not evaluated yet"
-            elif k != self._next_step():
-                why = f"next step is {self._next_step()}"
+            elif k not in self.steps or self.steps[k].kind == "final":
+                why = f"step {k} is not a step to mark"
+            elif k in self.marks:
+                why = f"step {k} already marked"
             if why:
-                self.log.append(self.sid, "step_refused", {"k": k, "by": msg.get("by"), "reason": why})
-            else:
+                self.log.append(self.sid, "step_refused", {"k": k, "by": by, "reason": why})
+                return
+            # out of order or early: logged and judged by PROC-SEQUENCE (FAIL -> BLOCKED), never acted on
+            action = {"kind": "mark", "k": k, "by": by, "evaluated": sorted(self.evaluated)}
+            in_order = sequence.check(self.plan, [action], self.params).status == FindingStatus.PASS
+            self.actions.append(action)
+            self.log.append(self.sid, "step_done", {"k": k, "by": by} if in_order else {"k": k, "by": by, "out_of_order": True})
+            if in_order:
                 self.marks[k] = now
-                self.log.append(self.sid, "step_done", {"k": k, "by": msg.get("by")})
+            self._process_evaluation(k)
         elif kind == "sign":
             self.closed = True  # only a human signature closes a session
             self.log.append(self.sid, "signature", {"by": msg.get("by"), "role": msg.get("role"), "note": msg.get("note"),
@@ -259,6 +275,8 @@ def status_from_events(events: list[dict]) -> dict:
         elif kind == "evaluation" and p["source"] == "step":
             st = [f["status"] for f in p["findings"]]
             out["steps"][p["step"]] = "FAIL" if "FAIL" in st else "UNKNOWN" if ("UNKNOWN" in st or not st) else "PASS"
+        elif kind == "evaluation" and p["source"] == "process" and any(f["status"] == "FAIL" for f in p["findings"]):
+            out["steps"][p["step"]] = "FAIL"
         elif kind == "verdict":
             out["verdict"], out["stamp"] = p["verdict"], p
         elif kind == "signature":

@@ -4,6 +4,7 @@ thresholds, and report any finding or verdict that comes out different."""
 from zerostate import gate
 from zerostate.audit.log import AuditLog
 from zerostate.checks.plan import run_plan_checks
+from zerostate.checks.process import PROC_RULES
 from zerostate.models.envelope import IsolationPlan
 from zerostate.models.evidence import Window
 from zerostate.models.plant_map import PlantMap
@@ -37,8 +38,11 @@ def replay(log: AuditLog, session: str, params: dict) -> list[str]:
             if got != logged:
                 mismatches.append(f"event {e['id']} (plan): replay {got} != logged {logged}")
             continue
-        only = [tuple(x) for x in p["only"]] if p.get("only") is not None else None
-        findings = gate.evaluate(plan, steps[p["step"]], Window.model_validate(p["window"]), params, p["rules"], only)
+        if p["source"] == "process":  # re-run the logged rules on the logged step actions
+            findings = [PROC_RULES[r].check(plan, p["actions"], params) for r in p["rules"]]
+        else:
+            only = [tuple(x) for x in p["only"]] if p.get("only") is not None else None
+            findings = gate.evaluate(plan, steps[p["step"]], Window.model_validate(p["window"]), params, p["rules"], only)
         got = [(f.rule_id, f.status.value, f.message) for f in findings]
         logged = [(f["rule_id"], f["status"], f["message"]) for f in p["findings"]]
         if got != logged:

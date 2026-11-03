@@ -128,6 +128,8 @@ def build(run: Path, plant_map: dict | None = None) -> Bundle:
         if e["payload"]["source"] == "step":
             st = {f["status"] for f in e["payload"]["findings"]}
             results[e["payload"]["step"]] = "FAIL" if "FAIL" in st else "UNKNOWN" if ("UNKNOWN" in st or not st) else "PASS"
+        elif e["payload"]["source"] == "process" and any(f["status"] == "FAIL" for f in e["payload"]["findings"]):
+            results[e["payload"]["step"]] = "FAIL"  # e.g. a step marked out of order
     if verdict.get("verdict") == "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF":
         results.update({s["k"]: "PASS" for s in plan["steps"] if s["kind"] == "final"})
     steps = [Step(k=s["k"], kind=s["kind"], targets=s.get("targets") or ([s["target"]] if s.get("target") else []),
