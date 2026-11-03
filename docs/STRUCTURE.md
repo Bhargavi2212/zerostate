@@ -81,7 +81,7 @@ zerostate/
 â”‚   â”‚   â”œâ”€â”€ locate.py              # SAM 3.1 boxes matched to display_map regions
 â”‚   â”‚   â”œâ”€â”€ read.py                # crop + upscale, single Muse Spark read (3-read voting is a should)
 â”‚   â”‚   â”œâ”€â”€ freeze.py              # freeze detection in code: average hash of each display region (frame noise defeats an exact pixel hash)
-â”‚   â”‚   â””â”€â”€ track.py               # the with-camera track: worker-thread bursts (3 frames, 2 s apart), camera_reading / camera evaluation / with_camera verdict events
+â”‚   â”‚   â””â”€â”€ track.py               # the with-camera track: worker-thread bursts (3 frames, 2 s apart), camera_reading (with SAM box) / camera evaluation / with_camera verdict events; saves each frame to /data/frames/<session>/<sha256>.jpg
 â”‚   â”‚                              # not built: align.py (lag is a measured threshold), redact.py (no people in simulator frames)
 â”‚   â”œâ”€â”€ llm/
 â”‚   â”‚   â”œâ”€â”€ client.py              # the only Meta API caller: via zs-proxy (explicit), spark_json / sam_boxes, ledger /data/credits.jsonl, budget stop ZS_BUDGET_USD

@@ -101,7 +101,8 @@ def camera_track(s, plan, log, scale, override):
         ct.CameraTrack(s.sid, plan, s.params, log, {}, scale, override).no_service()
         return None, None, None
     dmap = ct.load_display_map(os.environ.get("ZS_DISPLAY_MAP", str(_config() / "frame_service" / "display_map.yaml")))
-    cam, jobs, results = ct.CameraTrack(s.sid, plan, s.params, log, dmap, scale, override), queue.Queue(), queue.Queue()
+    cam = ct.CameraTrack(s.sid, plan, s.params, log, dmap, scale, override, frames_dir=_data() / "frames" / s.sid)
+    jobs, results = queue.Queue(), queue.Queue()
     threading.Thread(target=ct.worker, args=(jobs, results), daemon=True, name="camera").start()
     return cam, jobs, results
 
