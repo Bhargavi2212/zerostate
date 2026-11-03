@@ -160,6 +160,7 @@ zerostate/
 │   ├── test_runner.py             # runner logic without the lab: seeded draws, router-rule order
 │   ├── test_published_replay.py   # C11 regression gate: every published P1 episode replays identically under today's rules
 │   ├── test_llm_client.py         # fake opener: box parsing, strict-JSON retry then fail, ledger, budget stop, key never logged
+│   ├── test_bundle.py             # episode bundle: export → load → schema validates; key-like strings refused
 │   ├── test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
 │   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
 │   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, settle before monitoring, UNKNOWN grace, stop
