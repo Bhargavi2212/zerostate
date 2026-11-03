@@ -49,6 +49,12 @@ class Inbox:
             self.seen = rows[-1][0]
         return [{"kind": k, **json.loads(p)} for _, k, p in rows]
 
+    def start_request(self, session: str) -> dict | None:
+        """The session start the API queued under this id (POST /api/sessions), or None."""
+        row = self.db.execute("SELECT payload_json FROM inbox WHERE session = ? AND kind = 'session_start' ORDER BY id DESC LIMIT 1",
+                              (session,)).fetchone()
+        return json.loads(row[0]) if row else None
+
 
 class Session:
     def __init__(self, sid: str, plan: IsolationPlan, plan_hash: str, params: dict, process_time_scale: float,
@@ -227,9 +233,16 @@ class Session:
                 self.marks[k] = now
             self._process_evaluation(k)
         elif kind == "sign":
-            self.closed = True  # only a human signature closes a session
             with_cam = gate.worsen(self.verdict, self.camera_verdict)
+            outcome = msg.get("outcome") or "not_accepted"  # "Close — not accepted" never reads as approval
+            nd = Verdict.NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF
+            if outcome == "accepted" and not (self.verdict == nd and with_cam == nd):
+                self.log.append(self.sid, "sign_refused", {"by": msg.get("by"), "outcome": outcome,
+                                                           "reason": "accepted needs both tracks at NO DISCREPANCY FOUND"})
+                return
+            self.closed = True  # only a human signature closes a session
             self.log.append(self.sid, "signature", {"by": msg.get("by"), "role": msg.get("role"), "note": msg.get("note"),
+                                                    "outcome": outcome,
                                                     "verdict_at_signing": self.verdict.value if self.verdict else None,
                                                     "verdict_with_camera_at_signing": with_cam.value if with_cam else None})
         elif kind == "stop":
@@ -302,7 +315,10 @@ def status_from_events(events: list[dict]) -> dict:
         elif kind == "step_reopen":
             for j in p["pending"]:
                 out["steps"].pop(j, None)  # back to pending: absent until marked again
-        elif kind == "step_refused":
+        elif kind in ("step_refused", "sign_refused"):
+            out["refused"].append(p)
+        elif kind == "session_refused":  # the core would not start a session requested through the API
+            out["state"] = "refused"
             out["refused"].append(p)
         elif kind == "evaluation" and p["source"] == "step":
             st = [f["status"] for f in p["findings"]]

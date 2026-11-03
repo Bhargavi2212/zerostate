@@ -236,9 +236,13 @@ def test_verdict_never_improves_and_sign_closes(tmp_path):
     d.fn = lambda ps: steady(pressure=2700.0)
     d.run(5)
     assert d.status()["verdict"] == "BLOCKED"
+    d.run(POLL, [{"kind": "sign", "by": "receiver-a", "role": "receiver", "outcome": "accepted"}])
+    st = d.status()  # "accepted" on a block is refused and leaves the session open
+    assert st["state"] == "ready" and st["refused"][-1]["outcome"] == "accepted"
     d.run(POLL, [{"kind": "sign", "by": "receiver-a", "role": "receiver"}])
     st = d.status()
     assert st["state"] == "closed" and st["signature"]["verdict_at_signing"] == "BLOCKED"
+    assert st["signature"]["outcome"] == "not_accepted"
 
 
 def test_stop_leaves_the_session_unsigned(tmp_path):
@@ -279,3 +283,18 @@ def test_monitor_crash_escalates_and_still_replays(tmp_path):
     st = d.status()
     assert st["verdict"] == "ESCALATED" and st["stamp"]["reasons"] == ["monitor stopped: OperationalError: database is locked"]
     assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_a_start_the_core_refuses_is_logged_under_the_api_id(tmp_path, monkeypatch):
+    from zerostate import cli
+    from zerostate.session import Inbox
+
+    for var, sub in (("ZS_DATA", "data"), ("ZS_AUDIT", "audit.sqlite"), ("ZS_CONFIG", "config")):
+        monkeypatch.setenv(var, str(tmp_path / sub))
+    (tmp_path / "data").mkdir()
+    Inbox(tmp_path / "data" / "inbox.sqlite").put("api-1", "session_start", plant="p2_gasline", plan_hash="c" * 64,
+                                                   by="Owner", plan_check_override=None)
+    assert cli.main(["session", "start", "--session", "api-1", "--from-inbox"]) == 1
+    ev = AuditLog(tmp_path / "audit.sqlite").events("api-1")
+    assert [e["kind"] for e in ev] == ["session_refused"] and "no plan file" in ev[0]["payload"]["reason"]
+    assert status_from_events(ev)["state"] == "refused"
