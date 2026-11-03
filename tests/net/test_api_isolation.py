@@ -51,7 +51,11 @@ def test_cannot_change_the_allowlist():
 
 def test_audit_log_is_read_only():
     path = os.environ["ZS_AUDIT"]
+    # Check before probing: run anywhere the log is writable (e.g. inside zerostate), the probe below
+    # would really write to it. Fail without writing instead.
+    assert not os.access(path, os.W_OK) and not os.access(os.path.dirname(path), os.W_OK), \
+        "audit log is writable here: run this file only inside zs-api"
     with pytest.raises(sqlite3.OperationalError):
-        sqlite3.connect(path).execute("CREATE TABLE IF NOT EXISTS zs_api_probe (x)")
+        sqlite3.connect(path).execute("CREATE TABLE zs_api_probe (x)")
     with pytest.raises(sqlite3.OperationalError):
         AuditLog(path, read_only=True).append("zs-api-probe", "probe", {})
