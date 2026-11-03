@@ -52,6 +52,7 @@ Target: 5 variants per error, 15 correct. P1's real GRFICS plan is run separatel
 | S10 | blocked vent (no flow when opened) | Tosco drains | — | ✓ (LIVE-ALIVE: open, no flow, no fall → FAIL) |
 | S11 | dry test (no upstream pressure during hold) | WMC MHS-07 | — | ✓ |
 | S12 | comms loss / stale registers (incl. whole-path freeze: every tag behind the PLC, also closed-valve groups, must leave GOOD) | Modbus last-value behaviour; seen live Oct 31 (~50 s frozen with successful reads) | ✓ | ✓ |
+| S13 | inch and test: f1 reopened after the block-in, closed again, not verified again (PROC-RESET) | temporary de-isolation (ETUG) | ✓ | — |
 | S9 | replayed values | Stuxnet | stretch | stretch |
 Target: 5 episodes per scenario per plant, 15 clean per plant (Decision 8). Run overnight Nov 2.
 

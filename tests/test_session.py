@@ -34,6 +34,9 @@ class Driver:
             self.fn, self.fn_t0 = fn, self.t
         self.run(POLL, [{"kind": "step_done", "k": k, "by": "op"}])
 
+    def verify(self, k, by="op2"):
+        self.run(POLL, [{"kind": "step_verify", "k": k, "by": by}])
+
     def status(self):
         return status_from_events(self.log.events("s1"))
 
@@ -46,11 +49,28 @@ def until_evaluated(d, k, limit_wall_s=120):
     raise AssertionError(f"step {k} never evaluated")
 
 
-def clean_run(d):
+    def verify(self, k, by="op2"):
+        self.run(POLL, [{"kind": "step_verify", "k": k, "by": by}])
+
+
+def clean_run(d, verifier="op2", skip_verify=(), reopen_f1=None):
+    """reopen_f1: None, or whether the inch-and-test of f1 after the isolation is verified again."""
     d.run(2)
     for k in range(1, VENT):  # mode, then close f1, f2, product, purge
         d.mark(k, lambda ps: steady(pressure=2700.0))
         until_evaluated(d, k)
+        if PLAN.steps[k - 1].kind == "isolate" and k not in skip_verify:
+            d.verify(k, verifier)  # a second person checks each isolate step (PROC-INDEPENDENCE)
+    if reopen_f1 is not None:
+        d.run(POLL, [{"kind": "step_reopen", "k": 2, "by": "op", "reason": "inch and test f1"}])
+        d.fn, d.fn_t0 = (lambda ps: steady(pressure=2700.0, f1_valve_pos=20.0, f1_cmd=20.0, f1_flow=200.0)), d.t
+        d.run(5)
+        st = d.status()
+        assert 2 not in st["steps"] and st["verdict"] is None  # f1 open on purpose: pending, not monitored
+        d.mark(2, lambda ps: steady(pressure=2700.0))  # closed again
+        until_evaluated(d, 2)
+        if reopen_f1:
+            d.verify(2, verifier)
     d.mark(VENT, vent)
     until_evaluated(d, VENT)
     d.run(25)  # like the runner: keep venting until the vent target (~366 process-s from 2700 kPa)
@@ -76,6 +96,59 @@ def test_clean_session_reaches_no_discrepancy_and_replays(tmp_path):
     assert d.log.verify() == (True, None)
 
 
+def test_installer_verifying_own_step_blocks(tmp_path):
+    d = Driver(tmp_path)
+    d.run(2)
+    d.verify(1)  # nothing marked yet: refused and logged
+    assert d.status()["refused"][-1] == {"k": 1, "by": "op2", "reason": "step 1 not marked done yet", "action": "verify"}
+    for k in (1, 2):
+        d.mark(k)
+        until_evaluated(d, k)
+    d.verify(2, by="op")  # the one who marked it
+    st = d.status()
+    assert st["verdict"] == "BLOCKED" and st["steps"][2] == "FAIL"
+    assert st["stamp"]["reasons"] == ["PROC-INDEPENDENCE: step 2 verified by op, the person who marked it done"]
+    assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_missing_verify_at_final_escalates_instead_of_no_discrepancy(tmp_path):
+    d = Driver(tmp_path)
+    clean_run(d, skip_verify=(3,))
+    st = d.status()
+    assert st["verdict"] == "ESCALATED"
+    assert st["stamp"]["reasons"] == ["PROC-INDEPENDENCE: isolate steps not verified by a second person: 3"]
+    assert "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF" not in [e["payload"]["verdict"] for e in d.log.events("s1") if e["kind"] == "verdict"]
+    assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_reopen_done_again_and_verified_again_completes_and_replays(tmp_path):
+    d = Driver(tmp_path)
+    clean_run(d, reopen_f1=True)
+    assert d.status()["verdict"] == "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+    assert [e["payload"]["pending"] for e in d.log.events("s1") if e["kind"] == "step_reopen"] == [[2]]
+    assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_reopen_not_verified_again_never_reaches_no_discrepancy(tmp_path):
+    d = Driver(tmp_path)
+    clean_run(d, reopen_f1=False)
+    st = d.status()
+    assert st["verdict"] == "BLOCKED"
+    assert st["stamp"]["reasons"] == ["PROC-RESET: step 2 not verified again by a second person after step 2 was reopened"]
+    assert "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF" not in [e["payload"]["verdict"] for e in d.log.events("s1") if e["kind"] == "verdict"]
+    assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_reopen_refused_before_its_mark_and_after_a_verdict(tmp_path):
+    d = Driver(tmp_path)
+    d.run(2)
+    d.run(POLL, [{"kind": "step_reopen", "k": 2, "by": "op", "reason": "test"}])
+    assert d.status()["refused"][-1]["reason"] == "step 2 not marked done yet"
+    clean_run(d)
+    d.run(POLL, [{"kind": "step_reopen", "k": 2, "by": "op", "reason": "test"}])
+    assert d.status()["refused"][-1]["reason"].startswith("verdict is already NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF")
+
+
 def test_warm_in_timeout_escalates(tmp_path):
     d = Driver(tmp_path, quality=lambda t, tag: "STALE" if tag == "pressure" else "GOOD")
     d.run(31)
@@ -84,17 +157,44 @@ def test_warm_in_timeout_escalates(tmp_path):
     assert "instruments not verified live" in st["stamp"]["reasons"][0]
 
 
-def test_marks_refused_before_ready_and_out_of_order(tmp_path):
+def test_mark_before_ready_refused_and_pending_is_not_a_verdict(tmp_path):
     d = Driver(tmp_path, quality=lambda t, tag: "UNKNOWN" if t < 1 else "GOOD")
     d.mark(1)
     assert d.status()["refused"][0]["reason"].startswith("session is warming_in")
     d.run(2)
-    d.mark(2)
-    assert "next step is 1" in d.status()["refused"][-1]["reason"]
+    d.mark(1)
+    d.mark(1)  # a repeated mark is refused, not a sequence fault
+    assert d.status()["refused"][-1]["reason"] == "step 1 already marked"
+    assert d.status()["verdict"] is None  # pending is not a verdict
+    assert replay(d.log, "s1", PARAMS) == []
+
+
+def test_mark_while_previous_step_pending_blocks(tmp_path):
+    d = Driver(tmp_path)
+    d.run(2)
     d.mark(1)
     d.mark(2)  # step 1 still pending
-    assert d.status()["refused"][-1]["reason"] == "previous step not evaluated yet"
-    assert d.status()["verdict"] is None  # pending is not a verdict
+    st = d.status()
+    assert st["verdict"] == "BLOCKED" and st["steps"][2] == "FAIL"
+    assert st["stamp"]["reasons"] == ["PROC-SEQUENCE: step 2 marked before step 1 was verified"]
+    assert 2 not in d.s.marks  # logged and judged, never evaluated as a step
+
+
+def test_skipped_step_blocks_and_replays(tmp_path):
+    d = Driver(tmp_path)
+    d.run(2)
+    for k in (1, 2):
+        d.mark(k)
+        until_evaluated(d, k)
+    d.mark(4)  # step 3 skipped
+    st = d.status()
+    assert st["verdict"] == "BLOCKED"
+    assert st["stamp"]["reasons"] == ["PROC-SEQUENCE: step 4 marked before step 3 was verified"]
+    done = [e["payload"] for e in d.log.events("s1") if e["kind"] == "step_done"]
+    assert done[-1] == {"k": 4, "by": "op", "out_of_order": True}
+    assert replay(d.log, "s1", PARAMS) == []
+    d.mark(3)  # after a terminal verdict marks stay refused
+    assert d.status()["refused"][-1]["reason"] == "verdict is already BLOCKED"
 
 
 def test_monitor_ignores_a_valve_still_settling_but_blocks_after(tmp_path):

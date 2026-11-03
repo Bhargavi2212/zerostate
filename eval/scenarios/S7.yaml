@@ -1,0 +1,6 @@
+id: S7
+title: step skipped (f2 never blocked in; product marked right after step 2)
+real_case: BP Amoco Augusta 2001
+expected: [BLOCKED]  # PROC-SEQUENCE: step 4 marked before step 3 was verified
+operator: skip_step
+skip_step: 3

@@ -1,0 +1,5 @@
+id: S7-same
+title: the person who blocked in f1 and purge also verifies it
+real_case: BP Amoco Augusta 2001
+expected: [BLOCKED]  # PROC-INDEPENDENCE: step 2 verified by eval-operator, the person who marked it done
+operator: same_verifier

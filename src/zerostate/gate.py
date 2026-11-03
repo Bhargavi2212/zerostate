@@ -3,12 +3,13 @@ signature closes a session (session.py). No model judge: no model output can pro
 
 from zerostate.checks.live import RULES
 from zerostate.checks.plan import PLAN_RULES
+from zerostate.checks.process import PROC_RULES
 from zerostate.models.envelope import IsolationPlan, Step
 from zerostate.models.evidence import Finding, Window
 from zerostate.models.verdict import FindingStatus, Verdict
 from zerostate.version import __version__
 
-REGISTRY = {**RULES, **PLAN_RULES}  # every rule, live and plan: the versions a verdict stamp lists
+REGISTRY = {**RULES, **PLAN_RULES, **PROC_RULES}  # every rule, live, plan and process: the versions a verdict stamp lists
 
 # Severity order; None = no verdict yet (steps pending).
 RANK = {None: 0, Verdict.NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF: 1, Verdict.ESCALATED: 2, Verdict.BLOCKED: 3}

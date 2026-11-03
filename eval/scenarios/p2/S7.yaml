@@ -1,0 +1,8 @@
+# P2 gas line (plants/p2_gasline/SPEC.md). Steps: 1 close XV-201, 2 close XV-203, 3 open BV-202, 4 close XV-204,
+# 5 vent to 200 kPa, 6 close VV-213, 7 hold 600 process-s, 8 final vent (VV-213 stays open), 9 final.
+id: S7
+plant: p2_gasline
+title: step skipped (XV-203 never closed; BV-202 marked right after step 1)
+expected: [BLOCKED]  # PROC-SEQUENCE: step 3 marked before step 2 was verified
+operator: skip_step
+skip_step: 2
