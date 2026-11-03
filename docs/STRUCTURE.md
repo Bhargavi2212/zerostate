@@ -35,9 +35,9 @@ zerostate/
 │   ├── specs/                     # PHASE_<n>.md specs + PHASE_<n>_GATE.md outputs
 │   └── MODEL_NOTES.md             # measured behaviour of Meta models (feeds README section)
 ├── deploy/
-│   ├── docker-compose.zerostate.yml   # zerostate-net + zerostate (+ operator, frame service, egress proxy, p2 in later phases)
+│   ├── docker-compose.zerostate.yml   # zerostate-net + zerostate (+ operator, frame service, egress proxy, zs-api + zs-api-net, p2 in later phases); volumes zs-data, zs-audit
 │   ├── Dockerfile                     # zerostate runtime image (python:3.13-slim, no capabilities, joins zerostate-net)
-│   ├── Dockerfile.net                 # zerostate-net helper image (alpine + iptables)
+│   ├── Dockerfile.net                 # zerostate-net / zs-api-net helper image (alpine + iptables; net_setup.sh, api_net.sh)
 │   ├── net_setup.sh                   # helper: route via router, OUTPUT allowlist (PLC:502, P2 OPC UA :4840, proxy :8888, frames :8080), IPv6 drop, then sleep
 │   ├── api_net.sh                     # zs-api-net helper: OUTPUT allowlist = proxy only (+ replies to 127.0.0.1:8090)
 │   ├── apply_router_rules.ps1         # idempotent router FORWARD rules + Suricata rule install; prints/checks chain order
@@ -92,7 +92,7 @@ zerostate/
 │   │   ├── log.py                 # SQLite append-only, hash-chained rows
 │   │   ├── sign.py                # Ed25519 verdict signatures
 │   │   └── replay.py              # re-run gate on a logged session, must reproduce the verdict
-│   └── api/
+│   └── api/                       # __init__.py + server.py
 │       └── server.py              # FastAPI (zs-api, 127.0.0.1:8090): plans, drafts, sessions, SSE, inbox actions; audit read-only
 ├── ui/                            # Phase 3 operator console (static, served by zs-api)
 ├── site/                          # Phase 3 public replay viewer + results (Vercel, static, reads committed bundles only)
@@ -166,6 +166,7 @@ zerostate/
 │   ├── test_published_replay.py   # C11 regression gate: every published P1 episode replays identically under today's rules
 │   ├── test_llm_client.py         # fake opener: box parsing, strict-JSON retry then fail, ledger, budget stop, key never logged
 │   ├── test_bundle.py             # episode bundle: export → load → schema validates; key-like strings refused
+│   ├── test_api_contract.py       # API (docs/API.md): every endpoint returns its schema, error codes, audit opened read-only, steps/sign only add inbox rows, voice never reaches sign
 │   ├── test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
 │   ├── test_gate.py               # no SAFE; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
 │   ├── test_session.py            # warm-in, plan-hash refusal, pending, step order, settle before monitoring, UNKNOWN grace, stop
@@ -173,6 +174,7 @@ zerostate/
 │   ├── conftest.py                # shared in-process Modbus server fixture (adapter + operator tests) + in-process P2 OPC UA server
 │   ├── test_audit_chain.py  test_replay.py  test_importer_gate.py  test_plants_only_diff.py
 │   ├── net/test_container_isolation.py   # run inside container: only PLC:502 reachable; truth, host ports, DMZ, router, internet not; app can't change net config
+│   ├── net/test_api_isolation.py  # run inside zs-api: only the proxy reachable (no plant, frames, internet); can't change the allowlist; audit volume read-only
 │   ├── checks/                    # test_<rule>.py per rule (test_paths.py … test_reset.py), a passing and a failing case each; test_timescale_invariance.py
 │   ├── live/                      # marker `live`, run from the host against the lab: test_patch.py, test_operator_net.py
 │   │                              # tests/checks/synth.py: synthetic P1 windows (vent model, 4 Hz polls) for rule tests

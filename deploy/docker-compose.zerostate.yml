@@ -43,8 +43,52 @@ services:
         required: false
     environment:
       ZS_BUDGET_USD: ${ZS_BUDGET_USD:-75}
+      ZS_AUDIT: /audit/audit.sqlite
     volumes:
       - zs-data:/data
+      # The audit log's own volume: rw here, ro in zs-api. Migration (after batch p1, not before):
+      # copy the existing /data/audit.sqlite into zs-audit once, so the chain continues.
+      - zs-audit:/audit
+
+  # Network helper for zs-api: OUTPUT allowlist = the model proxy only (deploy/api_net.sh); never a plant.
+  # It owns the namespace, so it publishes the API port, on Windows localhost only (the console can sign).
+  zs-api-net:
+    image: zerostate-net:local
+    container_name: zs-api-net
+    command: ["/api_net.sh"]
+    cap_add: [NET_ADMIN]
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 1
+    ports:
+      - "127.0.0.1:8090:8090"
+    networks:
+      zs-api-pub: {}
+      zs-internal:
+        ipv4_address: 172.30.0.11
+    healthcheck:
+      test: ["CMD-SHELL", "iptables -S OUTPUT | grep -qx -- '-P OUTPUT DROP' && iptables -C OUTPUT -p tcp -d 172.30.0.2 --dport 8888 -j ACCEPT && [ $$(iptables -S OUTPUT | grep -c -- '-j ACCEPT') -eq 3 ]"]
+      interval: 5s
+      retries: 3
+      start_period: 5s
+
+  # HTTP API for the operator console (docs/API.md): same image, audit read-only, inbox and drafts rw.
+  zs-api:
+    image: zerostate:local
+    container_name: zs-api
+    command: ["zs", "api", "--host", "0.0.0.0", "--port", "8090"]
+    network_mode: "service:zs-api-net"
+    cap_drop: [ALL]
+    depends_on:
+      zs-api-net: {condition: service_healthy}
+    env_file:
+      - path: ./zerostate/.env
+        required: false
+    environment:
+      ZS_BUDGET_USD: ${ZS_BUDGET_USD:-75}
+      ZS_AUDIT: /audit/audit.sqlite
+    volumes:
+      - zs-data:/data
+      - zs-audit:/audit:ro
 
   # The only route to the Meta API: CONNECT api.meta.ai:443, nothing else. Its own uplink has internet;
   # zs-internal has none.
@@ -74,6 +118,8 @@ networks:
       config:
         - subnet: 172.30.0.0/24
   zs-uplink: {}  # the proxy's way out
+  zs-api-pub: {}  # bridge only so zs-api-net can publish 127.0.0.1:8090; OUTPUT allowlist blocks new traffic out
 
 volumes:
   zs-data:
+  zs-audit:
