@@ -1,0 +1,14 @@
+# The correct P2 isolation list, as a permit issuer would write it (SPEC.md "Correct plan").
+# PC0 of the plan-check set; the mutations PC1-PC6 start from this list.
+plant: p2_gasline
+work_equipment: F-210
+points:
+  - {tag: XV-201, required_state: closed, seq: 1, isolation_type: proved}
+  - {tag: XV-203, required_state: closed, seq: 2, isolation_type: proved}
+  - {tag: BV-202, required_state: open, seq: 3}
+  - {tag: XV-204, required_state: closed, seq: 4, isolation_type: proved}
+vent: VV-213
+proving:
+  - {tag: BV-202, proves: [XV-201, XV-203]}
+  - {tag: VV-213, proves: [XV-204]}  # single block and bleed: the vent and the hold prove XV-204
+hold_minutes: 10

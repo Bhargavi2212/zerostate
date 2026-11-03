@@ -1,0 +1,66 @@
+# P2 gas line (SPEC.md): the plant as a graph. Valves, vents, bleeds and reliefs open or close a path.
+# Base of the plan-check set (eval/plan_cases/) and, with isolation_list.yaml, of P2's live plan.
+plant: p2_gasline
+nodes:
+  - {id: S-200, kind: source, energy: nitrogen, pressure_kpa_abs: 2000, hazardous: true}
+  - {id: XV-201, kind: valve, device: block_valve, actuation: manual, normal_state: open}
+  - {id: C-202, kind: vessel}
+  - {id: BV-202, kind: bleed, device: block_valve, actuation: manual, normal_state: closed, discharges_to: atmosphere}
+  - {id: XV-203, kind: valve, device: block_valve, actuation: manual, normal_state: open}
+  - {id: F-210, kind: vessel}
+  - {id: VV-213, kind: vent, device: block_valve, actuation: manual, normal_state: closed, discharges_to: atmosphere}
+  - {id: PSV-214, kind: relief, device: relief_valve, normal_state: closed, discharges_to: flare}
+  - {id: E-215, kind: heater, normal_state: closed}
+  - {id: XV-204, kind: valve, device: block_valve, actuation: manual, normal_state: open}
+  - {id: D-220, kind: source, energy: nitrogen, pressure_kpa_abs: 1500, hazardous: true}
+  - {id: XV-231, kind: valve, device: block_valve, actuation: manual, normal_state: open}
+  - {id: L-230, kind: segment}
+pipes:
+  - {a: S-200, b: XV-201}
+  - {a: XV-201, b: C-202}
+  - {a: C-202, b: BV-202}
+  - {a: C-202, b: XV-203}
+  - {a: XV-203, b: F-210}
+  - {a: F-210, b: VV-213}
+  - {a: F-210, b: PSV-214}
+  - {a: F-210, b: E-215}
+  - {a: F-210, b: XV-204}
+  - {a: XV-204, b: D-220}
+  - {a: D-220, b: XV-231}
+  - {a: XV-231, b: L-230}
+instruments:
+  - {tag: PT-200, signal_ref: PT-200, role: pressure, at: S-200}
+  - {tag: PT-202, signal_ref: PT-202, role: pressure, at: C-202}
+  - {tag: PT-211, signal_ref: PT-211, role: pressure, at: F-210}
+  - {tag: PT-212, signal_ref: PT-212, role: pressure, at: F-210}
+  - {tag: FT-213, signal_ref: FT-213, role: flow, at: VV-213, point: VV-213}
+  - {tag: XV-201.FB, signal_ref: XV-201.FB, role: feedback, at: XV-201, point: XV-201}
+  - {tag: XV-201.CMD, signal_ref: XV-201.CMD, role: command, at: XV-201, point: XV-201}
+  - {tag: BV-202.FB, signal_ref: BV-202.FB, role: feedback, at: BV-202, point: BV-202}
+  - {tag: BV-202.CMD, signal_ref: BV-202.CMD, role: command, at: BV-202, point: BV-202}
+  - {tag: XV-203.FB, signal_ref: XV-203.FB, role: feedback, at: XV-203, point: XV-203}
+  - {tag: XV-203.CMD, signal_ref: XV-203.CMD, role: command, at: XV-203, point: XV-203}
+  - {tag: VV-213.FB, signal_ref: VV-213.FB, role: feedback, at: VV-213, point: VV-213}
+  - {tag: VV-213.CMD, signal_ref: VV-213.CMD, role: command, at: VV-213, point: VV-213}
+  - {tag: XV-204.FB, signal_ref: XV-204.FB, role: feedback, at: XV-204, point: XV-204}
+  - {tag: XV-204.CMD, signal_ref: XV-204.CMD, role: command, at: XV-204, point: XV-204}
+  - {tag: XV-231.FB, signal_ref: XV-231.FB, role: feedback, at: XV-231, point: XV-231}
+  - {tag: XV-231.CMD, signal_ref: XV-231.CMD, role: command, at: XV-231, point: XV-231}
+plan_defaults:
+  # max_rise_kpa is provisional until tuned on P2 tuning seeds at 200 kPa (about 3x the window-mean noise)
+  hold_test: {hold_process_s: 600, window_process_s: 120, max_rise_kpa: 1.5, upstream_min: 1500}
+  hold_pressure_kpa_abs: 200
+  vent_target_kpa_abs: 102
+  p_depressurised_kpa_abs: 105
+  settle_process_s: 30  # valve travel is 10 process-s
+  checks:
+    isolate: [LIVE-QUALITY, LIVE-VALVE]
+    bleed_open: [LIVE-QUALITY, LIVE-ALIVE, LIVE-VALVE]
+    vent_open: [LIVE-QUALITY, LIVE-ALIVE, LIVE-RELATION, LIVE-VALVE]
+    vent_close: [LIVE-QUALITY, LIVE-VALVE]
+    hold: [LIVE-QUALITY, LIVE-HOLD, LIVE-UPSTREAM, LIVE-VALVE]
+    final_vent: [LIVE-QUALITY, LIVE-ALIVE, LIVE-HOLD, LIVE-VALVE]
+  relations:
+    - {type: redundant_pair, signals: [PT-211, PT-212], params: {tol_pct: 2}}
+    # valve_flow_gas Cv is set in P2-6 from model.py (vent 2000 -> 102 kPa in ~5 process-min)
+  assumptions: []

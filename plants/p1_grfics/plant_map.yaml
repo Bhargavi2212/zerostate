@@ -1,0 +1,55 @@
+# P1 GRFICS as a graph, for the plan checks. P1's live plan stays the hand-written envelope.yaml.
+# Expected plan-check result for that plan: BLOCKED by PLAN-SOFTWARE (all four isolation points are
+# actuated control valves) and PLAN-TYPE (hazardous feeds isolated only by non-proved points).
+# The reactor is not a heater node: during the hold the reaction drains pressure (clean holds fall).
+plant: p1_grfics
+nodes:
+  - {id: feed1, kind: source, energy: process_gas, hazardous: true}
+  - {id: feed2, kind: source, energy: process_gas, hazardous: true}
+  - {id: product_line, kind: source, energy: process_liquid, hazardous: true}  # backflow from downstream
+  - {id: purge_header, kind: header}
+  - {id: f1, kind: valve, device: control_valve, actuation: actuated, normal_state: open}
+  - {id: f2, kind: valve, device: control_valve, actuation: actuated, normal_state: open}
+  - {id: product, kind: valve, device: control_valve, actuation: actuated, normal_state: open}
+  - {id: purge, kind: vent, device: control_valve, actuation: actuated, normal_state: open, discharges_to: "header:purge_header"}
+  - {id: reactor, kind: vessel}
+pipes:
+  - {a: feed1, b: f1}
+  - {a: f1, b: reactor}
+  - {a: feed2, b: f2}
+  - {a: f2, b: reactor}
+  - {a: reactor, b: product}
+  - {a: product, b: product_line}
+  - {a: reactor, b: purge}
+  - {a: purge, b: purge_header}
+instruments:
+  - {tag: pressure, signal_ref: pressure, role: pressure, at: reactor}
+  - {tag: level, signal_ref: level, role: level, at: reactor}
+  - {tag: manual_mode, signal_ref: manual_mode, role: mode, at: reactor}
+  - {tag: f1_valve_pos, signal_ref: f1_valve_pos, role: feedback, at: f1, point: f1}
+  - {tag: f1_cmd, signal_ref: f1_cmd, role: command, at: f1, point: f1}
+  - {tag: f1_flow, signal_ref: f1_flow, role: flow, at: f1, point: f1}
+  - {tag: f2_valve_pos, signal_ref: f2_valve_pos, role: feedback, at: f2, point: f2}
+  - {tag: f2_cmd, signal_ref: f2_cmd, role: command, at: f2, point: f2}
+  - {tag: f2_flow, signal_ref: f2_flow, role: flow, at: f2, point: f2}
+  - {tag: purge_valve_pos, signal_ref: purge_valve_pos, role: feedback, at: purge, point: purge}
+  - {tag: purge_cmd, signal_ref: purge_cmd, role: command, at: purge, point: purge}
+  - {tag: purge_flow, signal_ref: purge_flow, role: flow, at: purge, point: purge}
+  - {tag: product_valve_pos, signal_ref: product_valve_pos, role: feedback, at: product, point: product}
+  - {tag: product_cmd, signal_ref: product_cmd, role: command, at: product, point: product}
+  - {tag: product_flow, signal_ref: product_flow, role: flow, at: product, point: product}
+plan_defaults:  # for importer drafts of P1 jobs (the live plan is envelope.yaml)
+  hold_test: {hold_process_s: 600, window_process_s: 60, max_rise_kpa: 1.0}
+  vent_target_kpa_abs: 102
+  p_depressurised_kpa_abs: 105
+  settle_process_s: 60
+  camera: optional
+  checks:
+    isolate: [LIVE-QUALITY, LIVE-VALVE]
+    vent_open: [LIVE-QUALITY, LIVE-ALIVE, LIVE-RELATION, LIVE-VALVE]
+    vent_close: [LIVE-QUALITY, LIVE-VALVE]
+    hold: [LIVE-QUALITY, LIVE-HOLD, LIVE-VALVE]
+  relations:
+    - {type: valve_sqrt_law, signals: [purge_flow, purge_valve_pos, pressure], params: {k: 0.352, p_floor: 100}}
+  assumptions:
+    - {text: positive isolation upstream assumed, scope: out_of_scope}
