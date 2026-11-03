@@ -55,7 +55,8 @@ def run_episode(entry: dict, a) -> dict:
     before = set((ROOT / "runs").glob(f"{entry['scenario']}_seed{entry['seed']}_*"))
     subprocess.run([sys.executable, "-P", str(ROOT / "eval" / "runner.py"), "--plant", entry["plant"],
                     "--scenario", entry["scenario"], "--seed", str(entry["seed"]), "--batch", a.batch,
-                    "--manifest", a.manifest, "--salt", a.salt], check=False, cwd=ROOT)
+                    "--manifest", a.manifest, "--salt", a.salt, *(["--camera"] if getattr(a, "camera", False) else [])],
+                   check=False, cwd=ROOT)
     new = sorted(set((ROOT / "runs").glob(f"{entry['scenario']}_seed{entry['seed']}_*")) - before)
     if not new or not (new[-1] / "verdict.json").exists():
         return None
@@ -117,6 +118,7 @@ def main() -> int:
     ap.add_argument("--batch", required=True)
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--salt", required=True)
+    ap.add_argument("--camera", action="store_true", help="every episode with the frame service on (batch 2)")
     a = ap.parse_args()
     manifest = json.loads(Path(a.manifest).read_bytes())  # the runner checks it against the sealed hash
     manifest = {**manifest, "entries": [e for e in manifest["entries"] if e["plant"] in RUNNER_PLANTS]}
