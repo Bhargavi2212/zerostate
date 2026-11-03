@@ -8,10 +8,13 @@ from pathlib import Path
 import pytest
 import yaml
 
+from zerostate import cli
+from zerostate.importers.confirm import NotConfirmable, confirm, is_confirmed
 from zerostate.importers.csv_import import CsvImportError, parse_csv
+from zerostate.importers.draft import load_draft, save_draft, unresolved
 from zerostate.importers.image_import import import_image
 from zerostate.importers.text_import import import_text, system_prompt
-from zerostate.models.envelope import IsolationList
+from zerostate.models.envelope import IsolationList, IsolationPlan, ListPoint
 from zerostate.models.plant_map import PlantMap
 
 ROOT = Path(__file__).parents[1]
@@ -124,3 +127,103 @@ def test_image_route_sends_png_and_pdf_page_one_as_data_urls(model_env, tmp_path
 def test_csv_errors_raise_with_the_row(tmp_path, rows, header, match):
     with pytest.raises(CsvImportError, match=match):
         parse_csv(write_csv(tmp_path, rows, header), "p2_gasline")
+
+
+# ---- the gate: confirm, refuse ------------------------------------------------------------------
+class ReachedAdapter(Exception):
+    pass
+
+
+@pytest.fixture
+def lab(tmp_path, monkeypatch):
+    """A copy of P1's plan in a tmp config dir; ZS_DATA / ZS_CONFIG in tmp. Never the repo's plants/."""
+    cfg = tmp_path / "config" / "p1_grfics"
+    cfg.mkdir(parents=True)
+    plan_file = cfg / "envelope.yaml"
+    plan_file.write_text((ROOT / "plants/p1_grfics/envelope.yaml").read_text(encoding="utf-8-sig"), encoding="utf-8")
+    monkeypatch.setenv("ZS_DATA", str(tmp_path / "data"))
+    monkeypatch.setenv("ZS_CONFIG", str(tmp_path / "config"))
+    monkeypatch.setenv("ZS_THRESHOLDS", str(ROOT / "plants/p1_grfics/thresholds.yaml"))
+
+    def no_lab(*_a, **_k):
+        raise ReachedAdapter  # past every refusal: would now open the plant connection
+    monkeypatch.setattr(cli, "ModbusReadOnly", no_lab)
+    plan_hash = IsolationPlan.model_validate(yaml.safe_load(plan_file.read_text())).content_hash()
+    return plan_file, plan_hash, tmp_path
+
+
+def start(plan_file, plan_hash):
+    return cli.main(["session", "start", "--plan", str(plan_file), "--plan-hash", plan_hash, "--session", "s1"])
+
+
+def test_unconfirmed_plan_refuses_to_start_and_confirmed_one_gets_past(lab, capsys):
+    plan_file, plan_hash, tmp = lab
+    assert start(plan_file, plan_hash) == 1
+    assert "not confirmed" in capsys.readouterr().err
+    assert is_confirmed(plan_hash, [plan_file.parent], tmp / "data") is None
+
+    rec = confirm(str(plan_file), "Owner", data_dir=tmp / "data")
+    book = yaml.safe_load((plan_file.parent / "confirmed.yaml").read_text())
+    assert book == [rec] and rec["plan_hash"] == plan_hash and (rec["by"], rec["role"]) == ("Owner", "issuer")
+    assert is_confirmed(plan_hash, [plan_file.parent], tmp / "data") == rec
+    assert is_confirmed("0" * 64, [plan_file.parent], tmp / "data") is None
+    with pytest.raises(ReachedAdapter):
+        start(plan_file, plan_hash)
+
+
+def test_confirmation_is_logged_in_session_start(tmp_path):
+    from checks.synth import PARAMS, PLAN, SPANS
+
+    from zerostate.audit.log import AuditLog
+    from zerostate.session import Session
+
+    rec = {"plan_hash": PLAN.content_hash(), "by": "Owner", "role": "issuer", "date": "2026-11-03T09:00:00+00:00"}
+    log = AuditLog(tmp_path / "audit.sqlite")
+    Session("s1", PLAN, PLAN.content_hash(), PARAMS, 10.0, SPANS, log, 0.0, confirmation=rec)
+    assert log.events("s1")[0]["payload"]["confirmation"] == rec
+
+
+def test_confirm_needs_a_name_and_the_issuer_role(lab):
+    plan_file, _, tmp = lab
+    for by, role in (("", "issuer"), ("Owner", "receiver")):
+        with pytest.raises(NotConfirmable):
+            confirm(str(plan_file), by, role, data_dir=tmp / "data")
+    assert not (plan_file.parent / "confirmed.yaml").exists()
+
+
+def test_draft_with_nulls_cannot_be_confirmed(lab, capsys):
+    _, _, tmp = lab
+    lst = IsolationList(plant="p2_gasline", work_equipment="F-210", points=(
+        ListPoint(tag="XV-201", required_state="closed", seq=1, isolation_type="proved"),
+        ListPoint(tag=None, required_state="closed", seq=2, isolation_type="proved", note="tag scribbled over"),
+        ListPoint(tag="XV-204", required_state="closed", seq=None, isolation_type=None)))
+    d = save_draft(lst, "image", "sheet.png", tmp / "data")
+    assert json.loads((tmp / "data" / "drafts" / f"{d['id']}.json").read_text())["list"]["points"][1]["tag"] is None
+    assert unresolved(lst) == ["point 2 (?): tag is unclear - tag scribbled over", "point 3 (XV-204): seq is unclear",
+                               "point 3 (XV-204): isolation_type is unclear"]
+    map_file = ROOT / "plants/p2_gasline/plant_map.yaml"
+    with pytest.raises(NotConfirmable, match="unresolved"):
+        confirm(d["id"], "Owner", data_dir=tmp / "data", map_path=map_file)
+    assert cli.main(["plan", "confirm", d["id"], "--by", "Owner", "--map", str(map_file)]) == 1
+    assert "unresolved" in capsys.readouterr().err
+    assert not (tmp / "data" / "plans").exists()
+    assert cli.main(["plan", "show", d["id"], "--map", str(map_file)]) == 0
+    view = json.loads(capsys.readouterr().out)
+    assert view["plan_hash"] is None and len(view["unresolved"]) == 3
+    with pytest.raises(FileNotFoundError):
+        load_draft("../../etc", tmp / "data")
+
+
+def test_csv_draft_merges_checks_and_confirms(lab, capsys):
+    """Runs once graph/build.py and checks/plan (P2-2) are merged in."""
+    pytest.importorskip("zerostate.graph.build")
+    pytest.importorskip("zerostate.checks.plan")
+    _, _, tmp = lab
+    map_file = ROOT / "plants/p2_gasline/plant_map.yaml"
+    assert cli.main(["plan", "import", "--csv", str(write_csv(tmp, P2_ROWS)), "--plant", "p2_gasline", "--map", str(map_file)]) == 0
+    view = json.loads(capsys.readouterr().out)
+    assert view["unresolved"] == [] and view["plan_hash"] and view["draft"]["route"] == "csv"
+    assert cli.main(["plan", "confirm", view["draft"]["id"], "--by", "Owner", "--map", str(map_file)]) == 0
+    assert capsys.readouterr().out.strip() == view["plan_hash"]
+    rec = is_confirmed(view["plan_hash"], [], tmp / "data")
+    assert rec["by"] == "Owner" and rec["plan_hash"] == view["plan_hash"]

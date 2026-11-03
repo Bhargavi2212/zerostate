@@ -45,7 +45,7 @@ class Inbox:
 
 class Session:
     def __init__(self, sid: str, plan: IsolationPlan, plan_hash: str, params: dict, process_time_scale: float,
-                 spans: dict, log: AuditLog, now: float):
+                 spans: dict, log: AuditLog, now: float, confirmation: dict | None = None):
         if plan.content_hash() != plan_hash:
             raise PlanHashMismatch(f"plan hash {plan.content_hash()} != confirmed {plan_hash}")
         self.sid, self.plan, self.params, self.scale, self.spans, self.log = sid, plan, params, process_time_scale, spans, log
@@ -65,7 +65,7 @@ class Session:
         log.append(sid, "session_start", {"plan": plan.model_dump(mode="json"), "plan_hash": plan_hash,
                                           "package_version": versions["package_version"], "rules": versions["rules"],
                                           "thresholds_version": params["version"], "thresholds": params,
-                                          "process_time_scale": process_time_scale})
+                                          "process_time_scale": process_time_scale, "confirmation": confirmation})
 
     # ---- helpers ---------------------------------------------------------------------------
     def _ps(self, t0: float, t1: float) -> float:

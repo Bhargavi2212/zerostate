@@ -15,8 +15,10 @@ RUN pip install --no-cache-dir --no-deps .
 COPY scripts ./scripts
 COPY tests/net ./tests/net
 # Only plant data the product needs; never truth or fault code.
-COPY plants/p1_grfics/modbus_map.yaml plants/p1_grfics/envelope.yaml plants/p1_grfics/thresholds.yaml ./config/p1_grfics/
-ENV ZS_MAP=/app/config/p1_grfics/modbus_map.yaml ZS_THRESHOLDS=/app/config/p1_grfics/thresholds.yaml ZS_DATA=/data
+# Globs so an owner-made confirmed.yaml is included when it exists (YAML data only, never .py truth/fault code).
+COPY plants/p1_grfics/*.yaml ./config/p1_grfics/
+COPY plants/p2_gasline/*.yaml ./config/p2_gasline/
+ENV ZS_CONFIG=/app/config ZS_MAP=/app/config/p1_grfics/modbus_map.yaml ZS_THRESHOLDS=/app/config/p1_grfics/thresholds.yaml ZS_DATA=/data
 # audit.sqlite (core only), inbox.sqlite (human/operator actions), runs/<session>/signals.jsonl
 RUN mkdir -p /data && chown zs:zs /data
 USER zs
