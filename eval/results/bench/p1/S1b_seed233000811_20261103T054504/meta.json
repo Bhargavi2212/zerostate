@@ -1,0 +1,47 @@
+{
+ "scenario": {
+  "id": "S1b",
+  "title": "gauge frozen after the vent at ~vented value while f1 leaks below the flowmeter cutoff",
+  "real_case": "BP Amoco Augusta 2001",
+  "label": "depends on our noise model",
+  "expected": [
+   "ESCALATED"
+  ],
+  "faults": [
+   {
+    "at_step": "vent_close",
+    "after_process_s": [
+     0,
+     0
+    ],
+    "set": {
+     "tank_pressure_fault_mode": 1,
+     "f1_leak_pct": [
+      0.3,
+      1.5
+     ]
+    }
+   }
+  ]
+ },
+ "seed": 233000811,
+ "faults": [
+  {
+   "at_step": "vent_close",
+   "after_process_s": 0,
+   "set": {
+    "tank_pressure_fault_mode": 1,
+    "f1_leak_pct": 1.4609195573399734
+   }
+  }
+ ],
+ "process_time_scale": 10,
+ "images": {
+  "simulation": "sha256:8dbbdb286c047ad6d2920dc6cc8b6a0d84d6d14efad69498ff4836ad650b61a9",
+  "zerostate": "sha256:7204c4918abdb0ae4122dd0ab186d90e1ff3be2fd7e08ba56cf4d63183bad5d9",
+  "zs-operator": "sha256:e575cc26f154c0bc8a6865ce740ec4fc6f48dd07ece7fc924e55cfdf599150e5",
+  "plc": "sha256:7397c8440578dd8e9ff01133445ed264f1166beb5f00fc72d476d738b9797987"
+ },
+ "plan_hash": "89adfcf4fbb0a8e2b058c02ceed5d879d0a72312da92024bf967c8aec14f2a92",
+ "batch": "p1"
+}
