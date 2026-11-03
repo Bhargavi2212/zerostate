@@ -135,7 +135,7 @@ zerostate/
 â”œâ”€â”€ eval/
 â”‚   â”œâ”€â”€ scenarios/                 # P1 S0â€“S13 (S7 skip, S7-same same verifier, S13 reopen) as YAML (plant, fault, onset range, severity range, expected verdicts); p2/ for P2
 â”‚   â”œâ”€â”€ tools/credits_report.py    # copies /data/credits.jsonl out of the container â†’ dated summary in D:\grfics\credits_log.md
-â”‚   â”œâ”€â”€ tools/export_bundle.py     # episode â†’ bundle.json.gz (docs/BUNDLE.md)
+â”‚   â”œâ”€â”€ tools/export_bundle.py     # episode â†’ bundle.json.gz v2 (docs/BUNDLE.md); --runs-dir for full signals kept elsewhere
 â”‚   â”œâ”€â”€ tools/capture_frames.py    # frames set: operator sets random valve positions, frames + truth sidecars outside git
 â”‚   â”œâ”€â”€ tools/timescale_test.py    # Phase 1: time-scale stability runs (Ã—1 / Ã—10 / Ã—5) â†’ results/timescale_<date>.json
 â”‚   â”œâ”€â”€ tools/vent_fidelity.py     # Phase 1 rev 3: manual-mode vent at Ã—1 vs chosen scale vs physics â†’ results/vent_fidelity_<date>.json
