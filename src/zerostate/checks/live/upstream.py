@@ -1,5 +1,5 @@
 """LIVE-UPSTREAM: during the hold, every upstream witness must stay at or above hold_test.upstream_min.
-Without pressure behind the isolation a hold proves nothing (a dry test): that is UNKNOWN, never a pass.
+Without pressure behind the isolation a hold shows nothing (a dry test): that is UNKNOWN, never a pass.
 Compares window means, never single samples."""
 
 from zerostate.checks.live import finding, gauges
