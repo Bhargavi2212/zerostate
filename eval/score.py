@@ -487,13 +487,10 @@ def markdown(s: dict) -> str:
     return "\n".join(L) + "\n"
 
 
-def never_say(text: str) -> list[str] | None:
-    """The project's single never-say checker (src/zerostate/wording.py); None while it is not on this branch."""
-    try:
-        from zerostate import wording
-    except ImportError:
-        return None
-    return wording.find_never_say(text)
+def never_say(text: str) -> list[str]:
+    """The project's single never-say checker (src/zerostate/wording.py)."""
+    from zerostate import wording
+    return wording.hits(text)
 
 
 def write(s: dict, out_dir: Path) -> list[Path]:
@@ -501,7 +498,7 @@ def write(s: dict, out_dir: Path) -> list[Path]:
     hits = [never_say(t) for t in (j, md)]
     if any(hits):
         raise SystemExit(f"never-say words in the score output, not written: {hits}")
-    s["never_say_check"] = "clean" if hits[0] is not None else "not run: zerostate.wording is not on this branch"
+    s["never_say_check"] = "clean"
     j = json.dumps(s, indent=1, default=str)
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = [out_dir / f"score_{s['batch']}.json", out_dir / f"score_{s['batch']}.md"]
