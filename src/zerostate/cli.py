@@ -1,7 +1,7 @@
 """`zs` command line. Run inside the zerostate container, e.g. `docker exec -u zs zerostate zs status s1 --json`.
 
 Paths come from the environment: ZS_DATA (default /data), ZS_MAP and ZS_THRESHOLDS (plant files
-copied into the image under /app/config/<plant>/).
+copied into the image under /app/config/<plant>/); the map's `protocol` picks the adapter.
 """
 
 import argparse
@@ -14,6 +14,7 @@ from pathlib import Path
 import yaml
 
 from zerostate.adapters.modbus import ModbusReadOnly
+from zerostate.adapters.opcua import OpcUaReadOnly
 from zerostate.audit.log import AuditLog
 from zerostate.audit.replay import replay
 from zerostate.config import load_thresholds
@@ -33,13 +34,19 @@ def _thresholds() -> dict:
     return load_thresholds(os.environ.get("ZS_THRESHOLDS", "/app/config/p1_grfics/thresholds.yaml"))
 
 
+def open_adapter(map_path: str | Path):
+    """The plant map names its protocol; no `protocol` key means Modbus (P1's map predates it)."""
+    proto = (yaml.safe_load(Path(map_path).read_text(encoding="utf-8-sig")) or {}).get("protocol", "modbus")
+    return OpcUaReadOnly(map_path) if proto == "opcua" else ModbusReadOnly(map_path)
+
+
 def session_start(a) -> int:
     log = AuditLog(_data() / "audit.sqlite")
     if log.events(a.session):
         print(f"session {a.session} already exists", file=sys.stderr)
         return 1
     plan = IsolationPlan.model_validate(yaml.safe_load(Path(a.plan).read_text(encoding="utf-8-sig")))
-    adapter = ModbusReadOnly(os.environ.get("ZS_MAP", "/app/config/p1_grfics/modbus_map.yaml"))
+    adapter = open_adapter(os.environ.get("ZS_MAP", "/app/config/p1_grfics/modbus_map.yaml"))
     spans = {e.tag: (e.scale_min, e.scale_max) for e in adapter.map.tags}
     try:
         s = Session(a.session, plan, a.plan_hash, _thresholds(), adapter.map.process_time_scale, spans, log, time.time())

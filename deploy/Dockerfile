@@ -8,6 +8,8 @@ WORKDIR /app
 RUN pip install --no-cache-dir \
     pydantic==2.14.2 pydantic_core==2.50.2 annotated-types==0.8.0 typing_extensions==4.16.0 \
     typing-inspection==0.4.4 PyYAML==6.0.3 pymodbus==3.9.2 \
+    asyncua==1.1.6 aiofiles==25.1.0 aiosqlite==0.22.1 cryptography==50.0.2 cffi==2.1.1 pycparser==3.12 \
+    pyOpenSSL==26.4.0 python-dateutil==4.0.0 pytz==2026.6 sortedcontainers==2.4.0 \
     pytest==9.2.0 iniconfig==2.3.1 packaging==26.3 pluggy==1.7.0 Pygments==2.21.0
 COPY pyproject.toml ./
 COPY src ./src
