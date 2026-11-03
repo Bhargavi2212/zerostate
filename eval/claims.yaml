@@ -113,10 +113,10 @@ claims:
   - id: C7
     batch: tests
     engine: idealised camera, sealed frames set (no benchmark batch)
-    sentence: "SAM 3.1 + Muse Spark read plant displays with {all.exact_1pct_rate:.0%} exact match (within 1 %) on {all.n} readings from a sealed set of frames, idealised camera (renders the simulator's true state)."
+    sentence: "Reading accuracy, idealised camera, fault-free frames: SAM 3.1 + Muse Spark read {all.exact_1pct} of {all.n} valve displays within 1 % on a sealed set of frames (the camera renders the simulator's true state). This measures reading, not fault detection."
     tests: [tests/test_camera.py]
     results: eval/results/read_2*.json
-    keys: [all.exact_1pct_rate, all.n]
+    keys: [all.exact_1pct, all.n]
 
   - id: C8.p1
     batch: p1
