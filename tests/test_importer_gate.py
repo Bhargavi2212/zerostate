@@ -227,3 +227,32 @@ def test_csv_draft_merges_checks_and_confirms(lab, capsys):
     assert capsys.readouterr().out.strip() == view["plan_hash"]
     rec = is_confirmed(view["plan_hash"], [], tmp / "data")
     assert rec["by"] == "Owner" and rec["plan_hash"] == view["plan_hash"]
+
+
+# ---- eval/importer_accuracy.py scoring (host side, no model) --------------------------------------
+def accuracy_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("importer_accuracy", ROOT / "eval" / "importer_accuracy.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_accuracy_scoring_and_the_invented_point_stop(tmp_path, capsys):
+    acc = accuracy_module()
+    cases = acc.load_cases(ROOT / "eval" / "importer_set")
+    assert len(cases) == 12 and sum(1 for c in cases if c.get("ambiguity")) == 2
+    perfect = {c["id"]: {"route": c["route"], "list": c["gold"], "error": None} for c in cases}
+    rep = acc.score(perfect, cases, tmp_path)["routes"]
+    for route in ("text", "image", "csv"):
+        assert (rep[route]["precision"], rep[route]["invented"]) == (1.0, 0)
+    assert rep["text"]["recall"] == rep["image"]["recall"] == 1.0
+    assert sorted(e.split(":")[0] for e in rep["csv"]["errors"]) == ["s05", "t02"]  # a null tag can't be exported
+
+    t01 = perfect["t01"]["list"]
+    out = tmp_path / "out.json"
+    out.write_text(json.dumps({**perfect, "t01": {**perfect["t01"], "list": {**t01, "points": [
+        *t01["points"], {"tag": "f2", "required_state": "closed", "seq": 4, "isolation_type": "non_proved"}]}}}))
+    assert acc.main(["score", str(out)]) == 2
+    assert "STOP: invented point" in capsys.readouterr().err
