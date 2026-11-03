@@ -20,6 +20,7 @@ from pydantic import BaseModel, ValidationError
 
 BASE = "https://api.meta.ai/v1"
 SPARK, SAM = "muse-spark-1.3", "sam-3.1"
+MAX_TOKENS = 8192  # generous on every Spark call: a cut-short JSON reply would be a wasted call, never a result
 PRICE = {"spark_in_per_m": 1.25, "spark_out_per_m": 4.25, "sam_per_image": 2.50 / 1000}
 BOX = re.compile(r"<\|box;([^|]*)\|>")
 
@@ -75,10 +76,12 @@ def data_url(image: bytes, mime: str = "image/jpeg") -> str:
 
 
 def spark_json(messages: list[dict], schema: type[BaseModel], purpose: str, opener=None,
-               temperature: float | None = None) -> BaseModel:
+               temperature: float | None = None, max_tokens: int = MAX_TOKENS) -> BaseModel:
     """Muse Spark with a strict-JSON reply validated against `schema`; one retry, then ModelUnavailable.
-    `temperature` is sent only when given (the Muse-alone baseline pins 0)."""
-    body = {"model": SPARK, "messages": messages, **({} if temperature is None else {"temperature": temperature})}
+    `temperature` is sent only when given (the Muse-alone baseline pins 0). `max_tokens` is generous on
+    every call so a JSON reply is never cut short."""
+    body = {"model": SPARK, "messages": messages, "max_tokens": max_tokens,
+            **({} if temperature is None else {"temperature": temperature})}
     for attempt in (1, 2):
         with _post("/chat/completions", body, opener=opener) as r:
             try:

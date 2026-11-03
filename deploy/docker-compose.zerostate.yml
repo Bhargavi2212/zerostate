@@ -42,7 +42,7 @@ services:
       - path: ./zerostate/.env
         required: false
     environment:
-      ZS_BUDGET_USD: ${ZS_BUDGET_USD:-75}
+      ZS_BUDGET_USD: ${ZS_BUDGET_USD:-140}  # runaway-loop backstop only (Nov 3: no cost limit on model work)
       ZS_AUDIT: /audit/audit.sqlite
     volumes:
       - zs-data:/data
@@ -84,7 +84,7 @@ services:
       - path: ./zerostate/.env
         required: false
     environment:
-      ZS_BUDGET_USD: ${ZS_BUDGET_USD:-75}
+      ZS_BUDGET_USD: ${ZS_BUDGET_USD:-140}  # runaway-loop backstop only (Nov 3: no cost limit on model work)
       ZS_AUDIT: /audit/audit.sqlite
     volumes:
       - zs-data:/data
