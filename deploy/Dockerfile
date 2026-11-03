@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends iproute2 iptabl
 WORKDIR /app
 RUN pip install --no-cache-dir \
     pydantic==2.14.2 pydantic_core==2.50.2 annotated-types==0.8.0 typing_extensions==4.16.0 \
-    typing-inspection==0.4.4 PyYAML==6.0.3 pymodbus==3.9.2 \
+    typing-inspection==0.4.4 PyYAML==6.0.3 pymodbus==3.9.2 networkx==3.5 \
     pytest==9.2.0 iniconfig==2.3.1 packaging==26.3 pluggy==1.7.0 Pygments==2.21.0
 COPY pyproject.toml ./
 COPY src ./src

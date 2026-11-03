@@ -12,6 +12,7 @@ class Finding(BaseModel):
     status: FindingStatus
     message: str
     refs: list[str] = []
+    path: list[str] = []  # plan checks: a path as a node list, source first (for drawing)
 
 
 Sample = tuple[float, float | None, int | None, Quality]  # (wall time s, value, raw, quality)
