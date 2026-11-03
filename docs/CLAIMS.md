@@ -2,7 +2,7 @@
 
 Benchmark batches (DECISIONS Nov 2), each labelled by engine: **batch p1: live checks only** (P1, data-only, phase-1.1 engine) → C5, C6; **batch 2: full engine (live + process + camera)** → C3, C13 (S7, S7-same, S13), the camera half of C8, and the full engine's own false-block rate (S0 ×15, C6); **batch p2** → P2 numbers. Every claim sentence names its batch.
 
-Rule: a sentence may appear in the README, pitch or video only if it is in this table with status PASSING. Anything not passing at **Nov 3, 12:00 ET** is deleted from the submission — not reworded. Wording rules: PROJECT.md "never say" list.
+Rule: a sentence may appear in the README, pitch or video only if it is in this table with status PASSING. Anything not passing at **Nov 4, 10:00 ET** is deleted from the submission — not reworded. Wording rules: PROJECT.md "never say" list.
 Mechanism: `eval/claims.yaml` maps each claim id → required tests → eval result key → exact README sentence with placeholders. `eval/claims_audit.py` fails if a test is missing/failing, a result key is missing, or the README sentence differs from the rendered one.
 
 | ID | Claim (exact wording) | Component | Proof | Status |
