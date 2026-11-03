@@ -150,7 +150,7 @@ zerostate/
 â”‚   â”œâ”€â”€ plan_cases/make_cases.py   # PC0â€“PC6 from the P2 map + list by mutation; labels written before the checks run
 â”‚   â”œâ”€â”€ importer_set/              # 12 cases (6 texts, 6 rendered sheets) + gold lists, committed before any importer run: cases.yaml (gold), t01â€“t06.txt, s01â€“s06.png + s06.pdf, make_sheets.py
 â”‚   â”œâ”€â”€ frames_set/                # hash list + label hash only (frames outside git)
-â”‚   â”œâ”€â”€ voice_test.py              # 20 clips (outside git) â†’ transcript â†’ intent; expected intents committed
+â”‚   â”œâ”€â”€ voice_test.py              # 20 clips (outside git) â†’ transcript â†’ intent; expected intents committed; uses llm/client.transcribe (Muse Voice Transcribe) and the API's parse_intent
 â”‚   â”œâ”€â”€ voice_expected.yaml          # the 20 clips' expected intents, committed before any clip is transcribed
 â”‚   â”œâ”€â”€ run_benchmark.py           # loops runner.py over a sealed manifest: resumable, one retry, stops after 3 INVALID in a row, 05:00 watchdog
 â”‚   â”œâ”€â”€ plan_benchmark.py  read_accuracy.py  p2_validation.py  importer_accuracy.py

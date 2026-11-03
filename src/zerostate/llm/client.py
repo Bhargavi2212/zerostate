@@ -19,9 +19,10 @@ from pathlib import Path
 from pydantic import BaseModel, ValidationError
 
 BASE = "https://api.meta.ai/v1"
-SPARK, SAM = "muse-spark-1.3", "sam-3.1"
+SPARK, SAM, ASR = "muse-spark-1.3", "sam-3.1", "muse-voice-transcribe-1.0"
 MAX_TOKENS = 8192  # generous on every Spark call: a cut-short JSON reply would be a wasted call, never a result
-PRICE = {"spark_in_per_m": 1.25, "spark_out_per_m": 4.25, "sam_per_image": 2.50 / 1000}
+PRICE = {"spark_in_per_m": 1.25, "spark_out_per_m": 4.25, "sam_per_image": 2.50 / 1000,
+         "asr_per_s": 0.18 / 3600}  # Muse Voice Transcribe: 0.18 USD per hour, whole seconds rounded down
 BOX = re.compile(r"<\|box;([^|]*)\|>")
 
 
@@ -53,15 +54,17 @@ def _record(model: str, purpose: str, usd: float, **counts) -> None:
                              **counts, "usd": round(usd, 6)}) + "\n")
 
 
-def _post(path: str, body: dict, accept: str = "application/json", opener=None, timeout: float = 180):
-    budget = float(os.environ.get("ZS_BUDGET_USD", "75"))
+def _post(path: str, body: dict | None, accept: str = "application/json", opener=None, timeout: float = 180,
+          data: bytes | None = None, content_type: str = "application/json"):
+    """POST a JSON `body`, or raw `data` with its `content_type` (multipart audio)."""
+    budget = float(os.environ.get("ZS_BUDGET_USD", "140"))
     if spent_usd() >= budget:
         raise ModelUnavailable(f"model budget reached ({budget:g} USD in the ledger): raise ZS_BUDGET_USD to continue")
     key = os.environ.get("MODEL_API_KEY", "")
     if not key:
         raise ModelUnavailable("MODEL_API_KEY is not set")
-    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode(), method="POST",
-                                 headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json",
+    req = urllib.request.Request(BASE + path, data=data if data is not None else json.dumps(body).encode(), method="POST",
+                                 headers={"Authorization": f"Bearer {key}", "Content-Type": content_type,
                                           "Accept": accept})
     try:
         return (opener or _opener()).open(req, timeout=timeout)
@@ -131,3 +134,21 @@ def sam_boxes(image: bytes, prompt: str, purpose: str, opener=None) -> list[dict
                 text += ev.get("delta", "")
     _record(SAM, purpose, PRICE["sam_per_image"], images=1, wall_s=round(time.monotonic() - t0, 2))
     return parse_boxes(text)
+
+def transcribe(wav: bytes, purpose: str, opener=None) -> str:
+    """Muse Voice Transcribe, push-to-talk, on a mono 16-bit PCM WAV (16 or 24 kHz): the transcript text.
+    Multipart per dev.meta.ai/docs/api-reference/voice/transcribe; billed per whole second of audio."""
+    boundary = "zs" + os.urandom(12).hex()
+    req = json.dumps({"model": ASR, "mode": "PUSH_TO_TALK", "audioEncoding": "WAV"}).encode()
+    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"request\"\r\nContent-Type: application/json\r\n\r\n".encode()
+            + req + f"\r\n--{boundary}\r\nContent-Disposition: form-data; name=\"audio\"; filename=\"clip.wav\"\r\n"
+            "Content-Type: audio/wav\r\n\r\n".encode() + wav + f"\r\n--{boundary}--\r\n".encode())
+    with _post("/asr/transcribe", None, opener=opener, timeout=60, data=body,
+               content_type=f"multipart/form-data; boundary={boundary}") as r:
+        try:
+            reply = json.loads(r.read())
+        except (json.JSONDecodeError, ValueError):
+            raise ModelUnavailable("asr: reply is not JSON") from None
+    ms = int(reply.get("audioDurationMs") or 0)
+    _record(ASR, purpose, (ms // 1000) * PRICE["asr_per_s"], audio_ms=ms)
+    return reply.get("transcript") or ""

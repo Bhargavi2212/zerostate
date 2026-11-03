@@ -98,3 +98,13 @@ def test_missing_key_refuses(monkeypatch):
     monkeypatch.delenv("MODEL_API_KEY")
     with pytest.raises(client.ModelUnavailable, match="not set"):
         client.spark_json([], Reading, "x", opener=FakeOpener())
+
+def test_transcribe_sends_multipart_wav_and_logs_seconds(env):
+    op = FakeOpener({"sessionId": "s", "transcript": "step one done", "audioDurationMs": 2900, "turns": []})
+    assert client.transcribe(b"RIFFfakewav", "voice_test", opener=op) == "step one done"
+    req = op.requests[0]
+    assert req.full_url.endswith("/asr/transcribe") and req.get_header("Content-type").startswith("multipart/form-data")
+    assert b'"model": "muse-voice-transcribe-1.0"' in req.data and b"RIFFfakewav" in req.data
+    row = json.loads(env.read_text(encoding="utf-8").splitlines()[-1])
+    assert row["model"] == "muse-voice-transcribe-1.0" and row["audio_ms"] == 2900 and row["usd"] == round(2 * 0.18 / 3600, 6)
+    assert KEY not in env.read_text(encoding="utf-8")
