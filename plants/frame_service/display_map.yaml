@@ -3,12 +3,13 @@
 # /app/config/frame_service/) to match SAM boxes by overlap and to hash the region for freeze detection.
 # On P1 the page renders the simulator's true state: idealised camera.
 # Measured live Nov 3 on view `default` (1920x1080): valves set to f1 25, f2 50, purge 75, product 10 %,
-# each display read back its own value (truth sidecar 1.9 s after the frame). Boxes include a small margin.
+# each display read back its own value (truth sidecar 1.9 s after the frame). Each box is SAM 3.1's box for
+# that display on the same frame plus 3 px, so a SAM match clears locate.MIN_IOU (0.3) with room (IoU ~0.66).
 idealised: true
 views:
   default:
     displays:
-      f1: [585, 750, 655, 795]
-      f2: [815, 350, 870, 382]
-      purge: [1188, 345, 1240, 378]
-      product: [1385, 750, 1455, 795]
+      f1: [590, 762, 637, 788]
+      f2: [818, 356, 862, 382]
+      purge: [1190, 351, 1233, 377]
+      product: [1393, 762, 1438, 788]
