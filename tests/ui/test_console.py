@@ -48,7 +48,7 @@ def test_session_list(page, ui_server):
     base, _ = ui_server
     page.goto(f"{base}/ui/#/")
     rows = page.locator("#sessions tbody tr")
-    assert rows.count() == 3
+    assert rows.count() == 4  # the three sample bundles (replay mode) + the faked in-progress session
     assert "BLOCKED" in page.locator(f"tr[data-session='{BLOCKED_EP}']").inner_text()
     assert_never_green(page)
 
@@ -59,7 +59,7 @@ def test_blocked_job_renders_recorded_session(page, ui_server):
     assert "BLOCKED: LIVE-HOLD: pressure rose 29.9 kPa" in data_track
     assert "BLOCKED" in page.locator("[data-track='With-camera track']").inner_text()
     strip = page.locator("#assumptions").inner_text()
-    assert "positive isolation upstream assumed" in strip and "plan check overridden" in strip
+    assert "positive isolation upstream assumed" in strip  # the batch p1 runs logged no plan-check override
     body = page.locator("body").inner_text()
     assert "test harness" in page.locator("#steps-table").inner_text()
     assert "eval-operator" not in body and "eval-runner" not in body
@@ -111,6 +111,7 @@ def test_live_job_mark_verify_and_camera(page, ui_server):
     assert "Evaluating…" in page.locator("#verdict-banner").inner_text()
     assert page.locator("#sign-open").inner_text() == "Close — not accepted…"
     assert "test harness" in page.locator("tr[data-step='1'] .verified-by").inner_text()
+    assert "plan check overridden" in page.locator("#assumptions").inner_text()
     page.click("tr[data-step='3'] [data-action='done']")
     page.fill("#dlg-name", TEST_NAME)
     page.click("#dlg-submit")

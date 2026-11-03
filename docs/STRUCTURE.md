@@ -75,13 +75,13 @@ zerostate/
 â”‚   â”‚   â”œâ”€â”€ live/   quality.py alive.py relation.py upstream.py hold.py valve.py camera.py   # CUSUM lives in relation.py; __init__.py: window helpers; camera.py feeds only the with-camera track
 â”‚   â”‚   â””â”€â”€ process/ sequence.py independence.py reset.py
 â”‚   â”œâ”€â”€ thresholds/default.yaml    # versioned generic thresholds; plant thresholds live with the plant (plants/<p>/thresholds.yaml â†’ /app/config/<p>/), never in src/
-â”‚   â”œâ”€â”€ cli.py                     # `zs`: session start/stop, status, step done/verify/reopen, sign, plan import/show/confirm, audit verify/export, replay, api; camera worker thread
+â”‚   â”œâ”€â”€ cli.py                     # `zs`: session start (incl. --from-inbox: a start queued by the API)/stop, status, step done/verify/reopen, sign (--outcome), plan import/show/confirm, audit verify/export, replay, api; camera worker thread
 â”‚   â”œâ”€â”€ camera/
 â”‚   â”‚   â”œâ”€â”€ client.py              # fetches frames from the frame service (172.30.0.3:8080; no truth)
 â”‚   â”‚   â”œâ”€â”€ locate.py              # SAM 3.1 boxes matched to display_map regions
 â”‚   â”‚   â”œâ”€â”€ read.py                # crop + upscale, single Muse Spark read (3-read voting is a should)
 â”‚   â”‚   â”œâ”€â”€ freeze.py              # freeze detection in code: average hash of each display region (frame noise defeats an exact pixel hash)
-â”‚   â”‚   â””â”€â”€ track.py               # the with-camera track: worker-thread bursts (3 frames, 2 s apart), camera_reading / camera evaluation / with_camera verdict events
+â”‚   â”‚   â””â”€â”€ track.py               # the with-camera track: worker-thread bursts (3 frames, 2 s apart), camera_reading (with SAM box) / camera evaluation / with_camera verdict events; saves each frame to /data/frames/<session>/<sha256>.jpg
 â”‚   â”‚                              # not built: align.py (lag is a measured threshold), redact.py (no people in simulator frames)
 â”‚   â”œâ”€â”€ llm/
 â”‚   â”‚   â”œâ”€â”€ client.py              # the only Meta API caller: via zs-proxy (explicit), spark_json / sam_boxes, ledger /data/credits.jsonl, budget stop ZS_BUDGET_USD
@@ -94,8 +94,8 @@ zerostate/
 â”‚   â”‚   â”œâ”€â”€ log.py                 # SQLite append-only, hash-chained rows
 â”‚   â”‚   â”œâ”€â”€ sign.py                # Ed25519 verdict signatures
 â”‚   â”‚   â””â”€â”€ replay.py              # re-run gate on a logged session, must reproduce the verdict
-â”‚   â””â”€â”€ api/                       # __init__.py + server.py
-â”‚       â””â”€â”€ server.py              # FastAPI (zs-api, 127.0.0.1:8090): plans, drafts, sessions, SSE, inbox actions; audit read-only
+â”‚   â””â”€â”€ api/                       # __init__.py + server.py + replay.py (bundles v1/v2 -> session events for `zs api --replay`)
+â”‚       â””â”€â”€ server.py              # FastAPI (zs-api, 127.0.0.1:8090): plans, drafts, sessions list/start/detail, SSE, camera evidence + saved frames, voice read-back, inbox actions; serves ui/ at /ui/; audit read-only; playwright-test guard
 â”œâ”€â”€ ui/                            # Phase 3 operator console (static, served by zs-api)
 â”‚   â”œâ”€â”€ index.html  style.css      # one page, ISA-101 greys; no framework, no build step, no CDN
 â”‚   â”œâ”€â”€ app.js  lib.js             # router (#/ sessions, #/new, #/job/<id>) + session list; DOM/API helpers, verdict wording, "test harness" names
@@ -135,7 +135,7 @@ zerostate/
 â”œâ”€â”€ eval/
 â”‚   â”œâ”€â”€ scenarios/                 # P1 S0â€“S13 (S7 skip, S7-same same verifier, S13 reopen) as YAML (plant, fault, onset range, severity range, expected verdicts); p2/ for P2
 â”‚   â”œâ”€â”€ tools/credits_report.py    # copies /data/credits.jsonl out of the container â†’ dated summary in D:\grfics\credits_log.md
-â”‚   â”œâ”€â”€ tools/export_bundle.py     # episode â†’ bundle.json.gz (docs/BUNDLE.md)
+â”‚   â”œâ”€â”€ tools/export_bundle.py     # episode â†’ bundle.json.gz v2 (docs/BUNDLE.md); --runs-dir for full signals kept elsewhere
 â”‚   â”œâ”€â”€ tools/capture_frames.py    # frames set: operator sets random valve positions, frames + truth sidecars outside git
 â”‚   â”œâ”€â”€ tools/timescale_test.py    # Phase 1: time-scale stability runs (Ã—1 / Ã—10 / Ã—5) â†’ results/timescale_<date>.json
 â”‚   â”œâ”€â”€ tools/vent_fidelity.py     # Phase 1 rev 3: manual-mode vent at Ã—1 vs chosen scale vs physics â†’ results/vent_fidelity_<date>.json
@@ -156,7 +156,7 @@ zerostate/
 â”‚   â”œâ”€â”€ score.py                   # opens seal, checks every episode (manifest, batch, plan hash, audit chain, replay), labels from truth under both hazard definitions (DECISIONS Nov 3), Wilson CIs -> results/score_<batch>.{json,md}
 â”‚   â”œâ”€â”€ claims_audit.py            # reads claims.yaml: tests exist + pass, result keys exist, README sentence matches
 â”‚   â””â”€â”€ results/                   # committed outputs (json + md) with commit hash: timescale_<date>.json, smoke_p1_<date>.md, â€¦
-â”‚       â”œâ”€â”€ bench/<batch>/<episode>/  # scoring episodes of a sealed batch (+ progress.jsonl, signals_sha256.json: hash of each full local signals.jsonl); same files as episodes/
+â”‚       â”œâ”€â”€ bench/<batch>/<episode>/  # scoring episodes of a sealed batch (+ progress.jsonl, signals_sha256.json: hash of each full local signals.jsonl); same files as episodes/; p1 S0, S4-small, S1b also carry bundle.json.gz (samples for `zs api --replay`, G9)
 â”‚       â””â”€â”€ episodes/<episode>/    # per-episode audit_export, verdict, meta, ids, events, truth.jsonl.gz: anyone can replay and re-score
 â”œâ”€â”€ tests/
 â”‚   â”œâ”€â”€ test_readonly.py           # no plant-protocol write call anywhere; only adapters/ import pymodbus/asyncua; no write*/set* methods in adapters
@@ -180,7 +180,7 @@ zerostate/
 â”‚   â”œâ”€â”€ test_bundle.py             # episode bundle: export â†’ load â†’ schema validates; key-like strings refused
 â”‚   â”œâ”€â”€ test_score.py              # score.py on a fixture seal: both hazard definitions, windows, Wilson CIs, refused hash, INVALID entries, S1b note
 â”‚   â”œâ”€â”€ test_baselines.py          # gauge rule on committed p1 episodes; Muse alone with a fake client only (one call, temperature 0, pinned mapping, unavailable listed, dry run calls nothing); both scored by score.py
-â”‚   â”œâ”€â”€ test_api_contract.py       # API (docs/API.md): every endpoint returns its schema, error codes, audit opened read-only, steps/sign only add inbox rows, voice never reaches sign
+â”‚   â”œâ”€â”€ test_api_contract.py       # API (docs/API.md): every endpoint returns its schema, error codes, audit opened read-only, steps/sign/start only add inbox rows, playwright-test refused on real /data, voice never reaches sign/verify/reopen; replay mode serves every published episode and refuses writes
 â”‚   â”œâ”€â”€ test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
 â”‚   â”œâ”€â”€ test_gate.py               # no approval member; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
 │   ├── test_wording.py            # never-say checker: list matches PROJECT.md; docs/*.md and src/ string literals clean
@@ -197,7 +197,7 @@ zerostate/
 â”‚   â”‚                              # tests/checks/synth.py: synthetic P1 windows (vent model, 4 Hz polls) for rule tests
 â”‚   â”‚                              # tests/checks/plan_synth.py: small hand-built plant maps and plans for the plan-rule tests
 â”‚   â”‚                              # tests/checks/synth_p2.py: P2 plan + windows sampled from plants/p2_gasline/model.py (4 Hz, x30)
-â”‚   â”œâ”€â”€ ui/                        # marker `ui`: Playwright (headless Chromium) on the console, against tests/ui/fake_api.py
+â”‚   â”œâ”€â”€ ui/                        # marker `ui`: Playwright (headless Chromium) on the console, against tests/ui/fake_api.py (replay mode over the sample bundles + one faked in-progress session)
 â”‚   â”‚                              # (real plan/draft routes + recorded bench sessions as SessionDetail) on a throwaway data dir
 â”‚   â””â”€â”€ fixtures/                  # small recorded episodes for offline tests
 â””â”€â”€ scripts/

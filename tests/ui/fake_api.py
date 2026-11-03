@@ -1,25 +1,26 @@
-"""Fixture server for the console's Playwright tests (P3-3), until replay mode (`zs api --replay`) lands.
+"""Fixture server for the console's Playwright tests (P3-3).
 
 - Plans, drafts and confirm: the real `zerostate.api.server` app on a throwaway data dir, with a fake
   model transport (never the Meta API).
-- Sessions: shaped as docs/API.md `SessionDetail` (v2), built from recorded benchmark episodes
-  (eval/results/bench/p1/*/audit_export.json); the stream replays their logged events, then ends.
-- Writes (done / verify / sign / session start) only append to <data>/inbox.jsonl in the throwaway dir.
-  Like the API, a sign by `playwright-test` is refused (403) when the data dir is the real /data.
+- Recorded sessions: replay mode (`zs api --replay`) over the committed sample bundles
+  (eval/results/bench/p1/*/bundle.json.gz, G9); their GETs go to the replay app unchanged.
+- One in-progress session (`ui-live`), faked from the S0 recording: the one thing a bundle can't give.
+- Writes (done / verify / sign / session start) only append to <data>/inbox.jsonl in the throwaway dir
+  (replay mode itself refuses them). Like the API, a sign by `playwright-test` is refused (403) when the
+  data dir is the real /data.
 """
 
 import copy
 import io
 import json
-from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
-from fastapi.staticfiles import StaticFiles
 from PIL import Image
 
 from zerostate.api import server
+from zerostate.api.replay import load_bundles
 
 ROOT = Path(__file__).parents[2]
 BENCH = ROOT / "eval/results/bench/p1"
@@ -47,56 +48,17 @@ class FakeOpener:
                                       "usage": {"prompt_tokens": 10, "completion_tokens": 10}}).encode())
 
 
-def wall(ts: str) -> float:
-    return datetime.fromisoformat(ts).timestamp()
+def sse(e: dict) -> str:
+    out = f"event: {server.STREAM_KINDS[e['kind']]}\ndata: {json.dumps(e)}\n\n"
+    for f in e["payload"].get("findings", []) if e["kind"] == "evaluation" else []:
+        out += f"event: finding\ndata: {json.dumps({**f, 'id': server.finding_id(e['id'], f['rule_id']), 'eval_id': e['id']})}\n\n"
+    return out
 
 
-def episode(folder: Path) -> tuple[dict, list[tuple[str, dict]]]:
-    """A recorded episode -> (SessionDetail, stream events)."""
-    ev = json.loads((folder / "audit_export.json").read_text(encoding="utf-8"))
-    start = next(e for e in ev if e["kind"] == "session_start")
-    plan = start["payload"]["plan"]
-    steps = [{"k": s["k"], "kind": s["kind"], "targets": s["targets"] or ([s["target"]] if s["target"] else []),
-              "required_state": s["required_state"], "marked_by": None, "marked_t": None, "verified_by": None,
-              "verified_t": None, "reopened": [], "result": None, "finding_ids": []} for s in plan["steps"]]
-    by_k = {s["k"]: s for s in steps}
-    findings, stream, data_only = [], [], None
-    for e in ev:
-        p, kind = e["payload"], e["kind"]
-        if kind == "step_done":
-            by_k[p["k"]].update(marked_by=p["by"], marked_t=wall(e["ts"]))
-        elif kind == "evaluation":
-            for f in p["findings"]:
-                f = {"path": [], **f, "id": f"{e['id']}:{f['rule_id']}", "eval_id": e["id"], "source": p["source"],
-                     "step": p.get("step"), "t": wall(e["ts"])}
-                findings.append(f)
-                if p["source"] == "step":
-                    by_k[p["step"]]["finding_ids"].append(f["id"])
-            if p["source"] == "step":
-                sts = [f["status"] for f in p["findings"]]
-                by_k[p["step"]]["result"] = "FAIL" if "FAIL" in sts else "UNKNOWN" if "UNKNOWN" in sts else "PASS"
-        elif kind == "verdict":
-            data_only = {"verdict": p["verdict"], "reasons": p["reasons"], "t": wall(e["ts"]), "stamp": p}
-        name = {"step_done": "step", "session_start": "session_start", "evaluation": "evaluation",
-                "verdict": "verdict", "session_stopped": "session_stopped"}.get(kind)
-        if name:
-            stream.append((name, e))
-        if kind == "evaluation":
-            stream += [("finding", f) for f in findings if f["eval_id"] == e["id"]]
-    verdict = data_only["verdict"] if data_only else None
-    detail = {"id": folder.name, "plant": plan["plant"], "state": "stopped", "started": wall(start["ts"]),
-              "plan_hash": start["payload"]["plan_hash"], "plan": plan, "confirmation": None,
-              "assumptions": [a["text"] for a in plan["assumptions"]], "plan_check_override": OVERRIDE,
-              "steps": steps, "findings": findings, "verdict": verdict, "verdict_with_camera": verdict,
-              "tracks": {"data_only": data_only, "with_camera": None}, "stamp": data_only and data_only["stamp"],
-              "refused": [], "camera_pending": 0, "signature": None}
-    return detail, stream
-
-
-def live_session(base: dict, stream: list) -> tuple[dict, list]:
+def live_session(base: dict, events: list) -> tuple[dict, str]:
     """A session still in progress: steps 1-2 marked, step 1 verified, one camera read; verdict pending."""
     d = copy.deepcopy(base)
-    d.update(id="ui-live", state="ready", verdict=None, verdict_with_camera=None, stamp=None,
+    d.update(id="ui-live", state="ready", verdict=None, verdict_with_camera=None, stamp=None, plan_check_override=OVERRIDE,
              tracks={"data_only": None, "with_camera": None})
     for s in d["steps"]:
         if s["k"] > 2:
@@ -109,17 +71,8 @@ def live_session(base: dict, stream: list) -> tuple[dict, list]:
            "eval_id": 99999, "source": "camera", "step": 2, "t": d["steps"][1]["marked_t"] + 20}
     d["findings"].append(cam)
     evals = {f["eval_id"] for f in d["findings"]}
-    live = [(n, e) for n, e in stream if n == "session_start" or (n == "evaluation" and e["id"] in evals)]
-    return d, live
-
-
-def build_sessions() -> tuple[dict, dict]:
-    s0 = min(BENCH.glob("S0_*"))
-    out = {}
-    for folder in (BENCH / BLOCKED_EP, s0):
-        out[folder.name] = episode(folder)
-    out["ui-live"] = live_session(*out[s0.name])
-    return {k: v[0] for k, v in out.items()}, {k: v[1] for k, v in out.items()}
+    live = [e for e in events if e["kind"] == "session_start" or (e["kind"] == "evaluation" and e["id"] in evals)]
+    return d, "".join(sse(e) for e in live)
 
 
 def frame_jpeg() -> bytes:
@@ -131,8 +84,13 @@ def frame_jpeg() -> bytes:
 
 
 def make_app(data_dir: Path, config_dir: Path, params: dict, ui_dir: Path = ROOT / "ui") -> FastAPI:
-    details, streams = build_sessions()
-    real = server.create_app(data_dir, data_dir / "audit.sqlite", config_dir, params, opener=FakeOpener(), poll_s=0)
+    events = {sid: r["events"] for sid, r in load_bundles(BENCH).items()}
+    details = {sid: server.detail(sid, ev) for sid, ev in events.items()}
+    s0 = min(k for k in details if k.startswith("S0_"))
+    live, live_stream = live_session(details[s0], events[s0])
+    details["ui-live"] = live
+    real = server.create_app(data_dir, data_dir / "audit.sqlite", config_dir, params, opener=FakeOpener(), poll_s=0, ui_dir=ui_dir)
+    replay = server.create_app(BENCH, BENCH / "no-audit.sqlite", config_dir, {}, replay_dir=BENCH, ui_dir=ui_dir)
     app = FastAPI()
     real_data = data_dir.resolve() == Path("/data").resolve()
 
@@ -147,9 +105,9 @@ def make_app(data_dir: Path, config_dir: Path, params: dict, ui_dir: Path = ROOT
 
     @app.get("/api/sessions")
     def sessions():
-        rows = [{"id": d["id"], "plant": d["plant"], "plan_hash": d["plan_hash"], "started": d["started"], "state": d["state"],
-                 "verdict": d["verdict"], "verdict_with_camera": d["verdict_with_camera"], "signed": d["signature"] is not None}
-                for d in details.values()]
+        rows = [server.summary(sid, ev) for sid, ev in events.items()]
+        rows.append({"id": "ui-live", "plant": live["plant"], "plan_hash": live["plan_hash"], "started": live["started"],
+                     "state": live["state"], "verdict": None, "verdict_with_camera": None, "signed": False})
         return sorted(rows, key=lambda r: -r["started"])
 
     @app.post("/api/sessions")
@@ -160,16 +118,25 @@ def make_app(data_dir: Path, config_dir: Path, params: dict, ui_dir: Path = ROOT
         write("ui-live", "session_start", body)
         return JSONResponse({"queued": True, "session": "ui-live"}, status_code=202)
 
-    @app.get("/api/sessions/{sid}")
-    def detail(sid: str):
-        if sid not in details:
-            return JSONResponse({"error": "not_found", "detail": sid}, status_code=404)
-        return details[sid]
+    @app.get("/api/sessions/ui-live")
+    def live_detail():
+        return live
 
-    @app.get("/api/sessions/{sid}/stream")
-    def stream(sid: str):
-        body = "".join(f"event: {n}\ndata: {json.dumps(e)}\n\n" for n, e in streams.get(sid, []))
-        return StreamingResponse(iter([body]), media_type="text/event-stream")
+    @app.get("/api/sessions/ui-live/stream")
+    def live_events():
+        return StreamingResponse(iter([live_stream]), media_type="text/event-stream")
+
+    @app.get("/api/sessions/ui-live/camera/{eval_id}")
+    def camera(eval_id: int):
+        f = next((x for x in live["findings"] if x["eval_id"] == eval_id and x["source"] == "camera"), None)
+        if f is None:
+            return JSONResponse({"error": "not_found", "detail": str(eval_id)}, status_code=404)
+        return {"eval_id": eval_id, "step": f["step"], "point": "f1", "tag": "f1_valve_pos", "mode": "advisory",
+                "label": "idealised camera (renders the simulator's true state)", "models": ["muse-spark", "sam-3.1"],
+                "finding": f, "verdict_after": None, "with_camera_after": None, "feedback": [[f["t"], 0.0]],
+                "readings": [{"t": f["t"], "value": 0.0, "readable": True, "note": None, "frame_sha256": "ab" * 32,
+                              "box": [120, 70, 200, 110], "crop_hash": "cd" * 32, "feedback_at": 0.0,
+                              "frame_url": "/fixture/frame.jpg", "crop_url": None}]}
 
     @app.post("/api/sessions/{sid}/steps/{k}/{action}")
     async def step(sid: str, k: int, action: str, request: Request):
@@ -185,20 +152,13 @@ def make_app(data_dir: Path, config_dir: Path, params: dict, ui_dir: Path = ROOT
         cite = next((x for x in f if x["status"] == "FAIL"), f[0])
         return {"answer": f"The finding {cite['id']} says: {cite['message']}.", "cites": [cite["id"]]}
 
-    @app.get("/api/sessions/{sid}/camera/{eval_id}")
-    def camera(sid: str, eval_id: int):
-        f = next((x for x in details[sid]["findings"] if x["eval_id"] == eval_id and x["source"] == "camera"), None)
-        if f is None:
-            return JSONResponse({"error": "not_found", "detail": str(eval_id)}, status_code=404)
-        return {"eval_id": eval_id, "step": f["step"], "point": "f1", "tag": "f1_valve_pos", "mode": "advisory",
-                "label": "idealised camera (renders the simulator's true state)", "models": ["muse-spark", "sam-3.1"],
-                "finding": f, "verdict_after": None, "with_camera_after": None, "feedback": [[f["t"], 0.0]],
-                "readings": [{"t": f["t"], "value": 0.0, "readable": True, "note": None, "frame_sha256": "ab" * 32,
-                              "box": [120, 70, 200, 110], "crop_hash": "cd" * 32, "feedback_at": 0.0,
-                              "frame_url": "/fixture/frame.jpg", "crop_url": None}]}
-
     jpeg = frame_jpeg()
     app.get("/fixture/frame.jpg")(lambda: Response(jpeg, media_type="image/jpeg"))
-    app.mount("/ui", StaticFiles(directory=ui_dir, html=True), name="ui")
-    app.mount("/", real)
+
+    async def split(scope, receive, send):
+        """Recorded sessions' GETs go to replay mode; everything else (plans, drafts, confirm, /ui/) to the live app."""
+        to_replay = scope["type"] == "http" and scope["method"] == "GET" and scope["path"].startswith("/api/sessions/")
+        await (replay if to_replay else real)(scope, receive, send)
+
+    app.mount("/", split)
     return app

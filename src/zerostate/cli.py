@@ -101,9 +101,44 @@ def camera_track(s, plan, log, scale, override):
         ct.CameraTrack(s.sid, plan, s.params, log, {}, scale, override).no_service()
         return None, None, None
     dmap = ct.load_display_map(os.environ.get("ZS_DISPLAY_MAP", str(_config() / "frame_service" / "display_map.yaml")))
-    cam, jobs, results = ct.CameraTrack(s.sid, plan, s.params, log, dmap, scale, override), queue.Queue(), queue.Queue()
+    cam = ct.CameraTrack(s.sid, plan, s.params, log, dmap, scale, override, frames_dir=_data() / "frames" / s.sid)
+    jobs, results = queue.Queue(), queue.Queue()
     threading.Thread(target=ct.worker, args=(jobs, results), daemon=True, name="camera").start()
     return cam, jobs, results
+
+
+def _load_plan(path: Path) -> IsolationPlan:
+    raw = yaml.safe_load(path.read_text(encoding="utf-8-sig"))
+    return IsolationPlan.model_validate(raw.get("plan", raw))  # a plans/<hash>.json from a confirmed draft holds {plan, ...}
+
+
+def _plan_file(plant: str, plan_hash: str) -> Path | None:
+    """The plan file for a hash: a confirmed draft (/data/plans/<hash>.json) or a plan YAML in the plant config."""
+    p = _data() / "plans" / f"{plan_hash}.json"
+    if p.exists():
+        return p
+    for y in sorted((_config() / plant).glob("*.yaml")):
+        try:
+            h = _load_plan(y).content_hash()
+        except Exception:  # noqa: BLE001 - not a plan file
+            h = None
+        if h == plan_hash:
+            return y
+    return None
+
+
+def _from_inbox(a, log: AuditLog) -> str | None:
+    """Fill the start arguments from the request the API queued; returns a refusal reason, or None."""
+    req = Inbox(_data() / "inbox.sqlite").start_request(a.session)
+    if req is None:
+        return f"no session start queued for {a.session}"
+    path = _plan_file(req["plant"], req["plan_hash"])
+    if path is None:
+        return f"no plan file with hash {req['plan_hash']} for {req['plant']}"
+    a.plan, a.plan_hash, a.plan_check_override = str(path), req["plan_hash"], req.get("plan_check_override")
+    pmap = _config() / req["plant"] / "plant_map.yaml"
+    a.plan_map = a.plan_map or (str(pmap) if pmap.exists() else None)
+    return None
 
 
 def session_start(a) -> int:
@@ -111,12 +146,24 @@ def session_start(a) -> int:
     if log.events(a.session):
         print(f"session {a.session} already exists", file=sys.stderr)
         return 1
-    raw = yaml.safe_load(Path(a.plan).read_text(encoding="utf-8-sig"))
-    plan = IsolationPlan.model_validate(raw.get("plan", raw))  # a plans/<hash>.json from a confirmed draft holds {plan, ...}
+
+    def refuse(reason: str) -> int:
+        print(f"refused: {reason}", file=sys.stderr)
+        if a.from_inbox:  # the API returned this id: say why it never started
+            log.append(a.session, "session_refused", {"reason": reason})
+        return 1
+
+    if a.from_inbox:
+        why = _from_inbox(a, log)
+        if why:
+            return refuse(why)
+    elif not (a.plan and a.plan_hash):
+        print("session start needs --plan and --plan-hash, or --from-inbox", file=sys.stderr)
+        return 2
+    plan = _load_plan(Path(a.plan))
     confirmation = is_confirmed(plan.content_hash(), [Path(a.plan).parent, _config() / plan.plant], _data())
     if confirmation is None:
-        print(f"refused: plan {plan.content_hash()} is not confirmed by a person (zs plan confirm)", file=sys.stderr)
-        return 1
+        return refuse(f"plan {plan.content_hash()} is not confirmed by a person (zs plan confirm)")
     adapter = open_adapter(os.environ.get("ZS_MAP", "/app/config/p1_grfics/modbus_map.yaml"))
     spans = {e.tag: (e.scale_min, e.scale_max) for e in adapter.map.tags}
     pmap = (PlantMap.model_validate(yaml.safe_load(Path(a.plan_map).read_text(encoding="utf-8-sig")))
@@ -125,8 +172,8 @@ def session_start(a) -> int:
         s = Session(a.session, plan, a.plan_hash, _thresholds(), adapter.map.process_time_scale, spans, log, time.time(),
                     plant_map=pmap, override=a.plan_check_override, confirmation=confirmation)
     except (PlanHashMismatch, PlanCheckFailed) as e:
-        print(f"refused: {e}", file=sys.stderr)
-        return 1
+        adapter.close()
+        return refuse(str(e))
     inbox = Inbox(_data() / "inbox.sqlite")
     run_dir = _data() / "runs" / a.session
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -160,9 +207,10 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     se = sub.add_parser("session").add_subparsers(dest="action", required=True)
     st = se.add_parser("start")
-    st.add_argument("--plan", required=True)
-    st.add_argument("--plan-hash", required=True)
+    st.add_argument("--plan")
+    st.add_argument("--plan-hash")
     st.add_argument("--session", required=True)
+    st.add_argument("--from-inbox", action="store_true", help="start the session the API queued under --session (POST /api/sessions)")
     st.add_argument("--plan-map", help="plant map: run the plan checks before starting")
     st.add_argument("--plan-check-override", help="text accepting a plan-check finding; logged and stamped on every verdict")
     stop = se.add_parser("stop")
@@ -185,6 +233,8 @@ def main(argv: list[str] | None = None) -> int:
     sg.add_argument("--by", required=True)
     sg.add_argument("--role", required=True, choices=["planner", "approver", "installer", "verifier", "prover", "receiver"])
     sg.add_argument("--note")
+    sg.add_argument("--outcome", default="not_accepted", choices=["accepted", "not_accepted"],
+                    help="accepted only when both tracks read NO DISCREPANCY FOUND (the core refuses it otherwise)")
     au = sub.add_parser("audit").add_subparsers(dest="action", required=True)
     for name in ("verify", "export"):
         au.add_parser(name).add_argument("session")
@@ -206,8 +256,9 @@ def main(argv: list[str] | None = None) -> int:
     for p_ in (pi, pshow, pc):
         p_.add_argument("--map", help="plant_map.yaml (default /app/config/<plant>/plant_map.yaml)")
     api = sub.add_parser("api", help="HTTP API for the console (docs/API.md); the container publishes it on 127.0.0.1 only")
-    api.add_argument("--host", default="0.0.0.0")
+    api.add_argument("--host", help="default 0.0.0.0 in the container (published on 127.0.0.1 only); 127.0.0.1 with --replay")
     api.add_argument("--port", type=int, default=8090)
+    api.add_argument("--replay", metavar="BUNDLE_DIR", help="serve recorded bundles read-only: no lab, no audit log, no key")
     a = ap.parse_args(argv)
 
     if a.cmd == "api":
@@ -215,7 +266,11 @@ def main(argv: list[str] | None = None) -> int:
 
         from zerostate.api.server import create_app
 
-        uvicorn.run(create_app(_data(), _audit(), _config(), _thresholds()), host=a.host, port=a.port)
+        if a.replay:  # nothing is written in replay mode: the bundle dir stands in for the data dir
+            app = create_app(a.replay, Path(a.replay) / "no-audit.sqlite", _config(), {}, replay_dir=a.replay)
+        else:
+            app = create_app(_data(), _audit(), _config(), _thresholds())
+        uvicorn.run(app, host=a.host or ("127.0.0.1" if a.replay else "0.0.0.0"), port=a.port)
         return 0
 
     if a.cmd == "session" and a.action == "start":
@@ -232,7 +287,7 @@ def main(argv: list[str] | None = None) -> int:
         elif a.cmd == "step":
             inbox.put(a.session, f"step_{a.action}", k=a.k, by=a.by, **({"reason": a.reason} if a.action == "reopen" else {}))
         else:
-            inbox.put(a.session, "sign", by=a.by, role=a.role, note=a.note)
+            inbox.put(a.session, "sign", by=a.by, role=a.role, note=a.note, outcome=a.outcome)
         return 0
     log = AuditLog(_audit())
     events = log.events(a.session)

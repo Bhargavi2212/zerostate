@@ -13,6 +13,9 @@ Wording rule for every text field: PROJECT.md "never say" list, checked by `zero
 
 **Runner names:** clients show the names `eval-operator`, `eval-verifier` and `eval-runner` (the benchmark runner's) as **"test harness"**, never as a person. The API returns the logged name unchanged.
 
+## Console
+`GET /ui/` serves the console's static files (`ui/`; in the image `/app/ui`, `ZS_UI`) in live and replay mode; `GET /` redirects there. The console uses relative asset paths and calls the absolute `/api/...` routes below.
+
 ## Ids
 - **Session id** = episode id = folder name (`[A-Za-z0-9_-]{1,64}`).
 - **Evaluation id** (`eval_id`) = the audit-log row id of the `evaluation` event.
@@ -51,9 +54,9 @@ Agents and scripts never call the confirm endpoint on real data (CLAUDE.md).
 | `POST /api/sessions/{id}/steps/{k}/reopen` | `{by, reason}` (inch-and-test: PROC-RESET) | `{queued: true}` |
 | `POST /api/sessions/{id}/sign` **changed in P3** | `{by, role, note, outcome: "accepted"\|"not_accepted"}` — on-screen action with name and role; **no voice route reaches it** | `{queued: true}`; 409 for `accepted` unless both tracks read `NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF`; 403 for `playwright-test` on real `/data` |
 
-**Start (`POST /api/sessions`)** — live mode only. The API does not read the plant: it puts a `session_start` request in the inbox (session = a new id it returns) and the core (`zs session start`) runs it. The core refuses as it does from the command line: plan not confirmed by a person, plan hash mismatch, or a plan check that did not pass with no override text. A refused start is logged by the core as `session_refused {reason}` under the returned id, so `GET /api/sessions/{id}` shows `state: refused` and the reason; the API never fakes a session.
+**Start (`POST /api/sessions`)** — live mode only. The API does not read the plant: it puts a `session_start` request in the inbox (session = a new id it returns) and the core runs it with `zs session start --session <id> --from-inbox` (started in the `zerostate` container by the operator or the demo driver; the API can't start it). The core refuses as it does from the command line: plan not confirmed by a person, plan hash mismatch, or a plan check that did not pass with no override text. A refused start is logged by the core as `session_refused {reason}` under the returned id, so `GET /api/sessions/{id}` shows `state: refused` and the reason; the API never fakes a session.
 
-**Sign outcomes.** `accepted` is the console's "Accept and sign" (only offered on NO DISCREPANCY). `not_accepted` is "Close — not accepted" on BLOCKED or ESCALATED: a closing signature that records the job was not accepted; it never reads as approval. Only a signature closes a session. A missing `outcome` is `not_accepted`.
+**Sign outcomes.** `accepted` is the console's "Accept and sign" (only offered on NO DISCREPANCY). `not_accepted` is "Close — not accepted" on BLOCKED or ESCALATED: a closing signature that records the job was not accepted; it never reads as approval. Only a signature closes a session. A missing `outcome` is `not_accepted`. The core applies the same rule (also to `zs sign --outcome`): an `accepted` it can't honour is logged as `sign_refused` (listed in `refused`) and the session stays open.
 
 `SessionSummary` = `{id, plant, plan_hash, started: wall s, state, verdict, verdict_with_camera, signed: bool}`.
 
@@ -115,7 +118,7 @@ Label everywhere: **"idealised camera (renders the simulator's true state)"**.
 `POST /api/sessions/{id}/explain {question}` → `{answer, cites: [finding id]}`. Muse Spark answers **only** from that session's logged findings (with ids), summarised windows and the plan; it can't change anything (no write path from this endpoint). Every answer cites at least one finding id (`<eval_id>:<rule_id>`); the console renders each as a link to that finding. An uncited answer is retried once, then a fixed fallback is returned. A request to override, approve, sign or pass gets the fixed reply, with no model call: **"I can only explain the evidence; only code decides and only a person signs."** Needs the key, in replay mode too (503 without it).
 
 ## Voice (Phase 3, changed in P3)
-`POST /api/voice/command`, body `{session}` plus **either** `{audio}` (base64 recording; transcribed by the chosen speech model) **or** `{transcript, asr: "<model id>"}` (text already transcribed, with the id of the model that did it). `session` gives the plan the phrase is matched against (optional for P2 callers: without it only `status`/`repeat`/`confirm`/`cancel`/`unknown` can result).
+`POST /api/voice/command`, body `{session}` plus **either** `{audio}` (base64 recording; transcribed by the chosen speech model — until P3-5 wires one, it returns `unknown` with a read-back saying so) **or** `{transcript, asr: "<model id>"}` (text already transcribed, with the id of the model that did it). `session` gives the plan the phrase is matched against (optional for P2 callers: without it only `status`/`repeat`/`confirm`/`cancel`/`unknown` can result).
 → `{transcript, asr, intent, k: int|null, read_back}`.
 
 | `intent` | Meaning |
@@ -136,7 +139,7 @@ Label everywhere: **"idealised camera (renders the simulator's true state)"**.
 - The stream sends the recorded events in order, then ends; `?speed=N` paces them at N × recorded time.
 - **Every write returns 409 `{"error": "replay", "detail": ...}`**: import, draft edit, confirm, session start, done, verify, reopen, sign; voice too (there is no live step to mark). Explain is the only POST served.
 - Explain works only with the key (503 without it); nothing else needs one.
-- It is the README's main "run it" path, the Playwright fixture and the explain-check harness.
+- It is the README's main "run it" path, the Playwright fixture and the explain-check harness. Sample bundles are committed: `zs api --replay eval/results/bench/p1` then open `http://127.0.0.1:8090/ui/`.
 
 ## Errors
 JSON `{error, detail}` with 400 (bad input), 403 (`test_name_on_real_data`), 404 (unknown id), 409 (draft not confirmable / session state / `replay`), 503 (model unavailable or over budget: the API keeps working without model features).

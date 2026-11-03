@@ -1,6 +1,7 @@
 """Camera channel, offline: fake model and frame functions, synthetic display images made with Pillow.
 LIVE-CAMERA on its own track: a camera FAIL never reaches the data-only verdict."""
 
+import hashlib
 import io
 from datetime import UTC, datetime
 
@@ -97,6 +98,22 @@ def test_burst_reads_each_located_display():
     out = burst({"step": 2, "points": {"f1": ("default", F1_BOX)}}, fetch=lambda v: (frame(), 5.0),
                 sam=sam, spark=spark, sleep=lambda s: None)
     assert [r["value"] for r in out[0]["readings"]] == [100.0, 100.0, 100.0]
+    assert out[0]["readings"][0]["box"] == [100.0, 100.0, 220.0, 150.0]
+
+
+def test_burst_saves_each_frame_named_by_its_logged_hash(tmp_path):
+    sam = lambda img, prompt, purpose: [{"x1": 100, "y1": 100, "x2": 220, "y2": 150, "c": 0.9}]
+    spark = lambda msgs, schema, purpose: schema(value=100.0, readable=True)
+    frames = iter([frame("1"), frame("2"), frame("3")])
+    out = burst({"step": 2, "points": {"f1": ("default", F1_BOX)}, "frames_dir": tmp_path / "frames" / "s1"},
+                fetch=lambda v: (next(frames), 5.0), sam=sam, spark=spark, sleep=lambda s: None)
+    shas = [r["frame_sha256"] for r in out[0]["readings"]]
+    saved = sorted((tmp_path / "frames" / "s1").iterdir())
+    assert sorted(p.name for p in saved) == sorted(f"{s}.jpg" for s in shas)
+    assert all(hashlib.sha256(p.read_bytes()).hexdigest() == p.stem for p in saved)  # the service's bytes, unchanged
+    out = burst({"step": 2, "points": {"f1": ("default", F1_BOX)}}, fetch=lambda v: (frame(), 5.0),
+                sam=sam, spark=spark, sleep=lambda s: None)  # no frames_dir: nothing kept
+    assert len(list((tmp_path / "frames" / "s1").iterdir())) == 3
 
 
 # ---- freeze detection ------------------------------------------------------------------------

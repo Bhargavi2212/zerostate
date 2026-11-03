@@ -17,6 +17,8 @@ COPY pyproject.toml ./
 COPY src ./src
 RUN pip install --no-cache-dir --no-deps .
 COPY scripts ./scripts
+# The operator console (static), served by zs-api at /ui/.
+COPY ui ./ui
 COPY tests/net ./tests/net
 # Only plant data the product needs; never truth or fault code.
 # Globs so an owner-made confirmed.yaml is included when it exists (YAML data only, never .py truth/fault code).
@@ -24,7 +26,7 @@ COPY plants/p1_grfics/*.yaml ./config/p1_grfics/
 COPY plants/p2_gasline/*.yaml ./config/p2_gasline/
 # Where each display sits in a camera view (data only; views and the frame service stay in zs-frames).
 COPY plants/frame_service/display_map.yaml ./config/frame_service/
-ENV ZS_CONFIG=/app/config ZS_MAP=/app/config/p1_grfics/modbus_map.yaml ZS_THRESHOLDS=/app/config/p1_grfics/thresholds.yaml ZS_DATA=/data
+ENV ZS_CONFIG=/app/config ZS_MAP=/app/config/p1_grfics/modbus_map.yaml ZS_THRESHOLDS=/app/config/p1_grfics/thresholds.yaml ZS_DATA=/data ZS_UI=/app/ui
 # /audit/audit.sqlite (ZS_AUDIT; core rw, zs-api ro), /data: inbox.sqlite (human/operator actions), runs/<session>/signals.jsonl
 RUN mkdir -p /data /audit && chown zs:zs /data /audit
 USER zs

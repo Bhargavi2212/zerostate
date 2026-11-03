@@ -10,6 +10,7 @@ with-camera verdict = gate.worsen(data-only verdict, every camera contribution s
 can add a block (or, with `camera: required`, an escalation), never a pass.
 """
 
+import contextlib
 import hashlib
 import io
 import queue
@@ -40,6 +41,15 @@ def load_display_map(path: str | Path) -> dict[str, tuple[str, list]]:
     return {p: (view, list(box)) for view, v in (raw.get("views") or {}).items() for p, box in (v.get("displays") or {}).items()}
 
 
+def save_frame(frames_dir: Path, sha: str, data: bytes) -> None:
+    """<frames_dir>/<sha256>.jpg, the frame service's JPEG bytes unchanged (so the file checks against the
+    logged hash). A failed save only loses the picture, never the reading."""
+    with contextlib.suppress(OSError):  # FileExistsError too: the same frame is already kept
+        frames_dir.mkdir(parents=True, exist_ok=True)
+        with open(frames_dir / f"{sha}.jpg", "xb") as fh:
+            fh.write(data)
+
+
 def burst(job: dict, fetch=fetch_frame, sam=sam_boxes, spark=spark_json, sleep=time.sleep, clock=time.monotonic) -> list[dict]:
     """Capture FRAMES frames GAP_WALL_S apart for every view the job needs, then locate and read each
     display. Never raises: a failed fetch or model call is an unreadable reading."""
@@ -68,12 +78,15 @@ def burst(job: dict, fetch=fetch_frame, sam=sam_boxes, spark=spark_json, sleep=t
                                "note": str(e) if data is None else f"bad frame: {type(e).__name__}"})
             continue
         sha = hashlib.sha256(data).hexdigest()
+        if job.get("frames_dir"):  # the evidence panel shows it; the audit log keeps only the hash
+            save_frame(Path(job["frames_dir"]), sha, data)
         try:
             boxes, note = locate(data, img.size, regions, sam), None
         except ModelUnavailable as e:
             boxes, note = dict.fromkeys(regions), f"locate unavailable: {e}"
         for p, region in regions.items():
             r = {"t": t, "value": None, "readable": False, "frame_sha256": sha, "crop_hash": ahash(img.crop(tuple(int(x) for x in region))),
+                 "box": [float(x) for x in boxes[p]] if boxes[p] is not None else None,
                  "note": note or (None if boxes[p] else "display not located")}
             if boxes[p] is not None:
                 try:
@@ -98,8 +111,11 @@ def worker(jobs: queue.Queue, results: queue.Queue, **fns) -> None:
 
 
 class CameraTrack:
-    def __init__(self, sid, plan, params, log, display_map: dict[str, tuple[str, list]], scale: float, override=None):
+    def __init__(self, sid, plan, params, log, display_map: dict[str, tuple[str, list]], scale: float, override=None,
+                 frames_dir: Path | None = None):
+        """frames_dir: where the worker saves each evaluated frame (/data/frames/<session>); None keeps none."""
         self.sid, self.plan, self.params, self.log, self.scale, self.override = sid, plan, params, log, scale, override
+        self.frames_dir = frames_dir
         self.mode = plan.camera
         self.points = {p: vb for p, vb in display_map.items() if tag_for(plan, p, "feedback")}
         self.fb_tag = {p: tag_for(plan, p, "feedback") for p in self.points}
@@ -132,7 +148,7 @@ class CameraTrack:
             pts = {p: self.points[p] for p in step_targets(st) if p in self.points}
             if pts:
                 self.log.append(self.sid, "camera_capture", {"step": k, "points": sorted(pts)})
-                jobs.append({"step": k, "points": pts})
+                jobs.append({"step": k, "points": pts, "frames_dir": self.frames_dir})
         return jobs
 
     def no_service(self) -> None:
