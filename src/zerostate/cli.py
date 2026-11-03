@@ -59,14 +59,14 @@ def plan_cmd(a) -> int:
             from zerostate.importers.image_import import import_image
             from zerostate.importers.text_import import import_text
 
-            pmap = plant_map(a.plant)
+            pmap, transcript = plant_map(a.plant), None
             if a.csv:
                 lst, route, src = parse_csv(a.csv, a.plant), "csv", a.csv
             elif a.text:
                 lst, route, src = import_text(Path(a.text).read_text(encoding="utf-8-sig"), pmap), "text", a.text
             else:
-                lst, route, src = import_image(a.image, pmap), "image", a.image
-            a.draft = dr.save_draft(lst, route, Path(src).name, _data())["id"]
+                (lst, transcript), route, src = import_image(a.image, pmap), "image", a.image
+            a.draft = dr.save_draft(lst, route, Path(src).name, _data(), transcript)["id"]
         d = dr.load_draft(a.draft, _data())
         print(json.dumps(dr.check_draft(d, plant_map(d["list"]["plant"]), _thresholds())[1], indent=2))
         return 0

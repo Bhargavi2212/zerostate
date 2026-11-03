@@ -45,7 +45,8 @@ def _keep_written_tags(lst: IsolationList, text: str) -> IsolationList:
         "vent": None if unwritten(lst.vent) else lst.vent})
 
 
-def import_text(text: str, pmap: PlantMap, opener=None) -> IsolationList:
+def import_text(text: str, pmap: PlantMap, opener=None, route: str = "text") -> IsolationList:
+    """`route` labels the ledger line: "image" when the text is a photo's transcript."""
     msgs = [{"role": "system", "content": system_prompt(pmap)}, {"role": "user", "content": text}]
-    lst = spark_json(msgs, IsolationList, f"import_text:{PROMPT_ID}", opener=opener)
+    lst = spark_json(msgs, IsolationList, f"import_{route}:{PROMPT_ID}", opener=opener)
     return _keep_written_tags(lst.model_copy(update={"plant": pmap.plant}), text)

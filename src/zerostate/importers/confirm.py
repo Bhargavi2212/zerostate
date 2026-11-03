@@ -52,7 +52,7 @@ def confirm(target: str, by: str, role: str = "issuer", *, data_dir: str | Path,
     plan, view = check_draft(draft, pmap, params or {})
     if view["unresolved"] or plan is None:
         raise NotConfirmable(f"draft {target} has unresolved items: {view['unresolved']}")
-    rec = _record(plan, by, role)
+    rec = {**_record(plan, by, role), "defaults": view["defaults"]}  # confirmed knowingly, not silently
     out = Path(data_dir) / "plans" / f"{rec['plan_hash']}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     records = json.loads(out.read_text(encoding="utf-8"))["confirmed"] if out.exists() else []

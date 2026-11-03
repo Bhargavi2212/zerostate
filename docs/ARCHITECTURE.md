@@ -100,7 +100,7 @@ Plan → live → process checks. No model judge (decision 21): no model output 
 SQLite append-only (triggers reject UPDATE/DELETE), each row stores SHA-256 of the previous row. Evidence tree JSON: goal → check → raw signal snapshot / frame hash. Ed25519 signing: "should".
 
 ## 9. Model roles (Meta)
-Muse Spark: importer (typed text or sheet image/PDF → draft isolation list, human confirms) — must; reading displays from frames; plain-language explanation of logged findings (explain-only). SAM 3.1: locating displays/equipment. Never: deciding a pass, removing a block, or feeding the data-only verdict.
+Muse Spark: importer (typed text or sheet image/PDF → draft isolation list, human confirms; a photo is first transcribed verbatim, then structured like typed text, so one code guard nulls any tag not in the author's words; values taken from the plant, like the fixed hold time, are shown as defaults and confirmed knowingly) — must; reading displays from frames; plain-language explanation of logged findings (explain-only). SAM 3.1: locating displays/equipment. Never: deciding a pass, removing a block, or feeding the data-only verdict.
 
 ## 10. Failure behaviour
 Plant data stops/stale → UNKNOWN → ESCALATED. Model API down / over budget → camera and explanations marked unavailable; data checks still run; verdict cannot be NO_DISCREPANCY if the envelope requires camera evidence. Unconfirmed or edited envelope → refuse to start.

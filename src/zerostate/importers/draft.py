@@ -20,9 +20,12 @@ def put(p: Path, text: str) -> None:
         fh.write(text)
 
 
-def save_draft(lst: IsolationList, route: str, source_name: str, data_dir: str | Path) -> dict:
+def save_draft(lst: IsolationList, route: str, source_name: str, data_dir: str | Path,
+               transcript: str | None = None) -> dict:
+    """`transcript`: the photo route's verbatim reading, shown beside the photo when the person confirms."""
     d = {"id": uuid.uuid4().hex[:12], "route": route, "source_name": source_name,
-         "list": lst.model_dump(mode="json"), "created": datetime.now(UTC).isoformat(timespec="seconds")}
+         "list": lst.model_dump(mode="json"), "transcript": transcript,
+         "created": datetime.now(UTC).isoformat(timespec="seconds")}
     out = Path(data_dir) / "drafts"
     out.mkdir(parents=True, exist_ok=True)
     put(out / f"{d['id']}.json", json.dumps(d, indent=2))
@@ -47,6 +50,13 @@ def unresolved(lst: IsolationList) -> list[str]:
     return out
 
 
+def defaults_used(lst: IsolationList, pmap: PlantMap) -> list[dict]:
+    """Values the person did not write that the plan takes from the plant: shown and confirmed knowingly."""
+    if lst.hold_minutes is not None:
+        return []
+    return [{"field": "hold_minutes", "value": pmap.plan_defaults.hold_test.hold_process_s / 60, "source": "plant default"}]
+
+
 def check_draft(draft: dict, pmap: PlantMap, params: dict) -> tuple[IsolationPlan | None, dict]:
     """Merge with the map and run the plan checks. A list with nulls isn't merged: a plan built from
     guesses would not be the person's plan."""
@@ -61,4 +71,5 @@ def check_draft(draft: dict, pmap: PlantMap, params: dict) -> tuple[IsolationPla
         todo += list(problems)
         findings = run_plan_checks(plan, pmap, params) if plan else []
     return plan, {"draft": draft, "plan_hash": plan.content_hash() if plan else None,
-                  "findings": [f.model_dump(mode="json") for f in findings], "unresolved": todo}
+                  "findings": [f.model_dump(mode="json") for f in findings], "unresolved": todo,
+                  "defaults": defaults_used(lst, pmap)}

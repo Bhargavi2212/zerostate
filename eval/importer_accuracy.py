@@ -49,8 +49,12 @@ def run(set_dir: Path, maps_dir: Path, out: Path) -> None:
         pmap = PlantMap.model_validate(yaml.safe_load((maps_dir / plant / "plant_map.yaml").read_text(encoding="utf-8")))
         src = set_dir / c["input"]
         try:
-            lst = (import_text(src.read_text(encoding="utf-8"), pmap) if c["route"] == "text" else import_image(src, pmap))
-            results[c["id"]] = {"route": c["route"], "list": lst.model_dump(mode="json"), "error": None}
+            if c["route"] == "text":
+                lst, transcript = import_text(src.read_text(encoding="utf-8"), pmap), None
+            else:
+                lst, transcript = import_image(src, pmap)  # verbatim transcript, then the typed route
+            results[c["id"]] = {"route": c["route"], "list": lst.model_dump(mode="json"), "transcript": transcript,
+                                "error": None}
         except Exception as e:  # noqa: BLE001 - recorded per case; scoring counts it as a miss
             results[c["id"]] = {"route": c["route"], "list": None, "error": f"{type(e).__name__}: {e}"}
         out.write_text(json.dumps(results, indent=2), encoding="utf-8")

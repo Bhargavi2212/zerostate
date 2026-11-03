@@ -12,6 +12,7 @@ from zerostate.models.envelope import IsolationList, ListPoint, ListProving
 
 COLUMNS = ("work_order", "equipment", "tag", "required_state", "apply_seq", "isolation_type", "lock_id",
            "vent_tag", "proving_tag", "proves")
+OPTIONAL = ("hold_minutes",)  # without it the plant's fixed hold applies, shown as a plant default
 STATES = {"open", "closed"}
 TYPES = {"positive", "proved", "non_proved"}
 
@@ -31,8 +32,8 @@ def parse_csv(path: str | Path, plant: str) -> IsolationList:
         raise CsvImportError("no rows after the header")
     points, proving, same = [], {}, {}
     for n, r in enumerate(rows, start=2):  # row 1 is the header
-        v = {c: (r[c] or "").strip() for c in COLUMNS}
-        for c in ("work_order", "equipment", "vent_tag"):
+        v = {c: (r.get(c) or "").strip() for c in COLUMNS + OPTIONAL}
+        for c in ("work_order", "equipment", "vent_tag", "hold_minutes"):
             if same.setdefault(c, v[c]) != v[c]:
                 raise CsvImportError(f"row {n}: {c} {v[c]!r} differs from {same[c]!r} on earlier rows")
         if not v["tag"]:
@@ -56,7 +57,11 @@ def parse_csv(path: str | Path, plant: str) -> IsolationList:
                 raise CsvImportError(f"row {n}: proving_tag {v['proving_tag']} proves {proves}, earlier {proving[v['proving_tag']]}")
         elif v["proves"]:
             raise CsvImportError(f"row {n}: proves given without a proving_tag")
-    return IsolationList(plant=plant, work_equipment=same["equipment"] or None, points=tuple(points),
+    try:
+        hold = float(same["hold_minutes"]) if same["hold_minutes"] else None
+    except ValueError:
+        raise CsvImportError(f"hold_minutes {same['hold_minutes']!r} is not a number") from None
+    return IsolationList(plant=plant, work_equipment=same["equipment"] or None, points=tuple(points), hold_minutes=hold,
                          vent=same["vent_tag"] or None,
                          proving=tuple(ListProving(tag=t, proves=p) for t, p in proving.items()),
                          notes=(f"work order {same['work_order']}",) if same["work_order"] else ())

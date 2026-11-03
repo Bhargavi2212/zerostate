@@ -15,7 +15,7 @@ Wording rule for every text field: PROJECT.md "never say" list (no "safe", no "v
 | `PUT /api/plans/drafts/{id}` | `{list: IsolationList}` (edits from the table) | `Draft` (re-merged, re-checked) |
 | `POST /api/plans/drafts/{id}/confirm` | `{by, role: "issuer"}` — a deliberate on-screen action by a named person | `{plan_hash, by, role, date}`; 409 while `unresolved` is not empty |
 
-`Draft` = `{id, route, plant, list: IsolationList, plan_hash: str|null, findings: [Finding], unresolved: [str]}`. `Finding` = `{rule_id, rule_version, status: PASS|FAIL|UNKNOWN, message, refs, path}`; `path` is the open path as a list of map node ids (drawn red).
+`Draft` = `{id, route, plant, list: IsolationList, transcript: str|null, plan_hash: str|null, findings: [Finding], unresolved: [str], defaults: [{field, value, source: "plant default"}]}`. `transcript` (photo route) is the model's verbatim reading of the sheet: the confirm screen shows the photo, the transcript and the table side by side. `defaults` lists values the person did not write that the plan takes from the plant (e.g. the fixed hold time); the confirm screen marks them as defaults and the confirmation record stores them. `Finding` = `{rule_id, rule_version, status: PASS|FAIL|UNKNOWN, message, refs, path}`; `path` is the open path as a list of map node ids (drawn red).
 
 Agents and scripts never call the confirm endpoint (CLAUDE.md).
 

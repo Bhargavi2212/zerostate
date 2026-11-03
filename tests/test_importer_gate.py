@@ -9,6 +9,7 @@ import pytest
 import yaml
 
 from zerostate import cli
+from zerostate.importers import draft as dr
 from zerostate.importers.confirm import NotConfirmable, confirm, is_confirmed
 from zerostate.importers.csv_import import CsvImportError, parse_csv
 from zerostate.importers.draft import load_draft, save_draft, unresolved
@@ -95,22 +96,47 @@ def test_text_route_sends_the_text_and_keeps_only_written_tags(model_env):
     assert "not in the text" in lst.points[2].note and lst.vent == "VV-213"
 
 
-def test_image_route_sends_png_and_pdf_page_one_as_data_urls(model_env, tmp_path):
+SHEET = ("Work: F-210 | Vent: VV-213 | Hold 10 min\n1 | XV-201 | closed | proved\n"
+         "2 | XV-203 | closed | proved\nBleed BV-202 proves XV-201, XV-203")
+
+
+def test_image_route_transcribes_then_grounds_like_typed_text(model_env, tmp_path):
     from PIL import Image
 
     png, pdf = tmp_path / "sheet.png", tmp_path / "sheet.pdf"
     Image.new("RGB", (60, 40), "white").save(png)
     Image.new("RGB", (60, 40), "white").save(pdf)
-    op = FakeOpener(reply(), reply())
+    transcript = json.dumps({"text": SHEET})
+    op = FakeOpener(transcript, reply(), transcript, reply())
     for path in (png, pdf):
-        lst = import_image(path, p_map(), opener=op)
-        assert lst.plant == "p2_gasline" and lst.points[0].tag == "XV-201"
-    for req in op.requests:
-        content = req["messages"][1]["content"]
-        assert content[1]["image_url"]["url"].startswith("data:image/png;base64,")
-        assert "never add a point" in req["messages"][0]["content"]
+        lst, text = import_image(path, p_map(), opener=op)
+        assert text == SHEET and lst.plant == "p2_gasline" and lst.points[0].tag == "XV-201"
+    first, second = op.requests[0], op.requests[1]  # 1: verbatim transcription of the image; 2: the typed route
+    assert first["messages"][1]["content"][1]["image_url"]["url"].startswith("data:image/png;base64,")
+    assert "verbatim" in first["messages"][0]["content"] and "never add a point" in second["messages"][0]["content"]
+    assert second["messages"][1]["content"] == SHEET  # the list is built from the transcript, not the pixels
     with pytest.raises(ValueError, match="expected"):
         import_image(tmp_path / "sheet.gif", p_map(), opener=op)
+
+
+def test_image_route_nulls_a_real_map_tag_the_sheet_never_had(model_env, tmp_path):
+    """The dangerous case: an added tag that exists in the plant map (PLAN-MAPPING can't see it)."""
+    from PIL import Image
+
+    png = tmp_path / "sheet.png"
+    Image.new("RGB", (60, 40), "white").save(png)
+    added = json.loads(reply())
+    added["points"].append({"tag": "XV-204", "required_state": "closed", "seq": 3, "isolation_type": "proved"})
+    lst, _ = import_image(png, p_map(), opener=FakeOpener(json.dumps({"text": SHEET}), json.dumps(added)))
+    assert lst.points[2].tag is None and "not in the text" in lst.points[2].note  # blocks confirmation
+
+
+def test_draft_shows_the_plant_default_hold_and_keeps_the_transcript(tmp_path):
+    lst = IsolationList.model_validate({**json.loads(reply()), "plant": "p2_gasline", "hold_minutes": None})
+    d = dr.save_draft(lst, "image", "sheet.png", tmp_path, transcript=SHEET)
+    assert dr.load_draft(d["id"], tmp_path)["transcript"] == SHEET
+    assert dr.defaults_used(lst, p_map()) == [{"field": "hold_minutes", "value": 10.0, "source": "plant default"}]
+    assert dr.defaults_used(lst.model_copy(update={"hold_minutes": 10.0}), p_map()) == []
 
 
 @pytest.mark.parametrize("rows, header, match", [
@@ -256,3 +282,12 @@ def test_accuracy_scoring_and_the_invented_point_stop(tmp_path, capsys):
         *t01["points"], {"tag": "f2", "required_state": "closed", "seq": 4, "isolation_type": "non_proved"}]}}}))
     assert acc.main(["score", str(out)]) == 2
     assert "STOP: invented point" in capsys.readouterr().err
+
+
+def test_csv_may_state_the_hold_and_must_state_it_once(tmp_path):
+    header = HEADER.rstrip("\n") + ",hold_minutes\n"
+    rows = [r + ",10" for r in P2_ROWS]
+    assert parse_csv(write_csv(tmp_path, rows, header), "p2_gasline").hold_minutes == 10.0
+    assert parse_csv(write_csv(tmp_path, P2_ROWS), "p2_gasline").hold_minutes is None  # not written: plant default, shown
+    with pytest.raises(CsvImportError, match="hold_minutes"):
+        parse_csv(write_csv(tmp_path, [rows[0], P2_ROWS[1] + ",5", *rows[2:]], header), "p2_gasline")
