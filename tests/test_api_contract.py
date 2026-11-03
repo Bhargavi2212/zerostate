@@ -315,6 +315,10 @@ def test_voice_hears_a_target_spoken_as_word_and_number():
     assert server.parse_intent("feed one and purge closed", plan)[:2] == ("step_done", 2)
     assert server.parse_intent("feed one closed", plan)[0] == "unknown"
     assert server.parse_intent("purge open", plan)[:2] == ("step_done", 5)
+    # with "f1"/"f2" in the Transcribe keywords the transcript may come back as a tag: every spelling still maps
+    for said in ("F1 and purge closed", "F-1 and purge closed", "F 1 and purge closed", "Feed 1 and purge closed."):
+        assert server.parse_intent(said, plan)[:2] == ("step_done", 2), said
+    assert server.parse_intent("F2 closed", plan)[:2] == ("step_done", 3)
 
 
 def test_voice_keywords_are_command_words_and_plan_valves_only():
