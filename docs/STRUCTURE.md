@@ -175,6 +175,7 @@ zerostate/
 â”‚   â”œâ”€â”€ test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
 â”‚   â”œâ”€â”€ test_gate.py               # no approval member; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
 │   ├── test_wording.py            # never-say checker: list matches PROJECT.md; docs/*.md and src/ string literals clean
+│   ├── test_claims_audit.py       # claims audit on a tmp claims.yaml + fake results (missing/failing test, key, README differs); real claims.yaml well formed
 â”‚   â”œâ”€â”€ test_session.py            # warm-in, plan-hash refusal, pending, step order, verify, reopen, settle before monitoring, UNKNOWN grace, stop
 â”‚   â”œâ”€â”€ test_operator.py           # operator: setpoints before coil, readback mismatch aborts, manual off restores defaults
 â”‚   â”œâ”€â”€ conftest.py                # shared in-process Modbus server fixture (adapter + operator tests) + in-process P2 OPC UA server

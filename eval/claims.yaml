@@ -46,7 +46,7 @@ claims:
   - id: C2
     batch: p2
     engine: gas line, full engine
-    sentence: "The same engine, from one commit, ran both plants; no plant-specific name appears in `src/`."
+    sentence: "The same engine, from one commit, ran both plants; no plant-specific name appears in `src/` (P1 GRFICS over Modbus in batch 2; P2, our gas line over OPC UA, in batch p2)."
     tests: [tests/test_plant_agnostic.py]
     results: eval/results/score_p2.json
     keys: [invalid.n]  # score_p2.json exists = batch p2 ran
