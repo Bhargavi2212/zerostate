@@ -1,0 +1,6 @@
+Reactor - replace level transmitter nozzle gasket.
+
+Close the product valve first (non-proved, lock 21).
+Then close the feed valve - not sure which feed line this job is on, check with the shift lead before
+anyone touches it. Also non-proved, lock 22.
+Open purge to vent the reactor down.

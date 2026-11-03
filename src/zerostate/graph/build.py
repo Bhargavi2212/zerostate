@@ -48,7 +48,8 @@ def _problems(m: PlantMap, lst: IsolationList) -> list[str]:
         out.append("work_equipment is unclear")
     if lst.vent is None:
         out.append("vent is unclear")
-    if lst.hold_minutes is None or lst.hold_minutes * 60 != d.hold_test.hold_process_s:
+    # not written = the plant's fixed hold applies (a CSV export has no hold column); a different value is a conflict
+    if lst.hold_minutes is not None and lst.hold_minutes * 60 != d.hold_test.hold_process_s:
         out.append(f"hold_minutes {lst.hold_minutes} must equal the plant's fixed hold "
                    f"({d.hold_test.hold_process_s / 60:g} min)")
     seqs = [p.seq for p in lst.points if p.seq is not None]

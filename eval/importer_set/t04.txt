@@ -1,0 +1,8 @@
+Job: F-210 internal inspection, gas line. Prepared by the permit issuer.
+
+Isolation, in this order:
+- XV-201 closed, proved, lock A-01
+- XV-203 closed, proved, lock A-02
+- open bleed BV-202 between them; BV-202 proves XV-201 and XV-203
+- XV-204 closed, proved, lock A-03 (single block and bleed: VV-213 and the hold prove it)
+Vent F-210 through VV-213. Hold 10 minutes.

@@ -17,6 +17,7 @@ from zerostate.adapters.modbus import ModbusReadOnly
 from zerostate.audit.log import AuditLog
 from zerostate.audit.replay import replay
 from zerostate.config import load_thresholds
+from zerostate.importers.confirm import is_confirmed
 from zerostate.models.envelope import IsolationPlan
 from zerostate.models.plant_map import PlantMap
 from zerostate.session import Inbox, PlanCheckFailed, PlanHashMismatch, Session, status_from_events
@@ -34,19 +35,64 @@ def _thresholds() -> dict:
     return load_thresholds(os.environ.get("ZS_THRESHOLDS", "/app/config/p1_grfics/thresholds.yaml"))
 
 
+def _config() -> Path:
+    return Path(os.environ.get("ZS_CONFIG", "/app/config"))
+
+
+def plan_cmd(a) -> int:
+    """zs plan import / show / confirm. Model routes are imported here only, never on the session path."""
+    from zerostate.importers import confirm as cf
+    from zerostate.importers import draft as dr
+    from zerostate.llm.client import ModelUnavailable
+
+    def plant_map(plant):
+        path = Path(a.map or _config() / plant / "plant_map.yaml")
+        return PlantMap.model_validate(yaml.safe_load(path.read_text(encoding="utf-8-sig")))
+
+    try:
+        if a.action == "confirm":
+            rec = cf.confirm(a.target, a.by, a.role, data_dir=_data(), config_dir=_config(), map_path=a.map, params=_thresholds())
+            print(rec["plan_hash"])
+            return 0
+        if a.action == "import":
+            from zerostate.importers.csv_import import parse_csv
+            from zerostate.importers.image_import import import_image
+            from zerostate.importers.text_import import import_text
+
+            pmap = plant_map(a.plant)
+            if a.csv:
+                lst, route, src = parse_csv(a.csv, a.plant), "csv", a.csv
+            elif a.text:
+                lst, route, src = import_text(Path(a.text).read_text(encoding="utf-8-sig"), pmap), "text", a.text
+            else:
+                lst, route, src = import_image(a.image, pmap), "image", a.image
+            a.draft = dr.save_draft(lst, route, Path(src).name, _data())["id"]
+        d = dr.load_draft(a.draft, _data())
+        print(json.dumps(dr.check_draft(d, plant_map(d["list"]["plant"]), _thresholds())[1], indent=2))
+        return 0
+    except (ValueError, OSError, yaml.YAMLError, ModelUnavailable) as e:  # bad input, no model, unresolved draft
+        print(f"refused: {type(e).__name__}: {e}", file=sys.stderr)
+        return 1
+
+
 def session_start(a) -> int:
     log = AuditLog(_data() / "audit.sqlite")
     if log.events(a.session):
         print(f"session {a.session} already exists", file=sys.stderr)
         return 1
-    plan = IsolationPlan.model_validate(yaml.safe_load(Path(a.plan).read_text(encoding="utf-8-sig")))
+    raw = yaml.safe_load(Path(a.plan).read_text(encoding="utf-8-sig"))
+    plan = IsolationPlan.model_validate(raw.get("plan", raw))  # a plans/<hash>.json from a confirmed draft holds {plan, ...}
+    confirmation = is_confirmed(plan.content_hash(), [Path(a.plan).parent, _config() / plan.plant], _data())
+    if confirmation is None:
+        print(f"refused: plan {plan.content_hash()} is not confirmed by a person (zs plan confirm)", file=sys.stderr)
+        return 1
     adapter = ModbusReadOnly(os.environ.get("ZS_MAP", "/app/config/p1_grfics/modbus_map.yaml"))
     spans = {e.tag: (e.scale_min, e.scale_max) for e in adapter.map.tags}
     pmap = (PlantMap.model_validate(yaml.safe_load(Path(a.plan_map).read_text(encoding="utf-8-sig")))
             if a.plan_map else None)
     try:
         s = Session(a.session, plan, a.plan_hash, _thresholds(), adapter.map.process_time_scale, spans, log, time.time(),
-                    plant_map=pmap, override=a.plan_check_override)
+                    plant_map=pmap, override=a.plan_check_override, confirmation=confirmation)
     except (PlanHashMismatch, PlanCheckFailed) as e:
         print(f"refused: {e}", file=sys.stderr)
         return 1
@@ -100,10 +146,26 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("replay").add_argument("session")
     ph = sub.add_parser("plan-hash")
     ph.add_argument("plan")
+    pl = sub.add_parser("plan").add_subparsers(dest="action", required=True)
+    pi = pl.add_parser("import")
+    src = pi.add_mutually_exclusive_group(required=True)
+    for route in ("--csv", "--text", "--image"):
+        src.add_argument(route, metavar="PATH")
+    pi.add_argument("--plant", required=True)
+    pshow = pl.add_parser("show")
+    pshow.add_argument("draft")
+    pc = pl.add_parser("confirm")
+    pc.add_argument("target", help="plan YAML file or draft id")
+    pc.add_argument("--by", required=True)
+    pc.add_argument("--role", default="issuer", choices=["issuer"])
+    for p_ in (pi, pshow, pc):
+        p_.add_argument("--map", help="plant_map.yaml (default /app/config/<plant>/plant_map.yaml)")
     a = ap.parse_args(argv)
 
     if a.cmd == "session" and a.action == "start":
         return session_start(a)
+    if a.cmd == "plan":
+        return plan_cmd(a)
     if a.cmd == "plan-hash":
         print(IsolationPlan.model_validate(yaml.safe_load(Path(a.plan).read_text(encoding="utf-8-sig"))).content_hash())
         return 0

@@ -1,0 +1,7 @@
+WO 77120  Replace PT-202 on C-202
+
+Seq 1  XV-201  close  proved  lock B-14
+Seq 2  XV-203  close  proved  lock B-15
+Seq 3  BV-202  open (bleed C-202 to atmosphere)
+Vent point is BV-202, and it proves both XV-201 and XV-203.
+Hold 10 min.

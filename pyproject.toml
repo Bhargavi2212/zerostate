@@ -13,6 +13,8 @@ dependencies = [
     "pyyaml",
     "pymodbus>=3.6,<3.10",
     "networkx==3.5",
+    "pypdfium2==4.30.0",
+    "Pillow==11.3.0",
 ]
 
 [project.scripts]
@@ -25,7 +27,7 @@ dev = ["pytest", "ruff", "pre-commit", "detect-secrets"]
 where = ["src"]
 
 [tool.setuptools.package-data]
-zerostate = ["thresholds/*.yaml"]
+zerostate = ["thresholds/*.yaml", "llm/prompts/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

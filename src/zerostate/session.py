@@ -51,9 +51,11 @@ class Inbox:
 
 class Session:
     def __init__(self, sid: str, plan: IsolationPlan, plan_hash: str, params: dict, process_time_scale: float,
-                 spans: dict, log: AuditLog, now: float, plant_map: PlantMap | None = None, override: str | None = None):
+                 spans: dict, log: AuditLog, now: float, plant_map: PlantMap | None = None, override: str | None = None,
+                 confirmation: dict | None = None):
         """plant_map: run the plan checks first; any finding that is not PASS refuses the start unless an
-        override text is given, which is then logged and stamped into every verdict (it never changes one)."""
+        override text is given, which is then logged and stamped into every verdict (it never changes one).
+        confirmation: the record of the person who confirmed this plan (logged at session start)."""
         if plan.content_hash() != plan_hash:
             raise PlanHashMismatch(f"plan hash {plan.content_hash()} != confirmed {plan_hash}")
         plan_findings = run_plan_checks(plan, plant_map, params) if plant_map is not None else None
@@ -77,7 +79,8 @@ class Session:
         versions = gate.stamp(Verdict.ESCALATED, plan, params["version"], [])
         start = {"plan": plan.model_dump(mode="json"), "plan_hash": plan_hash,
                  "package_version": versions["package_version"], "rules": versions["rules"],
-                 "thresholds_version": params["version"], "thresholds": params, "process_time_scale": process_time_scale}
+                 "thresholds_version": params["version"], "thresholds": params, "process_time_scale": process_time_scale,
+                 "confirmation": confirmation}
         if override is not None:
             start["plan_check_override"] = override
         log.append(sid, "session_start", start)

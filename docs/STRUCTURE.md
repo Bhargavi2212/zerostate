@@ -84,7 +84,7 @@ zerostate/
 │   │                              # not built: align.py (lag is a measured threshold), redact.py (no people in simulator frames)
 │   ├── llm/
 │   │   ├── client.py              # the only Meta API caller: via zs-proxy (explicit), spark_json / sam_boxes, ledger /data/credits.jsonl, budget stop ZS_BUDGET_USD
-│   │   ├── prompts/               # one .md per prompt, versioned
+│   │   ├── prompts/               # one .md per prompt, versioned (import_list_v1.md: text + sheet import)
 │   │   └── explain.py             # Phase 3: plain-language answer from logged findings only (never changes a verdict)
 │   ├── session.py                 # session lifecycle: warm-in → ready → steps (pending → evaluated) → verdict; continuous monitor; inbox/audit I/O
 │   ├── gate.py                    # pure verdict policy: findings → verdict, monotonic, signature closes, verdict stamping; no model judge
@@ -138,7 +138,7 @@ zerostate/
 │   ├── runner.py                  # runs on the host (sim via localhost:80, operator via docker exec); one episode: check router+IDS rules, note eve.json byte offset → plant up → operator → faults → zerostate → record → re-check rules (missing = episode invalid); IDS alerts counted after the offset (file shrank = rotated → from 0)
 │   ├── baselines/  gauge_rule.py  muse_alone.py
 │   ├── plan_cases/make_cases.py   # PC0–PC6 from the P2 map + list by mutation; labels written before the checks run
-│   ├── importer_set/              # 12 cases (6 texts, 6 rendered sheets) + gold lists, committed before any importer run; make_sheets.py
+│   ├── importer_set/              # 12 cases (6 texts, 6 rendered sheets) + gold lists, committed before any importer run: cases.yaml (gold), t01–t06.txt, s01–s06.png + s06.pdf, make_sheets.py
 │   ├── frames_set/                # hash list + label hash only (frames outside git)
 │   ├── voice_test.py              # 20 clips (outside git) → transcript → intent; expected intents committed
 │   ├── run_benchmark.py           # loops runner.py over a sealed manifest: resumable, one retry, stops after 3 INVALID in a row, 05:00 watchdog
