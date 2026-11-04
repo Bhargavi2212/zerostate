@@ -192,3 +192,13 @@ def test_driver_source_has_no_write_command():
     src = (Path(demo.__file__)).read_text(encoding="utf-8")
     for bad in ('"step"', '"sign"', '"confirm"', '"verify"', '"reopen"', '"stop"', '"--by"', "inbox.sqlite", "audit.sqlite"):
         assert bad not in src, bad
+
+
+def test_the_plant_waits_for_pending_camera_reads(monkeypatch):
+    """Rehearsal 1: restored to AUTO while two camera reads were out, the camera read purge open."""
+    d = demo.Demo.__new__(demo.Demo)
+    states = iter([{"camera_pending": 1}, {"camera_pending": 0}])
+    d.status = lambda: next(states)
+    monkeypatch.setattr(demo.time, "sleep", lambda s: None)
+    assert d.camera_settled({"camera_pending": 2})["camera_pending"] == 0
+    assert d.camera_settled({"camera_pending": 0}) == {"camera_pending": 0}  # nothing out: no wait
