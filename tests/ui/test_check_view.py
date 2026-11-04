@@ -65,6 +65,8 @@ def check_server(tmp_path_factory, monkeypatch_module):
         b = json.load(fh)
     log = AuditLog(tmp / "audit.sqlite")
     for e in bundle_events(b):
+        if e["kind"] == "evaluation" and e["payload"]["source"] == "camera":  # as the live camera track logs them
+            e["payload"]["models"] = {"locate": "sam-3.1", "read": "muse-spark-1.3"}
         log.append("s8", e["kind"], e["payload"])
         if e["kind"] == "camera_reading" and e["payload"]["point"] == "f1" and e["payload"].get("box"):
             p = data / "frames" / "s8" / f"{e['payload']['frame_sha256']}.jpg"
@@ -162,3 +164,10 @@ def test_unclear_request_lists_the_confirmed_plans(page, check_server):
 def test_view_source_and_prompts_pass_the_never_say_check():
     files = [ROOT / "ui/check.js", ROOT / "src/zerostate/llm/prompts/explain_v1.md", ROOT / "src/zerostate/llm/prompts/resolve_request_v1.md"]
     assert wording.main([str(f) for f in files]) == 0
+
+
+def test_job_camera_panel_reads_models_logged_as_a_dict(page, check_server):
+    """Live camera evaluations log models as {locate, read}; the job screen's camera panel lists them."""
+    page.goto(f"{check_server}/ui/#/job/s8")
+    page.wait_for_function("document.querySelector('#camera') && document.querySelector('#camera').textContent.includes('models:')", timeout=30000)
+    assert "models: sam-3.1, muse-spark-1.3" in page.text_content("#camera")

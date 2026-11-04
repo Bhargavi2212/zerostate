@@ -6,6 +6,8 @@ import { api, el, s, errorText, fmt, NDF, statusMark, time, verdictClass, verdic
 import { plantView } from "./plant.js";
 import { lineChart } from "./chart.js";
 
+// live camera evaluations log models as {locate, read}; recorded ones as a list
+export const modelNames = (m) => (Array.isArray(m) ? m : Object.values(m || {})).join(", ") || "—";
 const CAMERA_LABEL = "idealised camera (renders the simulator's true state)";
 const STREAM_REFRESH = ["session_start", "step", "step_verify", "step_reopen", "verdict", "finding", "camera_reading", "signature", "session_stopped"];
 
@@ -133,7 +135,7 @@ export async function jobScreen(root, sid, params) {
     const c = st.camera[id];
     if (c.error) { parts.camera.replaceChildren(...box, el("p", { class: "error" }, c.error)); return; }
     const fb = c.feedback && c.feedback.length ? c.feedback[c.feedback.length - 1][1] : null;
-    box.push(el("p", {}, `Evaluation ${c.eval_id} · step ${c.step} · point ${c.point} (${c.tag}) · ${c.mode} · models: ${(c.models || []).join(", ") || "—"}`),
+    box.push(el("p", {}, `Evaluation ${c.eval_id} · step ${c.step} · point ${c.point} (${c.tag}) · ${c.mode} · models: ${modelNames(c.models)}`),
       el("p", {}, statusMark(c.finding.status), " ", `${c.finding.rule_id}: ${c.finding.message}`),
       el("p", {}, `Valve feedback value: ${fmt(fb)} % open`));
     for (const [i, r] of c.readings.entries()) {
