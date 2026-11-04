@@ -208,6 +208,7 @@ def test_live_step_mode_marks_only_after_the_read_back_and_stops_on_a_fail(page,
     log.append("live", "step_done", {"k": 2, "by": "Ana"})
     page.wait_for_selector('#verify-wait li[data-verify="2"] a[href="#/job/live"]', timeout=15000)
     assert "waiting for verification by a second person (console)" in page.text_content("#verify-wait")
+    assert page.text_content("#step-prompt") == "ZeroState is checking step 2…"  # marked, not yet evaluated
     fail = {**ok, "status": "FAIL", "refs": ["f1_flow", "f1_valve_pos"],
             "message": "flow through a valve reading closed: f1_flow = 640.6 while f1_valve_pos = 0.0 % (passing valve or false feedback)"}
     log.append("live", "evaluation", {"source": "step", "step": 2, "findings": [fail]})

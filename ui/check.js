@@ -344,7 +344,7 @@ export async function checkScreen(root, params) {
         const n = (flowSays ? 1 : 0) + (camSays ? 1 : 0);
         plain = `${r.point}: the PLC reads ${r.rd.plc}, the flow meter reads ${r.rd.flow}, the camera reads ${r.rd.cam}.${n ? ` ${n} of 3 witnesses disagree with the PLC.` : ""} Logged finding ${f.id}: ${f.message}.`;
         const what = [flowSays ? "the flow meter reads flow" : null, camSays ? "the camera reads it open" : null].filter(Boolean);
-        if (what.length) say = `${head} ${r.point}: ${what.join(" and ")} while the PLC reads ${r.rd.plc}. ${n} of 3 witnesses disagree.`;
+        if (what.length && !r.rd.plc.startsWith("no ")) say = `${head} ${r.point}: ${what.join(" and ")} while the PLC reads ${r.rd.plc}. ${n} of 3 witnesses disagree.`;
       } else if (f) plain = `Logged finding ${f.id}: ${f.message}.`;
       return { stop: true, text: `${head} ${plain}`, say, f, row: r };
     }
@@ -435,7 +435,7 @@ export async function checkScreen(root, params) {
       live.pendingK = null;
       try {
         await api(`/api/sessions/${encodeURIComponent(st.sid)}/steps/${k}/done`, { json: { by } });
-        live.checking = k;
+        live.checking = k; cmd.value = "";
         readBack.replaceChildren(el("p", { id: "read-back-text" }, `Step ${k} marked done by ${by}.`));
         say(`ZeroState is checking step ${k}.`);
       } catch (e) { readBack.replaceChildren(el("p", { class: "error" }, errorText(e))); }
@@ -455,6 +455,8 @@ export async function checkScreen(root, params) {
     const next = steps.find((x) => !x.marked_by);
     const checked = (k) => d.findings.some((f) => f.step === k && f.source === "step");
     if (live.checking !== null && checked(live.checking)) live.checking = null;
+    const waiting = steps.filter((x) => x.marked_by && !checked(x.k)).pop(); // marked (here or in the console), not yet evaluated
+    if (live.checking === null && waiting) live.checking = waiting.k;
     let prompt;
     if (live.ended) prompt = "No further steps are prompted.";
     else if (live.checking !== null) prompt = `ZeroState is checking step ${live.checking}…`;
