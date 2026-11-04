@@ -28,7 +28,12 @@ def operator(*args) -> None:
 
 
 def grab(view: str) -> tuple[bytes, str]:
-    r = subprocess.run(["docker", "exec", "zs-frames", "python", "-c", GRAB, view], check=True, capture_output=True, timeout=150)
+    cmd = ["docker", "exec", "zs-frames", "python", "-c", GRAB, view]
+    try:
+        r = subprocess.run(cmd, check=True, capture_output=True, timeout=150)
+    except subprocess.CalledProcessError:  # one retry: Chromium's screenshot occasionally times out (30 s) under load
+        time.sleep(5)
+        r = subprocess.run(cmd, check=True, capture_output=True, timeout=150)
     return r.stdout, r.stderr.decode().strip()
 
 
