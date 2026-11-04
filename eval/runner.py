@@ -148,6 +148,17 @@ def code_problem() -> str | None:
     return f"zerostate container code differs from this tree: {diff[:5]}" if diff else None
 
 
+def add_signals_hash(out: Path) -> str | None:
+    """meta.json gets the SHA-256 of the full local signals.jsonl (None when the copy failed), so a
+    published episode can be tied to the signals it was judged on."""
+    import hashlib
+    sig = out / "signals.jsonl"
+    h = hashlib.sha256(sig.read_bytes()).hexdigest() if sig.exists() else None
+    meta = json.loads((out / "meta.json").read_text(encoding="utf-8"))
+    (out / "meta.json").write_text(json.dumps({**meta, "signals_sha256": h}, indent=1), encoding="utf-8")
+    return h
+
+
 def vent_start_problem(p_kpa: float | None) -> str | None:
     if p_kpa is None or p_kpa < MIN_VENT_START_KPA:
         return f"vent start {p_kpa} kPa below {MIN_VENT_START_KPA}: too little range for the vent rules"
@@ -500,6 +511,7 @@ def main() -> int:
         ep.cleanup()
         raise
     (out / "verdict.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
+    add_signals_hash(out)
     publish(out, ROOT / "eval" / "results" / "bench" / a.batch if scoring else ROOT / "eval" / "results" / "episodes")
     print(json.dumps(result, indent=1))
     return 0 if result.get("valid") and result.get("match") else 1

@@ -73,3 +73,14 @@ def test_benchmark_plan_is_the_committed_plan():
         (runner.P1 / "envelope.yaml").read_text(encoding="utf-8")))
     assert plan.content_hash() == runner.BENCHMARK_PLAN_HASH
     assert any(s.targets for s in plan.steps)  # block-in
+
+
+def test_meta_gets_the_signals_hash(tmp_path):
+    import hashlib
+    (tmp_path / "meta.json").write_text(json.dumps({"seed": 7}))
+    assert runner.add_signals_hash(tmp_path) is None  # copy failed: recorded as missing, not invented
+    assert json.loads((tmp_path / "meta.json").read_text()) == {"seed": 7, "signals_sha256": None}
+    (tmp_path / "signals.jsonl").write_bytes(b'{"t": 1}\n{"t": 2}\n')
+    h = runner.add_signals_hash(tmp_path)
+    assert h == hashlib.sha256(b'{"t": 1}\n{"t": 2}\n').hexdigest()
+    assert json.loads((tmp_path / "meta.json").read_text()) == {"seed": 7, "signals_sha256": h}
