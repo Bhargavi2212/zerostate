@@ -115,10 +115,24 @@ Label everywhere: **"idealised camera (renders the simulator's true state)"**.
 **Frames (core change, P3-2):** the camera code saves each evaluated frame to `/data/frames/<session>/<frame_sha256>.jpg` (JPEG, about 50 KB), named by the frame hash it logs in `camera_reading`, and logs each reading's `box`. The audit log keeps hashes only; anyone holding the file can check it against the logged hash. Bundles never carry frames.
 
 ## Explain (Phase 3)
-`POST /api/sessions/{id}/explain {question}` → `{answer, cites: [finding id]}`. Muse Spark answers **only** from that session's logged findings (with ids), summarised windows and the plan; it can't change anything (no write path from this endpoint). Every answer cites at least one finding id (`<eval_id>:<rule_id>`); the console renders each as a link to that finding. An uncited answer is retried once, then a fixed fallback is returned. A request to override, approve, sign or pass gets the fixed reply, with no model call: **"I can only explain the evidence; only code decides and only a person signs."** Needs the key, in replay mode too (503 without it).
+`POST /api/sessions/{id}/explain {question}` → `{answer, cites: [finding id]}`. Muse Spark answers **only** from that session's logged findings (with ids), summarised windows and the plan; it can't change anything (no write path from this endpoint). Every answer cites at least one finding id (`<eval_id>:<rule_id>`); the console renders each as a link to that finding. An uncited answer is retried once, then a fixed fallback is returned. A request to override, approve, pass, unblock or sign gets the fixed reply, with no model call: **"I can't change a verdict; only a person signs, and a block stays a block."** Every answer goes through the never-say check; a hit means the fallback. The fallback quotes the logged message of the finding the question names (else the first non-PASS finding). Implemented in `src/zerostate/llm/explain.py` (prompt `llm/prompts/explain_v1.md`, temperature 0); it gets plain data and returns text, with no handle on the log, the inbox or the session. Needs the key, in replay mode too (503 without it); the fixed reply needs none.
+
+## Check my isolation (new in P3-3)
+Read-only: these routes start no session, confirm nothing and sign nothing; they write no inbox row.
+
+| Method + path | Request | Response |
+|---|---|---|
+| `GET /api/checks/plans` | — | `[ConfirmedPlan]`: every plan a person confirmed (plan files in the plant config with a `confirmed.yaml` record, and confirmed importer drafts; in replay mode, the recorded sessions' plans) |
+| `POST /api/checks/resolve` | `{text}` **or** `{audio}` (base64 WAV, mono 16-bit PCM, 16 or 24 kHz; transcribed by Muse Voice Transcribe, the plans' equipment and plant names as keywords) | `{text, asr: model id\|null, plans: [ConfirmedPlan], plan: ConfirmedPlan\|null, reason}` |
+
+`ConfirmedPlan` = `{id: "plan-<first 8 hex of plan_hash>", plant, equipment, task, plan_hash, confirmed_by, confirmed_date}`.
+
+Resolve sends the request and the list of confirmed plans (id, plant, work equipment, task) to Muse Spark (`llm/resolve.py`, prompt `resolve_request_v1.md`, temperature 0, JSON). The model picks one id from the list or null; **code checks the id against the list, and an id that is not on it counts as none** (`plan: null`, reason "the model named a plan that is not on the list"). On `plan: null` the console says it can't tell which equipment is meant and lists the confirmed plans to pick from. After a pick, the console attaches to the newest session of that `plan_hash` from `GET /api/sessions` and shows its findings and verdict from `GET /api/sessions/{id}` and the stream. Needs the key (503 without it), in replay mode too.
+
+**Live step mode (console, `#/check` on a running session):** the worker marks steps through the existing voice route below: typed text is sent as `{session, transcript, asr: "typed"}`, a recording as `{session, audio}`; the console calls `POST /api/sessions/{id}/steps/{k}/done {by}` only after the worker confirms the read-back (click or voice `confirm`). It never calls verify, reopen or sign; isolate steps show "waiting for verification by a second person (console)" with a link to the job page.
 
 ## Voice (Phase 3, changed in P3)
-`POST /api/voice/command`, body `{session}` plus **either** `{audio}` (base64 recording; transcribed by the chosen speech model — until P3-5 wires one, it returns `unknown` with a read-back saying so) **or** `{transcript, asr: "<model id>"}` (text already transcribed, with the id of the model that did it). `session` gives the plan the phrase is matched against (optional for P2 callers: without it only `status`/`repeat`/`confirm`/`cancel`/`unknown` can result).
+`POST /api/voice/command`, body `{session}` plus **either** `{audio}` (base64 WAV, mono 16-bit PCM, 16 or 24 kHz; transcribed by Muse Voice Transcribe with `voice_keywords(plan)` as keywords; if it can't be transcribed (no key, model unavailable, bad audio) the reply is `unknown` with a read-back asking to type the step) **or** `{transcript, asr: "<model id>"}` (text already transcribed, with the id of the model that did it). `session` gives the plan the phrase is matched against (optional for P2 callers: without it only `status`/`repeat`/`confirm`/`cancel`/`unknown` can result).
 → `{transcript, asr, intent, k: int|null, read_back}`.
 
 | `intent` | Meaning |
@@ -137,8 +151,8 @@ Label everywhere: **"idealised camera (renders the simulator's true state)"**.
 `zs api --replay <bundle_dir>` serves the recorded sessions in every `bundle.json.gz` under `<bundle_dir>` (v1 and v2; docs/BUNDLE.md) **read-only, lab-free, no key**:
 - Same GET endpoints and shapes: `GET /api/sessions` lists the bundles (session id = episode), `GET /api/sessions/{id}` is built from the bundle, `GET /api/plants/{plant}/map` returns the bundle's `plant_map`, the camera endpoint returns readings with `frame_url`/`crop_url` null.
 - The stream sends the recorded events in order, then ends; `?speed=N` paces them at N × recorded time.
-- **Every write returns 409 `{"error": "replay", "detail": ...}`**: import, draft edit, confirm, session start, done, verify, reopen, sign; voice too (there is no live step to mark). Explain is the only POST served.
-- Explain works only with the key (503 without it); nothing else needs one.
+- **Every write returns 409 `{"error": "replay", "detail": ...}`**: import, draft edit, confirm, session start, done, verify, reopen, sign; voice too (there is no live step to mark). Explain and `POST /api/checks/resolve` (both read-only) are the only POSTs served.
+- Explain and resolve work only with the key (503 without it); nothing else needs one.
 - It is the README's main "run it" path, the Playwright fixture and the explain-check harness. Sample bundles are committed: `zs api --replay eval/results/bench/p1` then open `http://127.0.0.1:8090/ui/`.
 
 ## Errors
