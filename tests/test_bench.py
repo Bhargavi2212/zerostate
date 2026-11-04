@@ -186,3 +186,18 @@ def test_first_n_runs_sealed_order_prefix_and_is_fixed_on_resume(tmp_path):
     q = tmp_path / "q.jsonl"  # a batch launched without --first can't take one later
     assert bench.run_batch({"entries": entries[:1]}, q, SimpleNamespace(), fake_run([True])[0], lambda: EVENING) == 0
     assert bench.run_batch({"entries": entries}, q, SimpleNamespace(first=2), fake_run([True])[0], lambda: EVENING) == 2
+
+
+
+def test_batch_p2_is_s0_x15_and_every_p2_scenario_x5(tmp_path, monkeypatch):
+    on_disk = {p.stem for p in (EVAL / "scenarios" / "p2").glob("*.yaml")} - {"S0"}
+    assert set(seal.P2_FAULTS) == on_disk and len(seal.P2_FAULTS) == 13
+    monkeypatch.setattr(seal, "ROOT", tmp_path)
+    (tmp_path / "eval").mkdir()
+    seal.seal("p2", tmp_path / "sealed")
+    entries = json.loads((tmp_path / "sealed" / "manifest_p2.json").read_bytes())["entries"]
+    assert {e["plant"] for e in entries} == {"p2"} and len(entries) == 15 + 13 * 5
+    assert sum(e["scenario"] == "S0" for e in entries) == 15
+    assert all(sum(e["scenario"] == s for e in entries) == 5 for s in seal.P2_FAULTS)
+    assert len({e["seed"] for e in entries}) == len(entries) and all(e["seed"] >= seal.MIN_SCORING_SEED for e in entries)
+    assert [e["scenario"] for e in entries[:15]] != ["S0"] * 15  # shuffled, not in table order
