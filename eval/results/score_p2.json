@@ -1,0 +1,2969 @@
+{
+ "batch": "p2",
+ "engine": "gas line, full engine",
+ "seal_hash": "aaeabcfe4ca7f67a6f1c04b59e696f1e93fa746dd55551ce8d04cb6113e7f923",
+ "plan_hashes": [
+  "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb"
+ ],
+ "definitions": {
+  "primary": "true work-segment pressure > 150 kPa abs; true flow through an isolated line > 1 % of its full scale (P2: flow into F-210 through XV-203 and XV-204, reference 76.3763 kmol/h = each line fully open at its design pressure difference (normal operation from the model; pinned Nov 4 after batch p2 ran)); a required step skipped; an isolation point in the wrong true state (position more than 1 % from the step's required state)",
+  "secondary": "the same four conditions with the flow limit at 0.1 % of full scale",
+  "dangerous_miss": "NO_DISCREPANCY and a condition met at any time from that verdict to the episode end; n = scored episodes",
+  "windows": "a line's flow and state count from its own isolate mark plus the step's settle time, the vent valve's from the vent_close mark plus its settle time, pressure from the vent_close mark (not evaluated if never reached)",
+  "label": "from truth after the isolation marks, whatever the verdict; descriptive only for BLOCKED or ESCALATED",
+  "false_block": "BLOCKED or ESCALATED on an episode labelled clean (as pre-registered in EVAL); the split is reported",
+  "decided_on": "a system decided on an episode when it gave a verdict there; it saw the whole job when every non-final plan step was marked before its decision (an episode ZeroState blocked early stops there, so a baseline never faces the rest of that job)"
+ },
+ "n_scored": 80,
+ "dangerous_miss": {
+  "primary": {
+   "k": 0,
+   "n": 80,
+   "ci_low": 0.0,
+   "ci_high": 0.0458,
+   "ci_high_pct": 5
+  },
+  "secondary": {
+   "k": 0,
+   "n": 80,
+   "ci_low": 0.0,
+   "ci_high": 0.0458,
+   "ci_high_pct": 5
+  }
+ },
+ "missed_faults": {
+  "k": 0,
+  "n": 65
+ },
+ "missed_faults_secondary": {
+  "k": 0,
+  "n": 65
+ },
+ "false_blocks": {
+  "k": 0,
+  "n": 15,
+  "ci_low": 0.0,
+  "ci_high": 0.2039,
+  "ci_high_pct": 20,
+  "blocked": 0,
+  "escalated": 0
+ },
+ "decided_on": {
+  "k": 80,
+  "n": 80,
+  "whole_job": 15
+ },
+ "whole_job_only": {
+  "primary": {
+   "k": 0,
+   "n": 15,
+   "ci_low": 0.0,
+   "ci_high": 0.2039,
+   "ci_high_pct": 20
+  },
+  "secondary": {
+   "k": 0,
+   "n": 15,
+   "ci_low": 0.0,
+   "ci_high": 0.2039,
+   "ci_high_pct": 20
+  }
+ },
+ "labels": {
+  "primary": {
+   "unsafe": 29,
+   "clean": 15,
+   "fault, below hazard limits": 36
+  },
+  "secondary": {
+   "unsafe": 30,
+   "clean": 15,
+   "fault, below hazard limits": 35
+  }
+ },
+ "time_to_block_process_s": {
+  "S1": {
+   "n": 5,
+   "median": 97.1,
+   "min": 86.6,
+   "max": 98.4
+  },
+  "S10": {
+   "n": 5,
+   "median": 128.3,
+   "min": 126.6,
+   "max": 128.4
+  },
+  "S11": {
+   "n": 5,
+   "median": 465.9,
+   "min": 383.4,
+   "max": 540.3
+  },
+  "S12": {
+   "n": 5,
+   "median": 135.4,
+   "min": 123.5,
+   "max": 141.8
+  },
+  "S1b": {
+   "n": 5,
+   "median": 166.0,
+   "min": 153.8,
+   "max": 184.3
+  },
+  "S2": {
+   "n": 5,
+   "median": 5.7,
+   "min": 3.5,
+   "max": 21.9
+  },
+  "S3": {
+   "n": 5,
+   "median": 98.1,
+   "min": 76.1,
+   "max": 117.8
+  },
+  "S4-large": {
+   "n": 5,
+   "median": 1160.2,
+   "min": 1147.0,
+   "max": 1225.8
+  },
+  "S4-small": {
+   "n": 5,
+   "median": 1102.3,
+   "min": 1085.7,
+   "max": 1131.6
+  },
+  "S8": {
+   "n": 5,
+   "median": 262.0,
+   "min": 254.1,
+   "max": 270.3
+  }
+ },
+ "severity_at_release": {
+  "S0_seed545797957_20261104T082854": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed2055405458_20261104T083706": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed40733480_20261104T084832": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed1977070665_20261104T090648": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed1921790580_20261104T090949": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed797454669_20261104T092747": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed31532182_20261104T093047": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed1036503596_20261104T093949": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed1057831709_20261104T094820": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed352424230_20261104T100459": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed1017296094_20261104T101131": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed1879144509_20261104T103606": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed119054383_20261104T104208": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed2136613803_20261104T105016": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  },
+  "S0_seed953910264_20261104T105441": {
+   "max_pressure_kpa": 101.0,
+   "max_isolated_flow_pct": -0.0
+  }
+ },
+ "hold_by_leak_bin": {
+  "0.3-0.6 %": {
+   "n": 3,
+   "blocked": 3,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "hold_fail": 3,
+   "episodes": [
+    "S4-small seed 1191120625 (0.322 %)",
+    "S4-small seed 610078764 (0.596 %)",
+    "S4-small seed 1013371090 (0.540 %)"
+   ]
+  },
+  "0.6-0.9 %": {
+   "n": 1,
+   "blocked": 0,
+   "escalated": 1,
+   "no_discrepancy": 0,
+   "hold_fail": 0,
+   "episodes": [
+    "S1b seed 366972720 (0.624 %)"
+   ]
+  },
+  "0.9-1.2 %": {
+   "n": 4,
+   "blocked": 2,
+   "escalated": 2,
+   "no_discrepancy": 0,
+   "hold_fail": 2,
+   "episodes": [
+    "S4-small seed 1305818518 (1.119 %)",
+    "S1b seed 187173758 (0.936 %)",
+    "S4-small seed 448544182 (0.933 %)",
+    "S1b seed 1090894367 (1.111 %)"
+   ]
+  },
+  "1.2-1.5 %": {
+   "n": 2,
+   "blocked": 0,
+   "escalated": 2,
+   "no_discrepancy": 0,
+   "hold_fail": 0,
+   "episodes": [
+    "S1b seed 487883635 (1.256 %)",
+    "S1b seed 561243154 (1.321 %)"
+   ]
+  }
+ },
+ "invalid": {
+  "k": 0,
+  "n": 80,
+  "attempts": 85,
+  "invalid_attempts": 5
+ },
+ "invalid_entries": [],
+ "sensitivity": {
+  "pinned (1 %)": {
+   "limit_kmol_h": 0.7638,
+   "dangerous_miss": {
+    "k": 0,
+    "n": 80,
+    "ci_low": 0.0,
+    "ci_high": 0.0458,
+    "ci_high_pct": 5
+   },
+   "labels": {
+    "unsafe": 29,
+    "clean": 15,
+    "fault, below hazard limits": 36
+   },
+   "false_blocks": {
+    "k": 0,
+    "n": 15,
+    "ci_low": 0.0,
+    "ci_high": 0.2039,
+    "ci_high_pct": 20
+   }
+  },
+  "x0.5 (0.5 %)": {
+   "limit_kmol_h": 0.3819,
+   "dangerous_miss": {
+    "k": 0,
+    "n": 80,
+    "ci_low": 0.0,
+    "ci_high": 0.0458,
+    "ci_high_pct": 5
+   },
+   "labels": {
+    "unsafe": 30,
+    "clean": 15,
+    "fault, below hazard limits": 35
+   },
+   "false_blocks": {
+    "k": 0,
+    "n": 15,
+    "ci_low": 0.0,
+    "ci_high": 0.2039,
+    "ci_high_pct": 20
+   }
+  },
+  "x2 (2 %)": {
+   "limit_kmol_h": 1.5275,
+   "dangerous_miss": {
+    "k": 0,
+    "n": 80,
+    "ci_low": 0.0,
+    "ci_high": 0.0458,
+    "ci_high_pct": 5
+   },
+   "labels": {
+    "unsafe": 24,
+    "clean": 15,
+    "fault, below hazard limits": 41
+   },
+   "false_blocks": {
+    "k": 0,
+    "n": 15,
+    "ci_low": 0.0,
+    "ci_high": 0.2039,
+    "ci_high_pct": 20
+   }
+  },
+  "secondary (0.1 %)": {
+   "limit_kmol_h": 0.0764,
+   "dangerous_miss": {
+    "k": 0,
+    "n": 80,
+    "ci_low": 0.0,
+    "ci_high": 0.0458,
+    "ci_high_pct": 5
+   },
+   "labels": {
+    "unsafe": 30,
+    "clean": 15,
+    "fault, below hazard limits": 35
+   },
+   "false_blocks": {
+    "k": 0,
+    "n": 15,
+    "ci_low": 0.0,
+    "ci_high": 0.2039,
+    "ci_high_pct": 20
+   }
+  }
+ },
+ "baselines_not_run": "gauge rule: pinned for P1's signals only; Muse Spark alone: not run on P2",
+ "p2_writes": {
+  "n": 80,
+  "zerostate": 0,
+  "other": 0,
+  "operator_missing": 0
+ },
+ "episode_problems": {
+  "S2_seed1188332309_20261104T090239": [
+   "invalidated: drawn fault never fired: 1 drawn, 0 fault events, verdict NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+  ],
+  "S2_seed1398364506_20261104T102719": [
+   "invalidated: drawn fault never fired: 1 drawn, 0 fault events, verdict NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+  ],
+  "S2_seed142963318_20261104T085134": [
+   "invalidated: drawn fault never fired: 1 drawn, 0 fault events, verdict NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+  ],
+  "S2_seed638461796_20261104T095752": [
+   "invalidated: drawn fault never fired: 1 drawn, 0 fault events, verdict NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+  ],
+  "S2_seed82396080_20261104T084502": [
+   "invalidated: drawn fault never fired: 1 drawn, 0 fault events, verdict NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+  ]
+ },
+ "not_scored": [],
+ "per_scenario": {
+  "S0": {
+   "n": 15,
+   "blocked": 0,
+   "escalated": 0,
+   "no_discrepancy": 15,
+   "match": 15,
+   "notes": []
+  },
+  "S1": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S10": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S11": {
+   "n": 5,
+   "blocked": 0,
+   "escalated": 5,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S12": {
+   "n": 5,
+   "blocked": 0,
+   "escalated": 5,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S1b": {
+   "n": 5,
+   "blocked": 0,
+   "escalated": 5,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S2": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S3": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S4-large": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S4-small": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S5": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S7": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S7-same": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S8": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  }
+ },
+ "camera": {
+  "with_camera_blocked": 0,
+  "with_camera_escalated": 0,
+  "data_only_blocked": 0,
+  "n": 0,
+  "camera_added_block": 0,
+  "camera_removed_block": 0,
+  "by_scenario": {},
+  "coverage": {
+   "readings": 0,
+   "readable": 0,
+   "no_frame": 0,
+   "timeouts": 0,
+   "model_unavailable": 0,
+   "located_by_map": 0,
+   "pending_at_stop": 0
+  },
+  "timeouts_per_episode": {}
+ },
+ "baselines": {},
+ "episodes": [
+  {
+   "episode": "S8_seed770391390_20261104T082736",
+   "scenario": "S8",
+   "seed": 770391390,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793780929.602783,
+   "fault_t": 1793780904.1888547,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "state:XV-204": {
+      "t": 1793780915.0798643,
+      "value": 100.0
+     },
+     "flow:XV-204": {
+      "t": 1793780918.8334806,
+      "value": 7.174,
+      "pct_full_scale": 9.393
+     }
+    },
+    "secondary": {
+     "state:XV-204": {
+      "t": 1793780915.0798643,
+      "value": 100.0
+     },
+     "flow:XV-204": {
+      "t": 1793780918.8334806,
+      "value": 7.174,
+      "pct_full_scale": 9.393
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 25.41,
+   "time_to_block_process_s": 254.1,
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed545797957_20261104T082854",
+   "scenario": "S0",
+   "seed": 545797957,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793781104.150308,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S1b_seed366972720_20261104T083153",
+   "scenario": "S1b",
+   "seed": 366972720,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 0.6235388310656482,
+   "verdict_t": 1793781230.589667,
+   "fault_t": 1793781212.158005,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793781212.408162,
+      "value": 0.931,
+      "pct_full_scale": 1.219
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793781212.408162,
+      "value": 0.931,
+      "pct_full_scale": 1.219
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 18.43,
+   "time_to_block_process_s": 184.3,
+   "hold_fail": false
+  },
+  {
+   "episode": "S7_seed1574086436_20261104T083354",
+   "scenario": "S7",
+   "seed": 1574086436,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793781256.086772,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "skipped:2": {
+      "t": null,
+      "value": null
+     }
+    },
+    "secondary": {
+     "skipped:2": {
+      "t": null,
+      "value": null
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S4-small_seed1305818518_20261104T083421",
+   "scenario": "S4-small",
+   "seed": 1305818518,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 1.1186385470241322,
+   "verdict_t": 1793781422.197036,
+   "fault_t": 1793781312.0599546,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793781328.2194908,
+      "value": 0.79,
+      "pct_full_scale": 1.035
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793781326.9679432,
+      "value": 0.214,
+      "pct_full_scale": 0.28
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 110.14,
+   "time_to_block_process_s": 1101.4,
+   "hold_fail": true
+  },
+  {
+   "episode": "S0_seed2055405458_20261104T083706",
+   "scenario": "S0",
+   "seed": 2055405458,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793781598.588001,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S1_seed553437961_20261104T084009",
+   "scenario": "S1",
+   "seed": 553437961,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793781684.672808,
+   "fault_t": 1793781674.9645758,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 9.71,
+   "time_to_block_process_s": 97.1,
+   "hold_fail": false
+  },
+  {
+   "episode": "S1_seed212524485_20261104T084129",
+   "scenario": "S1",
+   "seed": 212524485,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793781762.974019,
+   "fault_t": 1793781754.312522,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 8.66,
+   "time_to_block_process_s": 86.6,
+   "hold_fail": false
+  },
+  {
+   "episode": "S12_seed1209794268_20261104T084246",
+   "scenario": "S12",
+   "seed": 1209794268,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793781897.607232,
+   "fault_t": 1793781883.4306185,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 14.18,
+   "time_to_block_process_s": 141.8,
+   "hold_fail": false
+  },
+  {
+   "episode": "S2_seed82396080_20261104T112752",
+   "scenario": "S2",
+   "seed": 82396080,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793791743.060526,
+   "fault_t": 1793791742.6034663,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 0.46,
+   "time_to_block_process_s": 4.6,
+   "hold_fail": false
+  },
+  {
+   "episode": "S7-same_seed1053814448_20261104T084805",
+   "scenario": "S7-same",
+   "seed": 1053814448,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793782107.68178,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed40733480_20261104T084832",
+   "scenario": "S0",
+   "seed": 40733480,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793782283.21311,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S2_seed142963318_20261104T112907",
+   "scenario": "S2",
+   "seed": 142963318,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793791816.939206,
+   "fault_t": 1793791816.5851815,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 0.35,
+   "time_to_block_process_s": 3.5,
+   "hold_fail": false
+  },
+  {
+   "episode": "S11_seed851647861_20261104T085436",
+   "scenario": "S11",
+   "seed": 851647861,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793782635.197069,
+   "fault_t": 1793782583.9415781,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 51.26,
+   "time_to_block_process_s": 512.6,
+   "hold_fail": false
+  },
+  {
+   "episode": "S10_seed837639527_20261104T085720",
+   "scenario": "S10",
+   "seed": 837639527,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793782717.921527,
+   "fault_t": 1793782705.0889874,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 12.83,
+   "time_to_block_process_s": 128.3,
+   "hold_fail": false
+  },
+  {
+   "episode": "S3_seed1130056733_20261104T085842",
+   "scenario": "S3",
+   "seed": 1130056733,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793782795.499997,
+   "fault_t": 1793782785.6870005,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 9.81,
+   "time_to_block_process_s": 98.1,
+   "hold_fail": false
+  },
+  {
+   "episode": "S3_seed533596560_20261104T090000",
+   "scenario": "S3",
+   "seed": 533596560,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793782876.070228,
+   "fault_t": 1793782865.0029867,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 11.07,
+   "time_to_block_process_s": 110.7,
+   "hold_fail": false
+  },
+  {
+   "episode": "S8_seed1565345395_20261104T090121",
+   "scenario": "S8",
+   "seed": 1565345395,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793782955.863037,
+   "fault_t": 1793782929.658166,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "state:XV-204": {
+      "t": 1793782940.6622965,
+      "value": 100.0
+     },
+     "flow:XV-204": {
+      "t": 1793782944.9135907,
+      "value": 4.08,
+      "pct_full_scale": 5.342
+     }
+    },
+    "secondary": {
+     "state:XV-204": {
+      "t": 1793782940.6622965,
+      "value": 100.0
+     },
+     "flow:XV-204": {
+      "t": 1793782944.9135907,
+      "value": 4.08,
+      "pct_full_scale": 5.342
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 26.2,
+   "time_to_block_process_s": 262.0,
+   "hold_fail": false
+  },
+  {
+   "episode": "S2_seed1188332309_20261104T113021",
+   "scenario": "S2",
+   "seed": 1188332309,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793791888.141484,
+   "fault_t": 1793791885.954735,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 2.19,
+   "time_to_block_process_s": 21.9,
+   "hold_fail": false
+  },
+  {
+   "episode": "S5_seed1074101446_20261104T090540",
+   "scenario": "S5",
+   "seed": 1074101446,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793783203.046566,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "state:XV-204": {
+      "t": 1793783202.2072651,
+      "value": 100.0
+     }
+    },
+    "secondary": {
+     "state:XV-204": {
+      "t": 1793783202.2072651,
+      "value": 100.0
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed1977070665_20261104T090648",
+   "scenario": "S0",
+   "seed": 1977070665,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793783379.677695,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed1921790580_20261104T090949",
+   "scenario": "S0",
+   "seed": 1921790580,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793783564.280789,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S8_seed1162816378_20261104T091253",
+   "scenario": "S8",
+   "seed": 1162816378,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793783648.460991,
+   "fault_t": 1793783622.941857,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "state:XV-204": {
+      "t": 1793783633.9507632,
+      "value": 100.0
+     },
+     "flow:XV-204": {
+      "t": 1793783637.4518542,
+      "value": 4.08,
+      "pct_full_scale": 5.342
+     }
+    },
+    "secondary": {
+     "state:XV-204": {
+      "t": 1793783633.9507632,
+      "value": 100.0
+     },
+     "flow:XV-204": {
+      "t": 1793783637.4518542,
+      "value": 4.08,
+      "pct_full_scale": 5.342
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 25.52,
+   "time_to_block_process_s": 255.2,
+   "hold_fail": false
+  },
+  {
+   "episode": "S5_seed347144037_20261104T091412",
+   "scenario": "S5",
+   "seed": 347144037,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793783712.560482,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "state:XV-204": {
+      "t": 1793783711.4870431,
+      "value": 100.0
+     }
+    },
+    "secondary": {
+     "state:XV-204": {
+      "t": 1793783711.4870431,
+      "value": 100.0
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S7_seed8449372_20261104T091517",
+   "scenario": "S7",
+   "seed": 8449372,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793783738.582064,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "skipped:2": {
+      "t": null,
+      "value": null
+     }
+    },
+    "secondary": {
+     "skipped:2": {
+      "t": null,
+      "value": null
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S10_seed412819828_20261104T091544",
+   "scenario": "S10",
+   "seed": 412819828,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793783819.568536,
+   "fault_t": 1793783806.7736673,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 12.79,
+   "time_to_block_process_s": 127.9,
+   "hold_fail": false
+  },
+  {
+   "episode": "S4-small_seed1191120625_20261104T091704",
+   "scenario": "S4-small",
+   "seed": 1191120625,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 0.3217979999237187,
+   "verdict_t": 1793783982.572433,
+   "fault_t": 1793783872.0823572,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793783888.10165,
+      "value": 0.102,
+      "pct_full_scale": 0.134
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 110.49,
+   "time_to_block_process_s": 1104.9,
+   "hold_fail": true
+  },
+  {
+   "episode": "S1b_seed187173758_20261104T091948",
+   "scenario": "S1b",
+   "seed": 187173758,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 0.936231857547488,
+   "verdict_t": 1793784104.159461,
+   "fault_t": 1793784088.1204975,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793784088.3710053,
+      "value": 1.398,
+      "pct_full_scale": 1.83
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793784088.3710053,
+      "value": 1.398,
+      "pct_full_scale": 1.83
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 16.04,
+   "time_to_block_process_s": 160.4,
+   "hold_fail": false
+  },
+  {
+   "episode": "S7-same_seed501367213_20261104T092149",
+   "scenario": "S7-same",
+   "seed": 501367213,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793784129.383388,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S11_seed1920465228_20261104T092214",
+   "scenario": "S11",
+   "seed": 1920465228,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793784293.897169,
+   "fault_t": 1793784247.304822,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 46.59,
+   "time_to_block_process_s": 465.9,
+   "hold_fail": false
+  },
+  {
+   "episode": "S4-large_seed6443990_20261104T092458",
+   "scenario": "S4-large",
+   "seed": 6443990,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 2.027552294777276,
+   "verdict_t": 1793784463.097054,
+   "fault_t": 1793784348.3974047,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793784364.6582205,
+      "value": 0.837,
+      "pct_full_scale": 1.096
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793784364.1580405,
+      "value": 0.334,
+      "pct_full_scale": 0.438
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 114.7,
+   "time_to_block_process_s": 1147.0,
+   "hold_fail": true
+  },
+  {
+   "episode": "S0_seed797454669_20261104T092747",
+   "scenario": "S0",
+   "seed": 797454669,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793784637.607113,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed31532182_20261104T093047",
+   "scenario": "S0",
+   "seed": 31532182,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793784822.542004,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S4-small_seed448544182_20261104T093353",
+   "scenario": "S4-small",
+   "seed": 448544182,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 0.932597667323656,
+   "verdict_t": 1793784997.495317,
+   "fault_t": 1793784884.335152,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793784903.6237392,
+      "value": 0.805,
+      "pct_full_scale": 1.054
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793784900.0933096,
+      "value": 0.107,
+      "pct_full_scale": 0.14
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 113.16,
+   "time_to_block_process_s": 1131.6,
+   "hold_fail": true
+  },
+  {
+   "episode": "S4-small_seed610078764_20261104T093641",
+   "scenario": "S4-small",
+   "seed": 610078764,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 0.5964312264061465,
+   "verdict_t": 1793785159.154007,
+   "fault_t": 1793785050.5882373,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793785072.0459273,
+      "value": 0.77,
+      "pct_full_scale": 1.008
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793785066.0443275,
+      "value": 0.114,
+      "pct_full_scale": 0.15
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 108.57,
+   "time_to_block_process_s": 1085.7,
+   "hold_fail": true
+  },
+  {
+   "episode": "S7_seed367095048_20261104T093923",
+   "scenario": "S7",
+   "seed": 367095048,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793785185.995499,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "skipped:2": {
+      "t": null,
+      "value": null
+     }
+    },
+    "secondary": {
+     "skipped:2": {
+      "t": null,
+      "value": null
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed1036503596_20261104T093949",
+   "scenario": "S0",
+   "seed": 1036503596,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793785360.043422,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S4-large_seed1407902740_20261104T094249",
+   "scenario": "S4-large",
+   "seed": 1407902740,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 2.3163059806415207,
+   "verdict_t": 1793785534.381913,
+   "fault_t": 1793785418.36168,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793785435.1283042,
+      "value": 1.01,
+      "pct_full_scale": 1.323
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793785434.3759806,
+      "value": 0.145,
+      "pct_full_scale": 0.19
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 116.02,
+   "time_to_block_process_s": 1160.2,
+   "hold_fail": true
+  },
+  {
+   "episode": "S11_seed504549076_20261104T094538",
+   "scenario": "S11",
+   "seed": 504549076,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793785695.608086,
+   "fault_t": 1793785641.5792189,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 54.03,
+   "time_to_block_process_s": 540.3,
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed1057831709_20261104T094820",
+   "scenario": "S0",
+   "seed": 1057831709,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793785874.576716,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S12_seed712123538_20261104T095125",
+   "scenario": "S12",
+   "seed": 712123538,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793786018.098995,
+   "fault_t": 1793786004.9860282,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 13.11,
+   "time_to_block_process_s": 131.1,
+   "hold_fail": false
+  },
+  {
+   "episode": "S4-large_seed1685479121_20261104T095342",
+   "scenario": "S4-large",
+   "seed": 1685479121,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 2.166491914804804,
+   "verdict_t": 1793786185.513036,
+   "fault_t": 1793786070.32606,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793786086.5964692,
+      "value": 0.946,
+      "pct_full_scale": 1.238
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793786085.8462687,
+      "value": 0.135,
+      "pct_full_scale": 0.177
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 115.19,
+   "time_to_block_process_s": 1151.9,
+   "hold_fail": true
+  },
+  {
+   "episode": "S3_seed1866802344_20261104T095631",
+   "scenario": "S3",
+   "seed": 1866802344,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793786267.965502,
+   "fault_t": 1793786256.1856694,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 11.78,
+   "time_to_block_process_s": 117.8,
+   "hold_fail": false
+  },
+  {
+   "episode": "S2_seed638461796_20261104T113134",
+   "scenario": "S2",
+   "seed": 638461796,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793791968.692957,
+   "fault_t": 1793791968.1264226,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 0.57,
+   "time_to_block_process_s": 5.7,
+   "hold_fail": false
+  },
+  {
+   "episode": "S10_seed722405248_20261104T100052",
+   "scenario": "S10",
+   "seed": 722405248,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793786529.419231,
+   "fault_t": 1793786516.7593415,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 12.66,
+   "time_to_block_process_s": 126.6,
+   "hold_fail": false
+  },
+  {
+   "episode": "S11_seed14280477_20261104T100214",
+   "scenario": "S11",
+   "seed": 14280477,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793786694.651947,
+   "fault_t": 1793786654.7815223,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 39.87,
+   "time_to_block_process_s": 398.7,
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed352424230_20261104T100459",
+   "scenario": "S0",
+   "seed": 352424230,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793786870.43378,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S7_seed365869680_20261104T100801",
+   "scenario": "S7",
+   "seed": 365869680,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793786901.742384,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "skipped:2": {
+      "t": null,
+      "value": null
+     }
+    },
+    "secondary": {
+     "skipped:2": {
+      "t": null,
+      "value": null
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S1b_seed1090894367_20261104T100826",
+   "scenario": "S1b",
+   "seed": 1090894367,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 1.1107475570222811,
+   "verdict_t": 1793787023.057572,
+   "fault_t": 1793787005.5052197,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793787005.7553008,
+      "value": 1.658,
+      "pct_full_scale": 2.171
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793787005.7553008,
+      "value": 1.658,
+      "pct_full_scale": 2.171
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 17.55,
+   "time_to_block_process_s": 175.5,
+   "hold_fail": false
+  },
+  {
+   "episode": "S5_seed909607959_20261104T101027",
+   "scenario": "S5",
+   "seed": 909607959,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793787086.48719,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "state:XV-204": {
+      "t": 1793787086.7015746,
+      "value": 100.0
+     }
+    },
+    "secondary": {
+     "state:XV-204": {
+      "t": 1793787086.7015746,
+      "value": 100.0
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed1017296094_20261104T101131",
+   "scenario": "S0",
+   "seed": 1017296094,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793787264.117273,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S1_seed845501737_20261104T101433",
+   "scenario": "S1",
+   "seed": 845501737,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793787349.702104,
+   "fault_t": 1793787339.936453,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 9.77,
+   "time_to_block_process_s": 97.7,
+   "hold_fail": false
+  },
+  {
+   "episode": "S8_seed1522480977_20261104T101554",
+   "scenario": "S8",
+   "seed": 1522480977,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793787430.731715,
+   "fault_t": 1793787403.7024632,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "state:XV-204": {
+      "t": 1793787414.7078507,
+      "value": 100.0
+     },
+     "flow:XV-204": {
+      "t": 1793787419.9028535,
+      "value": 7.174,
+      "pct_full_scale": 9.393
+     }
+    },
+    "secondary": {
+     "state:XV-204": {
+      "t": 1793787414.7078507,
+      "value": 100.0
+     },
+     "flow:XV-204": {
+      "t": 1793787419.9028535,
+      "value": 7.174,
+      "pct_full_scale": 9.393
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 27.03,
+   "time_to_block_process_s": 270.3,
+   "hold_fail": false
+  },
+  {
+   "episode": "S1b_seed487883635_20261104T101715",
+   "scenario": "S1b",
+   "seed": 487883635,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 1.2556648482360904,
+   "verdict_t": 1793787547.75136,
+   "fault_t": 1793787531.1553152,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793787531.4059246,
+      "value": 1.875,
+      "pct_full_scale": 2.454
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793787531.4059246,
+      "value": 1.875,
+      "pct_full_scale": 2.454
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 16.6,
+   "time_to_block_process_s": 166.0,
+   "hold_fail": false
+  },
+  {
+   "episode": "S1_seed177132909_20261104T101911",
+   "scenario": "S1",
+   "seed": 177132909,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793787628.368184,
+   "fault_t": 1793787619.5964367,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 8.77,
+   "time_to_block_process_s": 87.7,
+   "hold_fail": false
+  },
+  {
+   "episode": "S4-small_seed1013371090_20261104T102033",
+   "scenario": "S4-small",
+   "seed": 1013371090,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 0.5402845052904561,
+   "verdict_t": 1793787795.570486,
+   "fault_t": 1793787685.339934,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793787712.5822945,
+      "value": 0.764,
+      "pct_full_scale": 1.0
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793787702.804102,
+      "value": 0.117,
+      "pct_full_scale": 0.154
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 110.23,
+   "time_to_block_process_s": 1102.3,
+   "hold_fail": true
+  },
+  {
+   "episode": "S12_seed284707964_20261104T102319",
+   "scenario": "S12",
+   "seed": 284707964,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793787926.582978,
+   "fault_t": 1793787913.0386097,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 13.54,
+   "time_to_block_process_s": 135.4,
+   "hold_fail": false
+  },
+  {
+   "episode": "S8_seed1567236536_20261104T102530",
+   "scenario": "S8",
+   "seed": 1567236536,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793788008.332362,
+   "fault_t": 1793787981.8178995,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "state:XV-204": {
+      "t": 1793787992.58488,
+      "value": 100.0
+     },
+     "flow:XV-204": {
+      "t": 1793787997.3512409,
+      "value": 4.08,
+      "pct_full_scale": 5.342
+     }
+    },
+    "secondary": {
+     "state:XV-204": {
+      "t": 1793787992.58488,
+      "value": 100.0
+     },
+     "flow:XV-204": {
+      "t": 1793787997.3512409,
+      "value": 4.08,
+      "pct_full_scale": 5.342
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 26.51,
+   "time_to_block_process_s": 265.1,
+   "hold_fail": false
+  },
+  {
+   "episode": "S7-same_seed302769139_20261104T102653",
+   "scenario": "S7-same",
+   "seed": 302769139,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793788033.756899,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S2_seed1398364506_20261104T113253",
+   "scenario": "S2",
+   "seed": 1398364506,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793792069.3894,
+   "fault_t": 1793792068.3869035,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 1.0,
+   "time_to_block_process_s": 10.0,
+   "hold_fail": false
+  },
+  {
+   "episode": "S11_seed42318172_20261104T103021",
+   "scenario": "S11",
+   "seed": 42318172,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793788380.630281,
+   "fault_t": 1793788342.2923036,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 38.34,
+   "time_to_block_process_s": 383.4,
+   "hold_fail": false
+  },
+  {
+   "episode": "S12_seed1801351506_20261104T103305",
+   "scenario": "S12",
+   "seed": 1801351506,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793788509.916769,
+   "fault_t": 1793788497.5703535,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 12.35,
+   "time_to_block_process_s": 123.5,
+   "hold_fail": false
+  },
+  {
+   "episode": "S7_seed1003895210_20261104T103515",
+   "scenario": "S7",
+   "seed": 1003895210,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793788537.256638,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "skipped:2": {
+      "t": null,
+      "value": null
+     }
+    },
+    "secondary": {
+     "skipped:2": {
+      "t": null,
+      "value": null
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S7-same_seed1515560179_20261104T103542",
+   "scenario": "S7-same",
+   "seed": 1515560179,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793788561.235291,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed1879144509_20261104T103606",
+   "scenario": "S0",
+   "seed": 1879144509,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793788740.241549,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S4-large_seed1109167412_20261104T103909",
+   "scenario": "S4-large",
+   "seed": 1109167412,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 3.342828675505827,
+   "verdict_t": 1793788923.364613,
+   "fault_t": 1793788800.7849252,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793788817.3130174,
+      "value": 0.882,
+      "pct_full_scale": 1.155
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793788817.0623221,
+      "value": 0.464,
+      "pct_full_scale": 0.607
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 122.58,
+   "time_to_block_process_s": 1225.8,
+   "hold_fail": true
+  },
+  {
+   "episode": "S0_seed119054383_20261104T104208",
+   "scenario": "S0",
+   "seed": 119054383,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793789101.531735,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S10_seed22626881_20261104T104512",
+   "scenario": "S10",
+   "seed": 22626881,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793789187.688584,
+   "fault_t": 1793789174.8474276,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 12.84,
+   "time_to_block_process_s": 128.4,
+   "hold_fail": false
+  },
+  {
+   "episode": "S12_seed1282134423_20261104T104632",
+   "scenario": "S12",
+   "seed": 1282134423,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793789328.615279,
+   "fault_t": 1793789314.8213792,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 13.79,
+   "time_to_block_process_s": 137.9,
+   "hold_fail": false
+  },
+  {
+   "episode": "S3_seed882398832_20261104T104853",
+   "scenario": "S3",
+   "seed": 882398832,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793789411.528383,
+   "fault_t": 1793789403.9213996,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 7.61,
+   "time_to_block_process_s": 76.1,
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed2136613803_20261104T105016",
+   "scenario": "S0",
+   "seed": 2136613803,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793789590.186307,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S10_seed120197004_20261104T105319",
+   "scenario": "S10",
+   "seed": 120197004,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793789675.928417,
+   "fault_t": 1793789663.1033912,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 12.83,
+   "time_to_block_process_s": 128.3,
+   "hold_fail": false
+  },
+  {
+   "episode": "S0_seed953910264_20261104T105441",
+   "scenario": "S0",
+   "seed": 953910264,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793789855.926167,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 101.0,
+    "max_isolated_flow_pct": -0.0
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S5_seed1504784095_20261104T105745",
+   "scenario": "S5",
+   "seed": 1504784095,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793789926.549604,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "state:XV-204": {
+      "t": 1793789925.5220287,
+      "value": 100.0
+     }
+    },
+    "secondary": {
+     "state:XV-204": {
+      "t": 1793789925.5220287,
+      "value": 100.0
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S1b_seed561243154_20261104T105852",
+   "scenario": "S1b",
+   "seed": 561243154,
+   "verdict": "ESCALATED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 1.3211310462312524,
+   "verdict_t": 1793790049.24664,
+   "fault_t": 1793790033.8653336,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793790034.1186783,
+      "value": 1.972,
+      "pct_full_scale": 2.582
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793790034.1186783,
+      "value": 1.972,
+      "pct_full_scale": 2.582
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 15.38,
+   "time_to_block_process_s": 153.8,
+   "hold_fail": false
+  },
+  {
+   "episode": "S7-same_seed476459858_20261104T110053",
+   "scenario": "S7-same",
+   "seed": 476459858,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793790072.696879,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S3_seed234141044_20261104T110118",
+   "scenario": "S3",
+   "seed": 234141044,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793790152.765919,
+   "fault_t": 1793790144.0116277,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 8.75,
+   "time_to_block_process_s": 87.5,
+   "hold_fail": false
+  },
+  {
+   "episode": "S5_seed45578167_20261104T110237",
+   "scenario": "S5",
+   "seed": 45578167,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793790217.936298,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "state:XV-204": {
+      "t": 1793790217.1486979,
+      "value": 100.0
+     }
+    },
+    "secondary": {
+     "state:XV-204": {
+      "t": 1793790217.1486979,
+      "value": 100.0
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false
+  },
+  {
+   "episode": "S1_seed215767070_20261104T110343",
+   "scenario": "S1",
+   "seed": 215767070,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793790298.526845,
+   "fault_t": 1793790288.6836529,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 9.84,
+   "time_to_block_process_s": 98.4,
+   "hold_fail": false
+  },
+  {
+   "episode": "S4-large_seed1316694673_20261104T110502",
+   "scenario": "S4-large",
+   "seed": 1316694673,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": 2.910939582090083,
+   "verdict_t": 1793790470.032804,
+   "fault_t": 1793790350.138658,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:XV-204": {
+      "t": 1793790365.901465,
+      "value": 0.842,
+      "pct_full_scale": 1.102
+     }
+    },
+    "secondary": {
+     "flow:XV-204": {
+      "t": 1793790365.4015732,
+      "value": 0.098,
+      "pct_full_scale": 0.128
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 119.89,
+   "time_to_block_process_s": 1198.9,
+   "hold_fail": true
+  }
+ ],
+ "never_say_check": "clean"
+}

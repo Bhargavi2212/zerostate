@@ -1,0 +1,1 @@
+{"t": 1793782929.2223814, "kind": "fault", "data": {"at_step": 4, "before_mark": true, "set": {"XV-204.stuck": 1, "XV-204.pos_fault_mode": 3, "XV-204.pos_fault_severity": 0}, "t_vm": 1793782929.658166}}

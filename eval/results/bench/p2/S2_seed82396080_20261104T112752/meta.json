@@ -1,0 +1,50 @@
+{
+ "scenario": {
+  "id": "S2",
+  "plant": "p2_gasline",
+  "title": "PT-211 dropout to 0 (10 process-s duty cycle)",
+  "expected": [
+   "BLOCKED"
+  ],
+  "faults": [
+   {
+    "at_step": [
+     5,
+     7
+    ],
+    "after_process_s": [
+     0,
+     30
+    ],
+    "set": {
+     "PT-211.fault_mode": 4,
+     "PT-211.fault_severity": [
+      0.3,
+      0.7
+     ]
+    }
+   }
+  ]
+ },
+ "seed": 82396080,
+ "faults": [
+  {
+   "at_step": 5,
+   "after_process_s": 2,
+   "set": {
+    "PT-211.fault_mode": 4,
+    "PT-211.fault_severity": 0.3427139870651157
+   }
+  }
+ ],
+ "process_time_scale": 10,
+ "images": {
+  "zs-p2": "sha256:9e7f346d5a00b0a43d2008855d9402bd4f5946c3c43abee96308dcea22a88f4a",
+  "zerostate": "sha256:68e2c80ffae9da66b2910bea56c3d9962eba2256d13807c9fd83ae82b08a4189",
+  "zs-operator": "sha256:1396cdd1158c4a39b5178a9500d6e1f9afc571c20fc4ce6d7f1bf744a7a9a54e"
+ },
+ "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+ "batch": "p2",
+ "camera": false,
+ "signals_sha256": "0578b9477d919f36d9ba82f31ec0b4e0a5cde69c29023c32e30fae3941642f69"
+}

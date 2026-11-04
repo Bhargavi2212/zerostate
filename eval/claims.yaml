@@ -48,7 +48,7 @@ claims:
     batch: p2
     engine: gas line, full engine
     # reworded Nov 4 (DECISIONS): batch p2 re-froze after batch 2, so "from one commit" no longer holds
-    sentence: "One engine ran both plants, and no plant-specific name appears in `src/` (P1 GRFICS over Modbus in batch 2; P2, our gas line over OPC UA, in batch p2). Between the two batches, two rule fixes found on P2 tuning seeds changed `src/` (LIVE-VALVE v2, LIVE-ALIVE v3); every published P1 episode replays to its logged verdict under them."
+    sentence: "The same engine ran both plants, and no plant-specific name appears in `src/` (P1 GRFICS over Modbus in batch 2; P2, our gas line over OPC UA, in batch p2). Between the batches, two rule fixes found on P2 tuning seeds changed `src/` (LIVE-VALVE v2, LIVE-ALIVE v3); every published P1 episode replays to its logged verdict under the fixed rules."
     tests: [tests/test_plant_agnostic.py, tests/test_published_replay.py]
     results: eval/results/score_p2.json
     keys: [invalid.n]  # score_p2.json exists = batch p2 ran

@@ -95,3 +95,8 @@ Ablations: LIVE-ALIVE off; LIVE-RELATION off.
 
 ## What we learned about Meta's models (measured only)
 Oct 27: SAM 3.1 found tanks (~0.94) and displays (~0.8), zero "valve" objects; Muse Spark read close-up digital displays (6/7 after timing correction), "unreadable" on tiny crops.
+
+## Known limits (carried into the README's Limits section)
+- **Camera lag was never measured.** `camera_lag_max_wall_s: 5` is the start value (the 3D page polls every 3 s), not a measured figure; LIVE-CAMERA's agreement window rests on it.
+- **Importer, text route, case t02:** the model listed a real vent valve (purge) as an isolation point (1 invented point; the 0-invented bar fails). The draft could not be confirmed: the confirm screen flagged the row and the plan would not merge until it was corrected, but no message named the cause.
+- **Batch p2 baselines:** the gauge rule and Muse Spark alone were run on P1 only; P2's flow reference was pinned after batch p2 ran, from the model (DECISIONS Nov 4, with a sensitivity table).
