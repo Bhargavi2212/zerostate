@@ -5,6 +5,7 @@ import hashlib
 import io
 from datetime import UTC, datetime
 
+import pytest
 from checks.synth import PARAMS, PLAN, SPANS, steady
 from PIL import Image, ImageDraw
 
@@ -186,7 +187,23 @@ def test_live_camera_pass_within_the_lag_window():
 
 def test_live_camera_fail_names_both_values():
     f = camera.check([rd(16.0, 50.0), rd(17.0, 50.0)], FB + [[17.0, 0.0]], PARAMS, tag="f1_valve_pos")
-    assert f.status == S.FAIL and f.message == "camera shows 50 % while the instrument says 0.0 % (f1_valve_pos)"
+    assert f.status == S.FAIL and f.message == "camera shows 50 % while the instrument says 0.0 % in 2 of 2 frames (f1_valve_pos)"
+
+
+FB0 = [[0.0, 0.0], [10.0, 0.0], [20.0, 0.0]]  # feedback steady at 0 (S8: f1 reads closed)
+
+
+@pytest.mark.parametrize("values, want", [
+    ([0.0, 100.0, 100.0], S.FAIL),  # v1 passed this on the one agreeing frame: a camera catch hidden
+    ([100.0, 100.0, 100.0], S.FAIL),
+    ([0.0, 0.0, 10.0], S.PASS),
+    ([0.0, 100.0], S.UNKNOWN),  # 2 readable, split 1-1
+    ([0.0, None, None], S.UNKNOWN),  # one readable
+])
+def test_live_camera_v2_majority_is_symmetric(values, want):
+    readings = [rd(12.0 + 2 * i, v, v is not None) for i, v in enumerate(values)]
+    f = camera.check(readings, FB0, PARAMS, tag="f1_valve_pos")
+    assert f.status == want and camera.RULE_VERSION == "2"
 
 
 def test_live_camera_unknown_with_fewer_than_two_readable_frames():
@@ -255,7 +272,7 @@ def test_camera_fail_blocks_only_the_with_camera_track_and_replays(tmp_path):
     st = r.status()
     assert st["verdict"] is None and st["steps"][2] == "PASS"  # data-only track untouched by the camera FAIL
     assert st["verdict_with_camera"] == "BLOCKED" and st["camera_pending"] == 0
-    assert "camera shows 100 % while the instrument says 0.0 % (f1_valve_pos)" in st["stamp_with_camera"]["reasons"][0]
+    assert "camera shows 100 % while the instrument says 0.0 % in 3 of 3 frames (f1_valve_pos)" in st["stamp_with_camera"]["reasons"][0]
     assert st["stamp_with_camera"]["models"] == {"locate": "sam-3.1", "read": "muse-spark-1.3"}
     assert st["stamp_with_camera"]["rules"]["LIVE-CAMERA"] == camera.RULE_VERSION
     assert {e["kind"] for e in r.log.events("s1")} >= {"camera_capture", "camera_reading"}

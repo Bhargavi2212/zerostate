@@ -16,8 +16,8 @@ from zerostate.models.verdict import FindingStatus as S
 from zerostate.models.verdict import Verdict
 
 RULE_ID = "LIVE-CAMERA"
-RULE_VERSION = "1"
-MIN_READABLE = 2
+RULE_VERSION = "2"  # v2: 2-of-3 majority, symmetric (v1: any agreeing frame passed)
+MIN_READABLE = 2  # frames needed to agree for PASS, or to disagree for FAIL
 
 
 def in_window(feedback: list, t: float, lag_s: float) -> list[float]:
@@ -36,13 +36,20 @@ def check(readings: list[dict], feedback: list, params: dict, previous: list[dic
     if len(readable) < MIN_READABLE:
         return finding(RULE_ID, RULE_VERSION, S.UNKNOWN,
                        f"{tag}: {len(readable)} readable frames of {len(readings)} (need {MIN_READABLE})", [tag])
-    windows = [(r["value"], in_window(feedback, r["t"], lag)) for r in readable]
-    if not any(w for _, w in windows):
+    windows = [(r["value"], w) for r in readable if (w := in_window(feedback, r["t"], lag))]
+    if not windows:
         return finding(RULE_ID, RULE_VERSION, S.UNKNOWN, f"{tag}: no feedback samples at the capture times", [tag])
-    if any(abs(x - v) <= tol for x, w in windows for v in w):
-        return finding(RULE_ID, RULE_VERSION, S.PASS, f"{tag}: camera reading agrees with the feedback", [tag])
-    x, w = next((x, w) for x, w in windows if w)
-    return finding(RULE_ID, RULE_VERSION, S.FAIL, f"camera shows {x:g} % while the instrument says {w[-1]:.1f} % ({tag})", [tag])
+    # v2: majority, symmetric. One frame matching the PLC can no longer hide two that do not (v1 passed on any).
+    agree = [(x, w) for x, w in windows if any(abs(x - v) <= tol for v in w)]
+    disagree = [(x, w) for x, w in windows if (x, w) not in agree]
+    if len(agree) >= MIN_READABLE:
+        return finding(RULE_ID, RULE_VERSION, S.PASS, f"{tag}: camera agrees with the feedback in {len(agree)} of {len(windows)} frames", [tag])
+    if len(disagree) >= MIN_READABLE:
+        x, w = disagree[0]
+        return finding(RULE_ID, RULE_VERSION, S.FAIL, f"camera shows {x:g} % while the instrument says {w[-1]:.1f} % "
+                       f"in {len(disagree)} of {len(windows)} frames ({tag})", [tag])
+    return finding(RULE_ID, RULE_VERSION, S.UNKNOWN,
+                   f"{tag}: frames split ({len(agree)} agree, {len(disagree)} disagree of {len(windows)})", [tag])
 
 
 def contribution(status: S, mode: str | None) -> Verdict | None:

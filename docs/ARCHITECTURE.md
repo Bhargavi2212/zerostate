@@ -83,7 +83,7 @@ Shared-point conflicts across permits: stretch (needs multiple envelopes).
 | LIVE-UPSTREAM | upstream pressure present during hold (not a dry test) | P2 only (P1 has no upstream sensor) |
 | LIVE-HOLD | mean of first window vs mean of last window: rise ≤ `max_rise_kpa` on every work-side gauge; final mean ≤ `p_depressurised_kpa_abs` (P2: checked at the final vent instead; between-blocks gauges stay ≤ it) | never single samples |
 | LIVE-VALVE | command vs position feedback; commanded closed with flow above the low-flow cutoff | needs patch on P1 |
-| LIVE-CAMERA | camera reading agrees with data within measured lag window | idealised on P1 |
+| LIVE-CAMERA | v2: of the readable frames in a burst, 2 or more agreeing with the feedback (within the lag window) PASS, 2 or more disagreeing FAIL, otherwise UNKNOWN; freeze check first | idealised on P1 |
 | LIVE-REPLAY | repeated window / autocorrelation | stretch |
 Transients: "unexpected change" alarms suppressed during commanded transients; invariants never suppressed. Generic checks for gas detectors / temperature exist in the design only when a plant has those signals; neither test plant does, so they are not built or claimed.
 
