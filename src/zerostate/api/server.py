@@ -5,11 +5,14 @@ Trust boundaries kept here:
 - the audit log is opened read-only (SQLite mode=ro): human actions go into the inbox and the core logs them;
 - the voice route only reads back; it never touches the inbox, so it can't mark a step, verify, reopen or sign;
 - the name `playwright-test` can't confirm or sign while the data dir is the real /data (G10);
-- replay mode (`zs api --replay <bundle_dir>`) serves recorded bundles; every write is 409 "replay".
+- replay mode (`zs api --replay <bundle_dir>`) serves recorded bundles; every write is 409 "replay";
+- the check-request resolver (llm/resolve.py) only reads: it gets plain data, returns text, and touches no
+  inbox, log or session. The data-only verdict path never imports it.
 Explain is a stub until P3-4.
 """
 
 import asyncio
+import base64
 import hashlib
 import io
 import itertools
@@ -35,8 +38,10 @@ from zerostate.api.replay import load_bundles
 from zerostate.audit.log import AuditLog
 from zerostate.importers import draft as dr
 from zerostate.importers.confirm import NotConfirmable, confirm, is_confirmed
+from zerostate.llm import client as model
 from zerostate.llm.client import ModelUnavailable
-from zerostate.models.envelope import IsolationList
+from zerostate.llm.resolve import resolve
+from zerostate.models.envelope import IsolationList, IsolationPlan
 from zerostate.models.plant_map import PlantMap
 from zerostate.session import Inbox, status_from_events
 
@@ -85,6 +90,17 @@ class DraftEdit(BaseModel):
 
 class Question(BaseModel):
     question: str
+
+
+class CheckRequest(BaseModel):
+    text: str | None = None
+    audio: str | None = None  # base64 WAV (mono 16-bit PCM, 16 or 24 kHz), transcribed by Muse Voice Transcribe
+
+    @model_validator(mode="after")
+    def one_input(self):
+        if (self.audio is None) == (self.text is None):
+            raise ValueError("send either `text` or `audio`")
+        return self
 
 
 class VoiceIn(BaseModel):
@@ -399,6 +415,32 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
             inbox.db.close()
         return {"queued": True}
 
+    def confirmed_plans() -> list[dict]:
+        """Every plan a person confirmed: plan files in the plant config with a confirmed.yaml record, and
+        confirmed importer drafts (<data>/plans/<hash>.json); in replay mode, the recorded sessions' plans."""
+        found: dict[str, tuple[dict, dict]] = {}
+        if bundles is not None:
+            for b in bundles.values():
+                if b.get("plan") and b.get("plan_hash") and b.get("confirmation"):
+                    found.setdefault(b["plan_hash"], (b["plan"], b["confirmation"]))
+        else:
+            for d in sorted(x for x in config.glob("*") if (x / "confirmed.yaml").exists()):
+                for y in sorted(d.glob("*.yaml")):
+                    try:
+                        plan = IsolationPlan.model_validate(yaml.safe_load(y.read_text(encoding="utf-8-sig")))
+                    except Exception:  # noqa: BLE001 - not a plan file (map, thresholds, confirmations)
+                        plan = None
+                    rec = plan and is_confirmed(plan.content_hash(), [d], data)
+                    if rec:
+                        found.setdefault(plan.content_hash(), (plan.model_dump(mode="json"), rec))
+            for f in sorted((data / "plans").glob("*.json")) if (data / "plans").is_dir() else []:
+                rec = is_confirmed(f.stem, [], data)
+                if rec:
+                    found.setdefault(f.stem, (json.loads(f.read_text(encoding="utf-8"))["plan"], rec))
+        return [{"id": f"plan-{h[:8]}", "plant": plan.get("plant"), "equipment": (plan.get("work") or {}).get("equipment"),
+                 "task": (plan.get("work") or {}).get("task"), "plan_hash": h, "confirmed_by": rec.get("by"),
+                 "confirmed_date": rec.get("date")} for h, (plan, rec) in found.items()]
+
     app.state.replay = bundles is not None
     app.state.detail = lambda sid: detail(sid, events(sid))
 
@@ -626,6 +668,26 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
     def explain(sid: str, body: Question):
         events(sid)
         return {"answer": "Explanations arrive with P3-4; see the logged findings.", "cites": []}
+
+    @app.get("/api/checks/plans")
+    def check_plans():
+        return confirmed_plans()
+
+    @app.post("/api/checks/resolve")
+    def check_resolve(body: CheckRequest):
+        """Read only: a request -> one confirmed plan or none. Starts no session, confirms and signs nothing."""
+        plans, asr = confirmed_plans(), None
+        text = body.text
+        if body.audio is not None:
+            try:
+                wav = base64.b64decode(body.audio, validate=True)
+            except ValueError:
+                raise HTTPException(400, "audio is not base64") from None
+            text, asr = model.transcribe(wav, "check_request", opener=opener,
+                                         keywords=sorted({w for p in plans for w in (p["equipment"], p["plant"]) if w})), model.ASR
+        r = resolve(text or "", plans, opener=opener)
+        pick = next((p for p in plans if p["id"] == r["plan_id"]), None)
+        return {"text": text, "asr": asr, "plans": plans, "plan": pick, "reason": r["reason"]}
 
     app.post("/api/voice/command", response_model=VoiceReply)(voice_command)
 
