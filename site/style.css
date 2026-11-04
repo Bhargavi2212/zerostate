@@ -89,6 +89,23 @@ menu { display: flex; gap: 8px; padding: 0; }
 .sam-box { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sam-box rect { fill: none; stroke: #000; stroke-width: 3; stroke-dasharray: 6 3; }
 .crop { border: 1px solid var(--dark); max-height: 80px; margin: 4px 0; }
+/* check my isolation: rows tick one at a time; FAIL is alarm red with a cross, never a green tick colour */
+#checklist tr.pending td { color: #8a8a8a; }
+#checklist tr.current td { outline: 2px solid var(--dark); }
+#checklist td.mark { font-weight: 700; white-space: nowrap; }
+#checklist td.mark[data-mark="FAIL"] { color: var(--alarm); }
+#checklist td.mark[data-mark="UNKNOWN"] { color: #6a5000; }
+.badge.recorded { background: #f2f2f2; border-style: dashed; font-weight: 600; }
+.zoomfig { margin: 0; } .zoom { width: 100%; max-width: 640px; border: 1px solid var(--dark); background: #111; }
+.witnesses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; }
+.witness { border: 1px solid var(--line); background: #f2f2f2; padding: 6px; }
+.witness-value { font-size: 18px; font-weight: 700; }
+.no-frame { border: 2px dashed var(--line); padding: 40px 12px; text-align: center; color: var(--muted); }
+.final { font-size: 20px; font-weight: 700; padding: 10px 14px; border: 3px double var(--dark); background: var(--panel); }
+.final-stop { background: var(--alarm); color: var(--alarm-ink); border: 3px solid #600000; }
+.final-stop::before { content: "◆ "; }
+.unclear-msg { font-weight: 600; border-left: 4px solid var(--warn); padding-left: 8px; }
+.spoken { font-size: 16px; padding: 6px 10px; border-left: 4px solid var(--dark); background: #efefef; min-height: 1.5em; }
 
 .replay-banner { background: #333; color: #fff; padding: 6px 12px; font-weight: bold; }
 .results { max-width: 1100px; margin: 0 auto; padding: 0 12px; }

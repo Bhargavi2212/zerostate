@@ -33,12 +33,15 @@ EPISODES = [  # (bundle, what it shows)
 ]
 BATCHES = [("p1", "bench-freeze-p1"), ("2", "bench-freeze-2"), ("p2", "bench-freeze-p2b and bench-freeze-p2c")]
 KEYLIKE = re.compile(r"(sk-[A-Za-z0-9_-]{16,}|Bearer\s+\S+|MODEL_API_KEY\s*[=:]\s*\S+)")
-UI_FILES = ["app.js", "lib.js", "job.js", "plant.js", "chart.js", "style.css"]  # intake.js (import/confirm) is left out
+UI_FILES = ["app.js", "lib.js", "job.js", "plant.js", "chart.js", "style.css"]  # intake.js (import/confirm) and check.js (request box, model calls) are left out
 
 # (file, regex, replacement): every pattern must match exactly once, so a ui/ change can't slip a control through
 PATCHES = [
     ("app.js", r'import \{ intakeScreen \} from "\./intake\.js";\n', ""),
     ("app.js", r'    else if \(path === "/new"\) await intakeScreen\(app\);\n', ""),
+    ("app.js", r'import \{ checkScreen \} from "\./check\.js";\n', ""),
+    ("app.js", r"\(job\),\n// #/check\[\?session=<id>\] \(check my isolation\)\.", "(job)."),
+    ("app.js", r'    else if \(path === "/check"\) cleanup = await checkScreen\(app, params\);\n', ""),
     ("app.js", r'"Sessions"\)\);', '"Recorded episodes"));'),
     ("app.js", r"No sessions yet\. Start with a new isolation\.", "No recorded episodes in this build."),
     ("job.js", r", and the Sign dialog\.", ". Site copy: recorded replay, no write controls."),
@@ -158,7 +161,7 @@ def patched_ui() -> dict[str, str]:
     page = (ROOT / "ui" / "index.html").read_text(encoding="utf-8")
     for old, new in [("<title>ZeroState console</title>", "<title>ZeroState recorded replay</title>"),
                      ("<body>\n", f'<body>\n<div class="replay-banner" id="replay-banner">{BANNER}</div>\n'),
-                     ('<nav><a href="#/">Sessions</a> <a href="#/new">New isolation</a></nav>',
+                     ('<nav><a href="#/">Sessions</a> <a href="#/new">New isolation</a> <a href="#/check">Check my isolation</a></nav>',
                       '<nav><a href="index.html#/">Episodes</a> <a href="results.html">Results</a></nav>'),
                      ('<script type="module" src="app.js">', '<script src="replay.js"></script>\n<script type="module" src="app.js">')]:
         if page.count(old) != 1:
