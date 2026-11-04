@@ -126,6 +126,12 @@ def test_p2_write_log_counts_users():
     assert runner.p2_writes("") == {"zerostate": 0, "operator_allowed": 0, "other": 0}
 
 
+def test_p2_plan_file_is_the_merge_the_owner_confirms():
+    """plants/p2_gasline/plan.yaml (confirmed by the owner, like P1's envelope) must hash like a fresh merge."""
+    f = runner.IsolationPlan.model_validate(runner.yaml.safe_load((runner.P2 / "plan.yaml").read_text(encoding="utf-8")))
+    assert f.content_hash() == runner.p2_plan().content_hash()
+
+
 def test_p2_plan_and_code_spec():
     plan = runner.p2_plan()
     assert [(s.k, s.kind, s.target) for s in plan.steps][:5] == [
@@ -208,7 +214,7 @@ def test_p2_clean_episode_uses_the_p2_path(tmp_path, monkeypatch):
     assert waits == [("PT-202", "102.0"), ("PT-211", "200.0"), ("PT-211", "102.0")]
     assert lab.verified == [("1", "eval-verifier"), ("2", "eval-verifier"), ("4", "eval-verifier")]
     start = next(c for c in lab.sh if "session" in c)
-    assert "ZS_MAP=/app/config/p2_gasline/opcua_map.yaml" in start and f"/data/plans/{ep.plan.content_hash()}.json" in start
+    assert "ZS_MAP=/app/config/p2_gasline/opcua_map.yaml" in start and "/app/config/p2_gasline/plan.yaml" in start
     assert "clear" in fired
 
 
