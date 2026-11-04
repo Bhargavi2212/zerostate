@@ -126,6 +126,7 @@ class CameraTrack:
         self.prev: dict[str, list] = {}
         self.triggered: set[int] = set()
         self.verdict = None  # the camera's contribution so far
+        self.pending = 0  # captured points not yet answered: an "accepted" signature waits for them (session.py)
 
     def observe(self, now: float, signals: dict) -> None:
         for tag, rows in self.fb.items():
@@ -151,6 +152,7 @@ class CameraTrack:
             pts = {p: self.points[p] for p in step_targets(st) if p in self.points}
             if pts:
                 self.log.append(self.sid, "camera_capture", {"step": k, "points": sorted(pts)})
+                self.pending += len(pts)
                 jobs.append({"step": k, "points": pts, "frames_dir": self.frames_dir})
         return jobs
 
@@ -185,6 +187,7 @@ class CameraTrack:
             "verdict_after": self.verdict.value if self.verdict else None,
             "with_camera_after": with_cam.value if with_cam else None})
         if point is not None:
+            self.pending = max(0, self.pending - 1)
             self.prev[point] = [{k: r[k] for k in ("t", "crop_hash", "feedback_at")} for r in readings]
         if self.verdict != before_v:  # the camera's contribution worsened: stamp the with-camera verdict
             st = gate.stamp(with_cam, self.plan, self.params["version"], [f], self.override)

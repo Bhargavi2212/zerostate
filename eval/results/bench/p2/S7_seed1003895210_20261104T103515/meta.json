@@ -1,0 +1,24 @@
+{
+ "scenario": {
+  "id": "S7",
+  "plant": "p2_gasline",
+  "title": "step skipped (XV-203 never closed; BV-202 marked right after step 1)",
+  "expected": [
+   "BLOCKED"
+  ],
+  "operator": "skip_step",
+  "skip_step": 2
+ },
+ "seed": 1003895210,
+ "faults": [],
+ "process_time_scale": 10,
+ "images": {
+  "zs-p2": "sha256:9e7f346d5a00b0a43d2008855d9402bd4f5946c3c43abee96308dcea22a88f4a",
+  "zerostate": "sha256:68e2c80ffae9da66b2910bea56c3d9962eba2256d13807c9fd83ae82b08a4189",
+  "zs-operator": "sha256:1396cdd1158c4a39b5178a9500d6e1f9afc571c20fc4ce6d7f1bf744a7a9a54e"
+ },
+ "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+ "batch": "p2",
+ "camera": false,
+ "signals_sha256": "c769757b25529fdefb6ac8dfa37b6e0d9782d5a5598432fbb5f1a74a4b4bd13b"
+}

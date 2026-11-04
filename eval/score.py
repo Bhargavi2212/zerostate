@@ -28,9 +28,14 @@ from zerostate.config import load_thresholds
 
 ROOT = Path(__file__).parents[1]
 NO_DISC = "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
-ENGINE = {"p1": "live checks only (Phase 1 engine)", "2": "full engine (live + process + camera)"}
+ENGINE = {"p1": "live checks only (Phase 1 engine)", "2": "full engine (live + process + camera)", "p2": "gas line, full engine"}
 DEFINITIONS = {"primary": 0.01, "secondary": 0.001}  # flow limit as a fraction of the line's full scale
 P1_FULL_SCALE = {"f1": 1000, "f2": 500, "purge": 2000, "product": 500}  # pinned in DECISIONS Nov 3
+# P2 (DECISIONS Nov 4, pinned after batch p2 ran, from the model only): flow INTO F-210 through the two lines
+# that feed it, each fully open at its design pressure difference = normal operation, S-200 2000 -> XV-201 ->
+# C-202 -> XV-203 -> F-210 -> XV-204 -> D-220 1500 kPa, Cv 0.1 each: F = 0.1 * sqrt((2000^2 - 1500^2) / 3).
+P2_FULL_SCALE = {"XV-203": 76.3763, "XV-204": 76.3763}
+P2_SENSITIVITY = {"pinned (1 %)": 0.01, "x0.5 (0.5 %)": 0.005, "x2 (2 %)": 0.02, "secondary (0.1 %)": 0.001}
 PRESSURE_LIMIT_KPA = 150.0
 STATE_TOL_PCT = 1.0  # true valve position more than 1 % of travel from the step's required state
 LEAK_BINS = ((0.3, 0.6), (0.6, 0.9), (0.9, 1.2), (1.2, 1.5))
@@ -70,10 +75,21 @@ def show(r: dict) -> str:
     return f"{r['k']}/{r['n']} (Wilson 95 % CI {r['ci_low']:.2f}–{r['ci_high']:.2f})"
 
 
+def p2_design_flow() -> float:
+    """The P2 pin recomputed from plants/p2_gasline/model.py: normal-operation flow, all blocks open."""
+    model = _load("p2_model", ROOT / "plants" / "p2_gasline" / "model.py")
+    return round(model.GasLine(seed=0).flows()["XV-203"], 4)
+
+
 def full_scale(plant: str) -> dict:
-    """Flow reference per line: scale_max of each *_flow tag in the committed map, checked against the pins."""
+    """Flow reference per line: scale_max of each *_flow tag in the committed map (P1), or the line's flow fully
+    open at its design pressure difference from the model (P2), checked against the pins."""
+    if plant == "p2_gasline":
+        if {v: p2_design_flow() for v in P2_FULL_SCALE} != P2_FULL_SCALE:
+            raise SystemExit(f"P2 model design flow {p2_design_flow()} differs from the pinned {P2_FULL_SCALE}")
+        return dict(P2_FULL_SCALE)
     if plant != "p1_grfics":
-        raise SystemExit(f"no flow reference pinned for {plant} (DECISIONS Nov 3 pins P1 only)")
+        raise SystemExit(f"no flow reference pinned for {plant}")
     tags = yaml.safe_load((ROOT / "plants" / plant / "modbus_map.yaml").read_text(encoding="utf-8"))["tags"]
     fs = {t["tag"].removesuffix("_flow"): t["scale_max"] for t in tags if t["tag"].endswith("_flow")}
     if fs != P1_FULL_SCALE:
@@ -132,7 +148,7 @@ def faulty(ep: dict) -> bool:
 def drawn_leak(ep: dict) -> float | None:
     for f in ep["meta"].get("faults") or []:
         for k, v in (f.get("set") or {}).items():
-            if k.endswith("_leak_pct"):
+            if k.endswith("leak_pct"):  # P1 f1_leak_pct, P2 XV-204.leak_pct
                 return float(v)
     return None
 
@@ -182,25 +198,68 @@ def episode_problems(ep: dict, batch: str, entries: set) -> list[str]:
     return out
 
 
-# ---------------------------------------------------------------- hazard (DECISIONS Nov 3)
+# ---------------------------------------------------------------- hazard (DECISIONS Nov 3; P2 Nov 4)
+def _p1_truth(r: dict) -> tuple[float, dict, dict]:
+    o, st = r["outputs"], r["state"]
+    flows = {k.removesuffix("_flow"): v for k, v in o.items() if k.endswith("_flow")}
+    return o["pressure"], flows, {k.removesuffix("_valve_pos"): v for k, v in st.items() if k.endswith("_valve_pos")}
+
+
+def _p2_truth(r: dict) -> tuple[float, dict, dict]:
+    """F-210 pressure; flow INTO F-210 (XV-203 a->b is into it, XV-204 a->b is out of it: model.VALVES); positions."""
+    f = r["flow_kmol_h"]
+    return r["pressure_kpa_abs"]["F-210"], {"XV-203": max(f["XV-203"], 0.0), "XV-204": max(-f["XV-204"], 0.0)}, r["position_pct"]
+
+
+TRUTH = {"p1_grfics": _p1_truth, "p2_gasline": _p2_truth}
+
+
+def truth(ep: dict, r: dict) -> tuple[float, dict, dict]:
+    return TRUTH[ep["plan"]["plant"]](r)
+
+
 def windows(ep: dict) -> tuple[dict, float | None]:
-    """valve -> (from, required state), and pressure's start. A line counts from its own isolate mark, the
+    """valve -> (from, required state, until), and pressure's start. A line counts from its own isolate mark, the
     vent valve from the vent_close mark, pressure from the vent_close mark. Flow and position start after
     the step's settle time: the operator acts only after declaring the step, so the valve is still moving
-    at the mark itself."""
+    at the mark itself; the start is the engine's own (the later of the step's settle and the plant's
+    min_settle_wall_s; P2: the operator's write lands ~4.5 s wall after the mark). A plan that reopens its vent
+    after the vent_close (P2's final vent after the hold, which sits at 200 kPa by design) ends that valve's
+    window at the reopening mark, and pressure counts only from the release (NO_DISCREPANCY), when the job
+    says the work is down; not evaluated without a release."""
     steps = ep["plan"]["steps"]
     vents = {t for s in steps if s["kind"] in ("vent_open", "vent_close") for t in targets(s)}
+    closed = {t for s in steps if s["kind"] == "vent_close" for t in targets(s)}
+    reopens = any(s["kind"] == "vent_open" and set(targets(s)) & closed
+                  and any(c["kind"] == "vent_close" and c["k"] < s["k"] for c in steps) for s in steps)
+    floor_wall = settle_floor_wall_s(ep)
     win, p_from = {}, None
+    if reopens:
+        p_from = verdict_time(ep) if ep["verdict"].get("verdict") == NO_DISC else None
     for s in steps:
-        if s["k"] not in ep["marks"] or s["kind"] not in ("isolate", "vent_close"):
+        if s["k"] not in ep["marks"]:
             continue
-        t0 = ep["marks"][s["k"]] + (s.get("settle_process_s") or 0) / ep["scale"]
-        if s["kind"] == "vent_close":
+        if s["kind"] == "vent_open":
+            for v in targets(s):
+                if v in win:  # reopened after its vent_close
+                    win[v] = (*win[v][:2], ep["marks"][s["k"]])
+            continue
+        if s["kind"] not in ("isolate", "vent_close"):
+            continue
+        t0 = ep["marks"][s["k"]] + max((s.get("settle_process_s") or 0) / ep["scale"], floor_wall)
+        if s["kind"] == "vent_close" and not reopens:
             p_from = ep["marks"][s["k"]]
         for v in targets(s):
             if s["kind"] == "vent_close" or v not in vents:
-                win[v] = (t0, float(s["required_state"]))
+                win[v] = (t0, float(s["required_state"]), math.inf)
     return win, p_from
+
+
+def settle_floor_wall_s(ep: dict) -> float:
+    """The plant's min_settle_wall_s (thresholds), the floor the engine puts under every step's settle."""
+    plant = ep["plan"].get("plant")
+    path = ROOT / "plants" / str(plant) / "thresholds.yaml"
+    return float(load_thresholds(path).get("min_settle_wall_s", 0)) if plant and path.exists() else 0.0
 
 
 def skipped(ep: dict) -> list[int]:
@@ -220,14 +279,15 @@ def conditions(ep: dict, frac: float, fs: dict, since: float | None = None) -> d
         t = r["t"]
         if since is not None and t < since:
             continue
-        p = r["outputs"]["pressure"]
+        p, flows, positions = truth(ep, r)
         if p_from is not None and t >= p_from and p > PRESSURE_LIMIT_KPA:
             hits.setdefault("pressure", {"t": t, "value": round(p, 2)})
-        for v, (t0, req) in win.items():
-            if t < t0:
+        for v, (t0, req, until) in win.items():
+            if not t0 <= t < until:
                 continue
-            f, pos = r["outputs"][f"{v}_flow"], r["state"][f"{v}_valve_pos"]
-            if f > frac * fs[v]:
+            pos = positions[v]
+            if v in fs and flows[v] > frac * fs[v]:
+                f = flows[v]
                 hits.setdefault(f"flow:{v}", {"t": t, "value": round(f, 3), "pct_full_scale": round(100 * f / fs[v], 3)})
             if abs(pos - req) > STATE_TOL_PCT:
                 hits.setdefault(f"state:{v}", {"t": t, "value": round(pos, 2)})
@@ -244,8 +304,8 @@ def severity(ep: dict, since: float, fs: dict) -> dict:
     """Severity at release: max true pressure and max isolated-line flow (% of full scale) after `since`."""
     win, _ = windows(ep)
     rows = [r for r in ep["truth"] if r["t"] >= since]
-    flows = [100 * r["outputs"][f"{v}_flow"] / fs[v] for r in rows for v, (t0, _) in win.items() if r["t"] >= t0]
-    return {"max_pressure_kpa": round(max((r["outputs"]["pressure"] for r in rows), default=0), 2) if rows else None,
+    flows = [100 * truth(ep, r)[1][v] / fs[v] for r in rows for v, (t0, _, until) in win.items() if v in fs and t0 <= r["t"] < until]
+    return {"max_pressure_kpa": round(max((truth(ep, r)[0] for r in rows), default=0), 2) if rows else None,
             "max_isolated_flow_pct": round(max(flows), 3) if flows else None}
 
 
@@ -324,6 +384,20 @@ def score_decisions(decisions: dict, eps: dict, fs: dict) -> dict:
     return out
 
 
+def sensitivity(chosen: dict, rows: list[dict], fs: dict) -> dict:
+    """P2's flow limit pinned after the batch ran: the same counts at the pin, half, double and the 0.1 % secondary."""
+    out = {}
+    for name, frac in P2_SENSITIVITY.items():
+        miss = sum(r["verdict"] == NO_DISC and r["verdict_t"] is not None and bool(conditions(ep, frac, fs, since=r["verdict_t"]))
+                   for ep, r in zip(chosen.values(), rows, strict=True))
+        labels = [label(conditions(ep, frac, fs), r["fault"]) for ep, r in zip(chosen.values(), rows, strict=True)]
+        clean = [r for r, lab in zip(rows, labels, strict=True) if lab == "clean"]
+        out[name] = {"limit_kmol_h": round(frac * fs["XV-203"], 4), "dangerous_miss": rate(miss, len(rows)),
+                     "labels": dict(Counter(labels)),
+                     "false_blocks": rate(sum(r["verdict"] in ("BLOCKED", "ESCALATED") for r in clean), len(clean))}
+    return out
+
+
 def camera_coverage(reads: list[dict], pending) -> dict:
     """How much of the camera's work produced a reading: next to its accuracy, never instead of it."""
     note = [str(r.get("note") or "") for r in reads]
@@ -352,7 +426,9 @@ def plan_set(path: Path, entries: set) -> dict:
         b["blocked"] += bool(r["blocked"])
         b["label_match"] += bool(r["label_match"])
     pc0 = [r for r in rows if r["case"] == "PC0"]
-    return {"n": len(rows), "label_match": sum(bool(r["label_match"]) for r in rows), "per_case": by,
+    planted = [r for r in rows if r["case"] != "PC0"]
+    return {"n": len(rows), "cases": len(rows), "label_match": sum(bool(r["label_match"]) for r in rows), "per_case": by,
+            "errors": {"k": sum(bool(r["blocked"]) for r in planted), "n": len(planted)},
             "false_blocks": rate(sum(bool(r["blocked"]) for r in pc0), len(pc0)),
             "not_in_manifest": [f"{r['case']} seed {r['seed']}" for r in rows if ("plan", r["case"], r["seed"]) not in entries],
             "missing": sorted(f"{c} seed {s}" for p, c, s in entries
@@ -389,7 +465,8 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
             invalid.append({**e, "episodes": {n: problems[n] for n in cands} or "no episode folder"})
     listed = {n: p for n, p in problems.items() if p}
     stray = sorted(set(loaded) - set(chosen) - set(listed))
-    fs = full_scale(next(iter(chosen.values()))["plan"]["plant"] if chosen else "p1_grfics")
+    plant = next(iter(chosen.values()))["plan"]["plant"] if chosen else "p1_grfics"
+    fs = full_scale(plant)
     rows = [score_episode(ep, fs) for ep in chosen.values()]
 
     def count(pred, among):
@@ -429,13 +506,17 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
             ttb.setdefault(r["scenario"], []).append(r["time_to_block_process_s"])
     cam_rows = [r for r in rows if "verdict_with_camera" in r]
     attempts = [p for p in progress if p.get("kind") == "attempt"]
+    ids = [json.loads((Path(results_dir) / n / "ids.json").read_text(encoding="utf-8")) for n in chosen]
 
+    reference = ("P1 scale_max: f1 1000, f2 500, purge 2000, product 500" if plant == "p1_grfics" else
+                 f"P2: flow into F-210 through XV-203 and XV-204, reference {P2_FULL_SCALE['XV-203']} kmol/h = each line fully "
+                 "open at its design pressure difference (normal operation from the model; pinned Nov 4 after batch p2 ran)")
     out = {
         "batch": batch, "engine": ENGINE.get(batch, batch), "seal_hash": h,
         "plan_hashes": sorted({ep["plan_hash"] for ep in chosen.values()}),
         "definitions": {
             "primary": "true work-segment pressure > 150 kPa abs; true flow through an isolated line > 1 % of its full scale "
-                       "(P1 scale_max: f1 1000, f2 500, purge 2000, product 500); a required step skipped; an isolation "
+                       f"({reference}); a required step skipped; an isolation "
                        "point in the wrong true state (position more than 1 % from the step's required state)",
             "secondary": "the same four conditions with the flow limit at 0.1 % of full scale",
             "dangerous_miss": "NO_DISCREPANCY and a condition met at any time from that verdict to the episode end; n = scored episodes",
@@ -465,6 +546,18 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
         "invalid": {"k": len(invalid), "n": len(entries), "attempts": len(attempts),
                     "invalid_attempts": sum(1 for p in attempts if not p.get("valid") or p.get("episode") in inv)},
         "invalid_entries": invalid,
+        **({"sensitivity": sensitivity(chosen, rows, fs)} if plant == "p2_gasline" else {}),
+        # pinned (G23) on P1's signals; P2's last mark opens the final vent at the 200 kPa hold
+        **({"baselines_not_run": "gauge rule: pinned for P1's signals only; Muse Spark alone: not run on P2"}
+           if plant != "p1_grfics" else {}),
+        # the write witnesses per scored episode: P1's IDS (9100001 ZeroState Modbus writes, 9100002 the operator's),
+        # P2's server write log (runner postflight); C1
+        **({"p2_writes": {"n": len(ids), "zerostate": sum(i["p2_writes"]["zerostate"] for i in ids),
+                          "other": sum(i["p2_writes"]["other"] for i in ids),
+                          "operator_missing": sum(i["p2_writes"]["operator_allowed"] == 0 for i in ids)}}
+           if ids and "p2_writes" in ids[0] else
+           {"ids": {"n": len(ids), "zerostate_writes": sum(i["9100001"] for i in ids),
+                    "operator_missing": sum(i["9100002"] == 0 for i in ids)}} if ids else {}),
         "episode_problems": listed,
         "not_scored": stray,
         "per_scenario": dict(sorted(per_scenario.items())),
@@ -494,7 +587,8 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
 def baselines(eps: dict, fs: dict, muse_results: Path) -> dict:
     out = {}
     gauge_p = ROOT / "eval" / "baselines" / "gauge_rule.py"
-    if gauge_p.exists():
+    p1 = all(ep["plan"]["plant"] == "p1_grfics" for ep in eps.values())
+    if gauge_p.exists() and p1:
         gauge = _load("gauge_rule", gauge_p)
         out["gauge_rule"] = score_decisions({n: gauge.decide(ep["dir"]) for n, ep in eps.items()}, eps, fs)
     if Path(muse_results).exists():

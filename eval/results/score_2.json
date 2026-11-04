@@ -192,6 +192,11 @@
   "invalid_attempts": 0
  },
  "invalid_entries": [],
+ "ids": {
+  "n": 35,
+  "zerostate_writes": 0,
+  "operator_missing": 0
+ },
  "episode_problems": {},
  "not_scored": [],
  "per_scenario": {
@@ -1897,6 +1902,7 @@
  ],
  "plan_set": {
   "n": 45,
+  "cases": 45,
   "label_match": 45,
   "per_case": {
    "PC0": {
@@ -1934,6 +1940,10 @@
     "blocked": 5,
     "label_match": 5
    }
+  },
+  "errors": {
+   "k": 30,
+   "n": 30
   },
   "false_blocks": {
    "k": 0,

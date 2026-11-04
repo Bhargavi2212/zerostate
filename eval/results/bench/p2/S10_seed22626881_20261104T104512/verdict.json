@@ -1,0 +1,47 @@
+{
+ "scenario": "S10",
+ "seed": 22626881,
+ "expected": [
+  "BLOCKED"
+ ],
+ "verdict": "BLOCKED",
+ "match": true,
+ "valid": true,
+ "problems": [],
+ "stamp": {
+  "assumptions": [],
+  "package_version": "0.1.0",
+  "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+  "reasons": [
+   "LIVE-ALIVE: vent blocked: VV-213.FB open, FT-213 at or below its cutoff and no pressure fall (PT-211 0.2 %, PT-212 0.2 %)"
+  ],
+  "rules": {
+   "LIVE-ALIVE": "3",
+   "LIVE-HOLD": "3",
+   "LIVE-QUALITY": "2",
+   "LIVE-RELATION": "2",
+   "LIVE-UPSTREAM": "1",
+   "LIVE-VALVE": "2",
+   "PLAN-BOXEDIN": "1",
+   "PLAN-LIVESIDE": "1",
+   "PLAN-MAPPING": "1",
+   "PLAN-PATHS": "1",
+   "PLAN-PROVING": "1",
+   "PLAN-SOFTWARE": "1",
+   "PLAN-TYPE": "1",
+   "PROC-INDEPENDENCE": "1",
+   "PROC-RESET": "1",
+   "PROC-SEQUENCE": "1"
+  },
+  "source": "step",
+  "thresholds_version": "6+p2-2",
+  "verdict": "BLOCKED"
+ },
+ "steps": {
+  "1": "PASS",
+  "2": "PASS",
+  "3": "PASS",
+  "4": "PASS",
+  "5": "FAIL"
+ }
+}

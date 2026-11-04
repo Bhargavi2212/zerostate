@@ -323,3 +323,20 @@ def test_a_start_the_core_refuses_is_logged_under_the_api_id(tmp_path, monkeypat
     ev = AuditLog(tmp_path / "audit.sqlite").events("api-1")
     assert [e["kind"] for e in ev] == ["session_refused"] and "no plan file" in ev[0]["payload"]["reason"]
     assert status_from_events(ev)["state"] == "refused"
+
+
+def test_accepted_waits_for_pending_camera_reads(tmp_path):
+    """Both tracks at NO DISCREPANCY but camera reads still out: the camera may yet block, so "accepted" is
+    refused (logged) and the session stays open; once the reads are in, it signs."""
+    d = Driver(tmp_path)
+    clean_run(d)
+    assert d.status()["verdict"] == "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+    d.s.camera_pending = 2
+    d.run(POLL, [{"kind": "sign", "by": "receiver-a", "role": "receiver", "outcome": "accepted"}])
+    st = d.status()
+    assert st["state"] != "closed" and st["refused"][-1]["reason"] == "camera still checking: 2 reads pending"
+    d.s.camera_pending = 0
+    d.run(POLL, [{"kind": "sign", "by": "receiver-a", "role": "receiver", "outcome": "accepted"}])
+    st = d.status()
+    assert st["state"] == "closed" and st["signature"]["outcome"] == "accepted"
+    assert replay(d.log, "s1", PARAMS) == []

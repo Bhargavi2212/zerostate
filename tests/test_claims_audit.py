@@ -132,3 +132,24 @@ def test_real_claims_yaml_is_well_formed():
         assert bool(c.get("keys")) == bool(c.get("results")), c["id"]
         if c["batch"] in ("p1", "2", "p2"):  # every batch figure names its batch in the sentence
             assert re.search(rf"\bbatch {c['batch']}\b", c["sentence"]), c["id"]
+
+
+def test_src_diff_must_list_exactly_the_changed_files(tmp_path):
+    """C2 after batch p2 re-froze: src/ between the two plants' tags differs only in the files the claim names."""
+    setup(tmp_path)
+    changes = {("a", "b"): ["src/x.py"], ("b", "c"): []}
+    claim = {**CLAIM, "src_diff": [{"from": "a", "to": "b", "files": ["src/x.py"]}, {"from": "b", "to": "c"}]}
+    assert ca.audit_claim(claim, tmp_path, "", ok, lambda t, r: "abc", lambda a, b, r: changes[(a, b)])["passing"]
+    changes[("b", "c")] = ["src/y.py"]  # an unlisted change between the batch tags
+    r = ca.audit_claim(claim, tmp_path, "", ok, lambda t, r: "abc", lambda a, b, r: changes[(a, b)])
+    assert r["why"] == ["src/ changes b..c are ['src/y.py'], claim lists none"]
+    r = ca.audit_claim(claim, tmp_path, "", ok, lambda t, r: "abc", lambda a, b, r: None)
+    assert r["why"][0] == "cannot diff src/ a..b"
+
+
+def test_real_src_diffs_of_c2_hold():
+    """The real tags: the claim's file lists match git."""
+    import yaml
+    c2 = next(c for c in yaml.safe_load((ROOT / "eval" / "claims.yaml").read_text(encoding="utf-8"))["claims"] if c["id"] == "C2")
+    for d in c2["src_diff"]:
+        assert ca.git_src_changes(d["from"], d["to"], ROOT) == sorted(d.get("files") or []), d

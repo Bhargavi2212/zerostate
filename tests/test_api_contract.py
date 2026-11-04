@@ -438,3 +438,17 @@ def test_every_published_episode_loads_in_replay_mode(tmp_path):
     for p in EPISODES:
         s = client.get(f"/api/sessions/{p.name}").json()
         assert s["verdict"] == json.loads((p / "verdict.json").read_text(encoding="utf-8")).get("verdict"), p.name
+
+
+def test_accepted_sign_is_refused_while_camera_reads_are_pending(env):
+    client, tmp, _ = env
+    ndf = "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+    log = AuditLog(tmp / "audit.sqlite")
+    for kind, payload in [("session_start", START), ("ready", {}), ("verdict", {"verdict": ndf, "reasons": []}),
+                          ("camera_capture", {"step": 1, "points": ["XV-201", "XV-203"]})]:
+        log.append("s2", kind, payload)
+    log.close()
+    accept = {"by": "R", "role": "receiver", "outcome": "accepted"}
+    r = client.post("/api/sessions/s2/sign", json=accept)
+    assert r.status_code == 409 and "camera still checking: 2 reads pending" in r.text and inbox_rows(tmp) == []
+    assert client.post("/api/sessions/s2/sign", json={**accept, "outcome": "not_accepted"}).json() == {"queued": True}

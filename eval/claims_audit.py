@@ -3,7 +3,8 @@
     python eval/claims_audit.py [--claims eval/claims.yaml] [--readme README.md]
 
 A claim is NOT PASSING on a missing or failing test (xfail counts as failing: --runxfail), a missing
-result file or key, an unmet `require`, `tags_same_commit` tags on different commits, or a README that
+result file or key, an unmet `require`, `tags_same_commit` tags on different commits, a `src_diff` whose
+`src/` changes between two tags are not exactly the files listed (none listed: identical), or a README that
 carries a different version of its sentence. A claim absent from the README is reported "not in README".
 Exit 1 if any claim the README uses is NOT PASSING, or if this output has a never-say word.
 """
@@ -49,7 +50,13 @@ def git_commit(tag: str, root: Path) -> str | None:
     return r.stdout.strip() or None
 
 
-def audit_claim(c: dict, root: Path, readme: str, run=pytest_rc, commit=git_commit) -> dict:
+def git_src_changes(a: str, b: str, root: Path) -> list[str] | None:
+    r = subprocess.run(["git", "diff", "--name-only", f"{a}^{{commit}}", f"{b}^{{commit}}", "--", "src/"], cwd=root,
+                       capture_output=True, text=True, check=False)
+    return sorted(r.stdout.split()) if r.returncode == 0 else None
+
+
+def audit_claim(c: dict, root: Path, readme: str, run=pytest_rc, commit=git_commit, src_changes=git_src_changes) -> dict:
     why, tests = [], tuple(c.get("tests") or ())
     missing = [t for t in tests if not (root / t.split("::")[0]).exists()]
     why += [f"missing test {t}" for t in missing]
@@ -78,6 +85,12 @@ def audit_claim(c: dict, root: Path, readme: str, run=pytest_rc, commit=git_comm
     why += [f"missing tag {t}" for t, h in zip(tags, commits) if h is None]
     if None not in commits and len(set(commits)) > 1:
         why.append(f"tags on different commits: {', '.join(tags)}")
+    for d in c.get("src_diff") or []:
+        got = src_changes(d["from"], d["to"], root)
+        if got is None:
+            why.append(f"cannot diff src/ {d['from']}..{d['to']}")
+        elif got != sorted(d.get("files") or []):
+            why.append(f"src/ changes {d['from']}..{d['to']} are {got or 'none'}, claim lists {sorted(d.get('files') or []) or 'none'}")
     rendered = None
     if all(k in values for k, _ in PLACEHOLDER.findall(c["sentence"])):
         rendered = norm(PLACEHOLDER.sub(lambda m: format(values[m[1]], m[2] or ""), c["sentence"]))

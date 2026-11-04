@@ -1,0 +1,45 @@
+{
+ "scenario": {
+  "id": "S11",
+  "plant": "p2_gasline",
+  "title": "S-200 depressurised during the hold (nothing behind the isolation)",
+  "expected": [
+   "ESCALATED"
+  ],
+  "faults": [
+   {
+    "at_step": 7,
+    "after_process_s": [
+     60,
+     300
+    ],
+    "set": {
+     "S-200.pressure_kpa": [
+      101,
+      1000
+     ]
+    }
+   }
+  ]
+ },
+ "seed": 42318172,
+ "faults": [
+  {
+   "at_step": 7,
+   "after_process_s": 208,
+   "set": {
+    "S-200.pressure_kpa": 355
+   }
+  }
+ ],
+ "process_time_scale": 10,
+ "images": {
+  "zs-p2": "sha256:9e7f346d5a00b0a43d2008855d9402bd4f5946c3c43abee96308dcea22a88f4a",
+  "zerostate": "sha256:68e2c80ffae9da66b2910bea56c3d9962eba2256d13807c9fd83ae82b08a4189",
+  "zs-operator": "sha256:1396cdd1158c4a39b5178a9500d6e1f9afc571c20fc4ce6d7f1bf744a7a9a54e"
+ },
+ "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+ "batch": "p2",
+ "camera": false,
+ "signals_sha256": "da55503d8bd1b8c0038fca3343d7231a86c90aa27e4d799348803cbdfa4f753c"
+}

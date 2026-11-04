@@ -200,7 +200,7 @@ def session_start(a) -> int:
                     while not results.empty():
                         for res in results.get_nowait():
                             cam.record(res, s.verdict)
-                    s.camera_verdict = cam.verdict
+                    s.camera_verdict, s.camera_pending = cam.verdict, cam.pending
                 time.sleep(max(0.0, POLL_WALL_S - (time.time() - t)))
         except Exception as e:
             s.fail(f"{type(e).__name__}: {e}")

@@ -106,8 +106,11 @@ def batch(tmp_path_factory):
 
 def test_full_scale_comes_from_the_committed_map_and_equals_the_pins():
     assert score.full_scale("p1_grfics") == {"f1": 1000, "f2": 500, "purge": 2000, "product": 500}
+    # P2 (pinned Nov 4 from the model): each feed line fully open at its design pressure difference
+    assert score.full_scale("p2_gasline") == {"XV-203": 76.3763, "XV-204": 76.3763} == score.P2_FULL_SCALE
+    assert score.p2_design_flow() == round(0.1 * ((2000**2 - 1500**2) / 3) ** 0.5, 4)  # the analytic series solution
     with pytest.raises(SystemExit):
-        score.full_scale("p2_gasline")
+        score.full_scale("p3_nowhere")
 
 
 def test_wilson_values():
@@ -160,6 +163,7 @@ def test_batch_keys_and_counts(batch):
                                        "notes": s["per_scenario"]["S0"]["notes"]}
     assert {"with_camera_blocked", "n"} <= set(s["camera"]) and s["camera"]["n"] == 0
     assert s["engine"] == "live checks only (Phase 1 engine)"
+    assert s["ids"] == {"n": 4, "zerostate_writes": 0, "operator_missing": 0}  # C1: from each scored episode's ids.json
 
 
 def test_labels_per_definition(batch):
@@ -187,7 +191,7 @@ def _toy(rows, verdict="NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF", marks=None):
              {"k": 7, "kind": "hold"}, {"k": 8, "kind": "final"}]
     full = {"pressure": 100.0, "f1_flow": 0, "f2_flow": 0, "purge_flow": 0, "product_flow": 0}
     truth = [{"t": t, "outputs": {**full, **o}, "state": {"f1_valve_pos": 0, "purge_valve_pos": 0, **st}} for t, o, st in rows]
-    return {"plan": {"steps": steps}, "marks": marks or {2: 100.0, 5: 200.0, 6: 300.0, 7: 310.0}, "scale": 10.0,
+    return {"plan": {"plant": "p1_grfics", "steps": steps}, "marks": marks or {2: 100.0, 5: 200.0, 6: 300.0, 7: 310.0}, "scale": 10.0,
             "truth": truth, "verdict": {"verdict": verdict}}
 
 
@@ -256,6 +260,7 @@ def test_plan_set_lists_manifest_entries_without_a_result(tmp_path):
     out = score.plan_set(p, {("plan", "PC0", 1), ("plan", "PC1", 2), ("p1", "S0", 3)})
     assert out["missing"] == ["PC1 seed 2"] and out["not_in_manifest"] == ["PC1 seed 9"]
     assert out["false_blocks"]["k"] == 0 and out["per_case"]["PC1"]["blocked"] == 1
+    assert out["cases"] == 2 and out["errors"] == {"k": 1, "n": 1}  # C3: planted errors are the non-PC0 cases
 
 
 def test_an_invalidated_attempt_is_listed_and_its_rerun_is_scored(tmp_path):
@@ -274,3 +279,46 @@ def test_an_invalidated_attempt_is_listed_and_its_rerun_is_scored(tmp_path):
     out = score.score("p1", m, s, res, hash_p=h, muse_results=tmp_path / "none.json")
     assert out["n_scored"] == 1 and out["invalid"] == {**out["invalid"], "k": 0, "attempts": 2, "invalid_attempts": 1}
     assert out["episode_problems"] == {old: ["invalidated: drawn fault never fired"]}
+
+
+def test_p2_write_log_counts_come_from_each_scored_episode(tmp_path):
+    res = tmp_path / "bench"
+    res.mkdir()
+    d = _copy(CLEAN_PASS, res, CLEAN_PASS)
+    (d / "ids.json").write_text(json.dumps({"p2_writes": {"zerostate": 0, "operator_allowed": 7, "other": 0}}), encoding="utf-8")
+    seed = int(CLEAN_PASS.split("_seed")[1].split("_")[0])
+    m, s, h = _seal(tmp_path, [{"plant": "p1", "scenario": "S0", "seed": seed}])
+    out = score.score("p1", m, s, res, hash_p=h, muse_results=tmp_path / "none.json")
+    assert out["p2_writes"] == {"n": 1, "zerostate": 0, "other": 0, "operator_missing": 0} and "ids" not in out
+
+
+def _p2_toy(rows, verdict="NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"):
+    """P2's steps: isolate XV-201/XV-203, bleed, isolate XV-204, vent, close vent, hold at 200 kPa, final vent."""
+    steps = [{"k": 1, "kind": "isolate", "target": "XV-201", "required_state": 0, "settle_process_s": 30},
+             {"k": 2, "kind": "isolate", "target": "XV-203", "required_state": 0, "settle_process_s": 30},
+             {"k": 3, "kind": "vent_open", "target": "BV-202", "required_state": 100},
+             {"k": 4, "kind": "isolate", "target": "XV-204", "required_state": 0, "settle_process_s": 30},
+             {"k": 5, "kind": "vent_open", "target": "VV-213", "required_state": 100},
+             {"k": 6, "kind": "vent_close", "target": "VV-213", "required_state": 0, "settle_process_s": 30},
+             {"k": 7, "kind": "hold"}, {"k": 8, "kind": "vent_open", "target": "VV-213", "required_state": 100},
+             {"k": 9, "kind": "final"}]
+    pos = {"XV-201": 0, "XV-203": 0, "XV-204": 0, "VV-213": 0, "BV-202": 100}
+    truth = [{"t": t, "pressure_kpa_abs": {"F-210": p}, "flow_kmol_h": {"XV-203": 0.0, "XV-204": f204},
+              "position_pct": {**pos, **extra}} for t, p, f204, extra in rows]
+    return {"plan": {"plant": "p2_gasline", "steps": steps}, "scale": 10.0, "truth": truth,
+            "marks": {1: 10.0, 2: 20.0, 3: 30.0, 4: 40.0, 5: 50.0, 6: 60.0, 7: 70.0, 8: 80.0},
+            "verdict": {"verdict": verdict}, "track": {"data_only": [(100.0, verdict)]}}
+
+
+def test_p2_hold_at_200_kpa_and_the_reopened_vent_are_not_hazards_but_backflow_is():
+    fs = score.P2_FULL_SCALE
+    clean = _p2_toy([(75.0, 200.0, 0.0, {}), (85.0, 150.0, 0.0, {"VV-213": 100}), (101.0, 102.0, 0.0, {"VV-213": 100})])
+    assert score.conditions(clean, 0.01, fs) == {}  # 200 kPa during the hold, the vent open again after step 8
+    late = _p2_toy([(101.0, 160.0, 0.0, {"VV-213": 100})])
+    assert set(score.conditions(late, 0.01, fs)) == {"pressure"}  # above 150 kPa after the release
+    # XV-204 a->b is F-210 -> D-220: a negative flow is backflow INTO F-210, the hazard; 0.9 kmol/h > 1 % of 76.38
+    leak = _p2_toy([(75.0, 200.0, -0.9, {})])
+    assert set(score.conditions(leak, 0.01, fs)) == {"flow:XV-204"} and score.conditions(leak, 0.02, fs) == {}
+    assert score.conditions(_p2_toy([(75.0, 200.0, 0.9, {})]), 0.01, fs) == {}  # out of F-210: not into the work
+    blocked = _p2_toy([(101.0, 160.0, 0.0, {"VV-213": 100})], verdict="BLOCKED")
+    assert score.conditions(blocked, 0.01, fs) == {}  # no release: pressure after the hold is not evaluated

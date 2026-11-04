@@ -27,7 +27,7 @@ P2 faults and physics are fixed (committed) before any P2 threshold is tuned.
 - Episode validity: the runner checks router rules and Suricata rules before and after each episode, and requires sid 9100002 > 0 (operator writes seen) and 9100001 = 0. Any failure → episode invalid, re-run, and the count of invalid episodes is reported.
 - **P2 gas line** (OPC UA, ours) — plan + live testbed (spec due Nov 1 night).
 - **Plan-check set** on P2's plant map (if P2 is cut: on a hand-drawn plant map of the same design, stated as synthetic).
-Generality claim (C2, decision D4 in PHASE_3.md): the same engine, from one commit, ran both plants; no plant-specific name appears in `src/` (`tests/test_plant_agnostic.py`). If batch p2 doesn't run, C2 is withdrawn.
+Generality claim (C2, decision D4 in PHASE_3.md; reworded Nov 4): one engine ran both plants and no plant-specific name appears in `src/` (`tests/test_plant_agnostic.py`); the `src/` changes between batch 2 and batch p2 are exactly the two rule fixes found on P2 tuning (LIVE-VALVE v2, LIVE-ALIVE v3), checked from git by the claims audit, and the published P1 episodes replay unchanged under them. If batch p2 doesn't run, C2 is withdrawn.
 
 ## Plan-check set
 | ID | Planted error | Real case |
@@ -95,3 +95,8 @@ Ablations: LIVE-ALIVE off; LIVE-RELATION off.
 
 ## What we learned about Meta's models (measured only)
 Oct 27: SAM 3.1 found tanks (~0.94) and displays (~0.8), zero "valve" objects; Muse Spark read close-up digital displays (6/7 after timing correction), "unreadable" on tiny crops.
+
+## Known limits (carried into the README's Limits section)
+- **Camera lag was never measured.** `camera_lag_max_wall_s: 5` is the start value (the 3D page polls every 3 s), not a measured figure; LIVE-CAMERA's agreement window rests on it.
+- **Importer, text route, case t02:** the model listed a real vent valve (purge) as an isolation point (1 invented point; the 0-invented bar fails). The draft could not be confirmed: the confirm screen flagged the row and the plan would not merge until it was corrected, but no message named the cause.
+- **Batch p2 baselines:** the gauge rule and Muse Spark alone were run on P1 only; P2's flow reference was pinned after batch p2 ran, from the model (DECISIONS Nov 4, with a sensitivity table).
