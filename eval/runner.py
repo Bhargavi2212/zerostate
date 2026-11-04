@@ -35,8 +35,12 @@ TERMINAL = ("BLOCKED", "ESCALATED")
 IO_DEVICES = "python (feed1|feed2|purge|product|tank|analyzer).py"  # GRFICS remote I/O device scripts
 MIN_VENT_START_KPA = 1500  # below this the vent rules get too little range to judge: episode INVALID
 TUNING_SEEDS = range(1000)  # anything else is a scoring seed
-# hash of the committed block-in plan (P1), a plan digest, not a secret
-BENCHMARK_PLAN_HASH = "89adfcf4fbb0a8e2b058c02ceed5d879d0a72312da92024bf967c8aec14f2a92"  # pragma: allowlist secret
+# Hash of each plant's committed benchmark plan (plan digests, not secrets). None = no plan confirmed by
+# the owner yet: scoring seeds on that plant are refused. The owner fills these in after confirming.
+BENCHMARK_PLAN_HASH = {
+    "p1": "89adfcf4fbb0a8e2b058c02ceed5d879d0a72312da92024bf967c8aec14f2a92",  # pragma: allowlist secret
+    "p2": None,
+}
 
 
 def _load(name, folder=P1):
@@ -89,12 +93,17 @@ def evaluated(status: dict, k: int) -> bool:
     return status["steps"].get(str(k)) not in (None, "pending")
 
 
-def seed_problem(seed: int, plan_hash: str) -> str | None:
-    """Scoring seeds run only on the committed block-in plan, so a benchmark never mixes plans."""
+def seed_problem(seed: int, plan_hash: str, plant: str = "p1") -> str | None:
+    """Scoring seeds run only on the plant's committed benchmark plan, so a benchmark never mixes plans."""
     if seed < 0:
         return "seed must be >= 0"
-    if seed not in TUNING_SEEDS and plan_hash != BENCHMARK_PLAN_HASH:
-        return f"scoring seed {seed} refused: plan hash {plan_hash[:12]} is not the benchmark plan {BENCHMARK_PLAN_HASH[:12]}"
+    if seed in TUNING_SEEDS:
+        return None
+    want = BENCHMARK_PLAN_HASH.get(plant)
+    if want is None:
+        return f"scoring seed {seed} refused: no benchmark plan confirmed for {plant} yet (BENCHMARK_PLAN_HASH[{plant!r}] is None)"
+    if plan_hash != want:
+        return f"scoring seed {seed} refused: plan hash {plan_hash[:12]} is not the {plant} benchmark plan {want[:12]}"
     return None
 
 
@@ -489,7 +498,7 @@ def main() -> int:
     out = ROOT / "runs" / f"{a.scenario}_seed{a.seed}_{datetime.now(UTC):%Y%m%dT%H%M%S}"
     scoring = a.seed not in TUNING_SEEDS
     ep = Episode(scenario, a.seed, out, scoring, camera=a.camera)
-    problem = seed_problem(a.seed, ep.plan.content_hash())
+    problem = seed_problem(a.seed, ep.plan.content_hash(), a.plant)
     if scoring and not problem:
         problem = scoring_problem(a.batch, a.manifest, a.salt, a.scenario, a.seed)
     if problem:

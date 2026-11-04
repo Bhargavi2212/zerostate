@@ -64,14 +64,28 @@ def test_scoring_seeds_need_the_benchmark_plan():
     other = "0" * 64
     assert runner.seed_problem(7, other) is None  # tuning seeds may run any plan (smoke)
     assert runner.seed_problem(1000, other)
-    assert runner.seed_problem(1000, runner.BENCHMARK_PLAN_HASH) is None
-    assert runner.seed_problem(-1, runner.BENCHMARK_PLAN_HASH)
+    p1 = runner.BENCHMARK_PLAN_HASH["p1"]
+    assert runner.seed_problem(1000, p1) is None
+    assert runner.seed_problem(1000, p1, "p1") is None
+    assert runner.seed_problem(-1, p1)
+    assert "p1 benchmark plan" in runner.seed_problem(1000, other, "p1")
+
+
+def test_plan_hash_is_per_plant_and_unconfirmed_refuses(monkeypatch):
+    assert set(runner.BENCHMARK_PLAN_HASH) == {"p1", "p2"}
+    monkeypatch.setitem(runner.BENCHMARK_PLAN_HASH, "p2", None)
+    p1 = runner.BENCHMARK_PLAN_HASH["p1"]
+    assert "no benchmark plan confirmed for p2" in runner.seed_problem(1000, p1, "p2")
+    assert runner.seed_problem(7, p1, "p2") is None  # tuning seeds (smoke) still run
+    monkeypatch.setitem(runner.BENCHMARK_PLAN_HASH, "p2", "a" * 64)
+    assert runner.seed_problem(1000, "a" * 64, "p2") is None
+    assert runner.seed_problem(1000, p1, "p2")  # P1's plan is not P2's
 
 
 def test_benchmark_plan_is_the_committed_plan():
     plan = runner.IsolationPlan.model_validate(runner.yaml.safe_load(
         (runner.P1 / "envelope.yaml").read_text(encoding="utf-8")))
-    assert plan.content_hash() == runner.BENCHMARK_PLAN_HASH
+    assert plan.content_hash() == runner.BENCHMARK_PLAN_HASH["p1"]
     assert any(s.targets for s in plan.steps)  # block-in
 
 
