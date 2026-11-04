@@ -265,13 +265,14 @@ class Rig:
 def test_camera_fail_blocks_only_the_with_camera_track_and_replays(tmp_path):
     r = Rig(tmp_path, "optional")
     r.to_step_2()
-    assert [j["step"] for j in r.jobs] == [2] and r.status()["camera_pending"] == 2
+    assert [j["step"] for j in r.jobs] == [2] and r.status()["camera_pending"] == 2 == r.cam.pending
     r.cam.record({"step": 2, "point": "f1", "readings": r.readings([100.0, 100.0, 100.0])}, r.s.verdict)  # feedback is 0
+    assert r.cam.pending == 1  # the session's count (cli.py copies it) matches the log's
     r.cam.record({"step": 2, "point": "purge", "readings": r.readings([0.0, 0.0, 0.0])}, r.s.verdict)
     r.s.camera_verdict = r.cam.verdict
     st = r.status()
     assert st["verdict"] is None and st["steps"][2] == "PASS"  # data-only track untouched by the camera FAIL
-    assert st["verdict_with_camera"] == "BLOCKED" and st["camera_pending"] == 0
+    assert st["verdict_with_camera"] == "BLOCKED" and st["camera_pending"] == 0 == r.cam.pending
     assert "camera shows 100 % while the instrument says 0.0 % in 3 of 3 frames (f1_valve_pos)" in st["stamp_with_camera"]["reasons"][0]
     assert st["stamp_with_camera"]["models"] == {"locate": "sam-3.1", "read": "muse-spark-1.3"}
     assert st["stamp_with_camera"]["rules"]["LIVE-CAMERA"] == camera.RULE_VERSION

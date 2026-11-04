@@ -80,6 +80,7 @@ class Session:
         self.state = "warming_in"
         self.verdict: Verdict | None = None
         self.camera_verdict: Verdict | None = None  # set by the with-camera track (cli.py); only recorded at signing
+        self.camera_pending = 0  # camera reads not yet answered (cli.py): "accepted" waits for them
         self.closed = self.stopped = False
         self.buffer: dict[str, list] = {t: [] for t in self.witnesses}
         self.latest: dict[str, Signal] = {}
@@ -245,6 +246,10 @@ class Session:
             if outcome == "accepted" and not (self.verdict == nd and with_cam == nd):
                 self.log.append(self.sid, "sign_refused", {"by": msg.get("by"), "outcome": outcome,
                                                            "reason": "accepted needs both tracks at NO DISCREPANCY FOUND"})
+                return
+            if outcome == "accepted" and self.camera_pending:  # the with-camera track has not finished: it may still block
+                self.log.append(self.sid, "sign_refused", {"by": msg.get("by"), "outcome": outcome,
+                                                           "reason": f"camera still checking: {self.camera_pending} reads pending"})
                 return
             self.closed = True  # only a human signature closes a session
             self.log.append(self.sid, "signature", {"by": msg.get("by"), "role": msg.get("role"), "note": msg.get("note"),

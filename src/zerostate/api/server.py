@@ -618,6 +618,8 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
             s = status_from_events(events(sid))
             if s["verdict"] != NDF or s["verdict_with_camera"] != NDF:
                 raise HTTPException(409, "`accepted` needs both tracks at NO DISCREPANCY FOUND; use `not_accepted` to close")
+            if s["camera_pending"] > 0:
+                raise HTTPException(409, f"camera still checking: {s['camera_pending']} reads pending; sign when they are in")
         return queue(sid, "sign", by=body.by, role=body.role, note=body.note, outcome=body.outcome)
 
     @app.post("/api/sessions/{sid}/explain")
