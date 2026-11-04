@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 from test_importer_gate import HEADER, P2_ROWS, FakeOpener, reply
 
 from zerostate.api import server
+from zerostate.api import voice as voice_words
 from zerostate.audit.log import AuditLog
 from zerostate.config import load_thresholds
 
@@ -329,7 +330,7 @@ def test_voice_collapses_a_word_run_together_with_itself():
     assert server.parse_intent("statusstatus", plan)[0] == "status"
     assert server.parse_intent("feed one and prudge closed.", plan)[0] == "unknown"  # no fuzzy valve matching
     assert server.parse_intent("raj open", plan)[0] == "unknown"
-    assert server._undouble("purge") == "purge" and server._undouble("aa") == "aa"  # only exact doubles of 2+ letters
+    assert voice_words._undouble("purge") == "purge" and voice_words._undouble("aa") == "aa"  # only exact doubles of 2+ letters
 
 
 def test_voice_keywords_are_command_words_and_plan_valves_only():
@@ -348,10 +349,11 @@ def test_voice_reads_back_only_and_can_never_reach_sign(env):
     assert client.post("/api/voice/command", json={"transcript": "yes"}).status_code == 400  # asr is required
     assert inbox_rows(tmp) == []
     # no code path: the handler names nothing that writes the inbox, signs, verifies or reopens
-    for fn in (server.voice_command, server.parse_intent):
+    for fn, mod in ((server.voice_command, server), (voice_words.parse_intent, voice_words), (voice_words.answer, voice_words)):
         names = set(fn.__code__.co_names)
         assert not names & {"Inbox", "queue", "put", "sign", "confirm", "step_done", "step_verify", "step_reopen"}
-        assert fn.__module__ == server.__name__
+        assert fn.__module__ == mod.__name__
+    assert not {"zerostate.session", "zerostate.audit.log", "sqlite3"} & set(vars(voice_words))  # api/voice.py is text only
     routes = {r.path: r.endpoint for r in client.app.routes if hasattr(r, "endpoint")}
     assert routes["/api/voice/command"] is server.voice_command
 

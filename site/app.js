@@ -1,6 +1,8 @@
-// Router and the session list. Screens: #/ (sessions), #/new (intake), #/job/<id>[?speed=N] (job).
+// Router and the session list. Screens: #/ (sessions), #/new (intake), #/job/<id>[?speed=N] (job),
+// #/check[?session=<id>] (check my isolation).
 import { api, el, errorText, verdictClass, verdictText, time } from "./lib.js";
 import { jobScreen } from "./job.js";
+import { checkScreen } from "./check.js";
 
 const app = document.getElementById("app");
 let cleanup = null;
@@ -29,6 +31,7 @@ async function route() {
   const params = new URLSearchParams(query || "");
   try {
     if (path.startsWith("/job/")) cleanup = await jobScreen(app, decodeURIComponent(path.slice(5)), params);
+    else if (path === "/check") cleanup = await checkScreen(app, params);
     else await sessionsScreen(app);
   } catch (e) {
     app.append(el("p", { class: "error" }, errorText(e)));
