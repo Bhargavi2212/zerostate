@@ -292,3 +292,24 @@ def test_csv_may_state_the_hold_and_must_state_it_once(tmp_path):
     assert parse_csv(write_csv(tmp_path, P2_ROWS), "p2_gasline").hold_minutes is None  # not written: plant default, shown
     with pytest.raises(CsvImportError, match="hold_minutes"):
         parse_csv(write_csv(tmp_path, [rows[0], P2_ROWS[1] + ",5", *rows[2:]], header), "p2_gasline")
+
+
+# importer case t02 as Muse Spark drafted it in the measured run (eval/results/importer_out_2026-11-04.json)
+T02 = {"plant": "p1_grfics", "work_equipment": "Reactor", "points": [
+    {"tag": "product", "required_state": "closed", "seq": 1, "isolation_type": "non_proved", "lock_id": "21", "note": None},
+    {"tag": None, "required_state": "closed", "seq": 2, "isolation_type": "non_proved", "lock_id": "22",
+     "note": "cannot tell which feed tag the author means - author states not sure which feed line this job is on"},
+    {"tag": "purge", "required_state": "open", "seq": None, "isolation_type": None, "lock_id": None, "note": None}],
+    "vent": None, "proving": [], "hold_minutes": None, "notes": []}
+T02_MESSAGE = "purge is a vent/bleed on this plant, listed here as an isolation point. Move it to the vent field or remove it."
+
+
+def test_t02_vent_listed_as_an_isolation_point_is_named_on_the_confirm_screen():
+    from zerostate.config import load_thresholds
+    params = load_thresholds(ROOT / "plants" / "p1_grfics" / "thresholds.yaml")
+    plan, out = dr.check_draft({"list": T02}, p_map("p1_grfics"), params)
+    assert plan is None and out["unresolved"][0] == T02_MESSAGE  # the cause first, before the missing fields
+    fixed = {**T02, "points": [p for p in T02["points"] if p["tag"] != "purge"], "vent": "purge"}
+    fixed["points"][1] = {**fixed["points"][1], "tag": "f1", "note": None}
+    _, out = dr.check_draft({"list": fixed}, p_map("p1_grfics"), params)
+    assert T02_MESSAGE not in out["unresolved"]  # moved to the vent field: no longer flagged
