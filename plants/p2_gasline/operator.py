@@ -17,6 +17,7 @@ import os
 import sys
 import time
 from collections import deque
+from datetime import UTC, datetime
 
 VALVES = ("XV-201", "BV-202", "XV-203", "VV-213", "XV-204", "XV-231")
 GAUGES = ("PT-200", "PT-202", "PT-211", "PT-212")
@@ -46,7 +47,9 @@ class Operator:
     def set(self, valve: str, pct: float) -> None:
         from asyncua import ua
         node = self.c.get_node(f"ns=2;s={valve}.CMD")
-        node.write_value(ua.DataValue(ua.Variant(float(pct), ua.VariantType.Double)))
+        # stamped like every server-published value: an unstamped write reads STALE until the next tick (seed 310)
+        now = datetime.now(UTC)
+        node.write_value(ua.DataValue(ua.Variant(float(pct), ua.VariantType.Double), SourceTimestamp=now, ServerTimestamp=now))
         if abs(self._value(f"{valve}.CMD") - pct) > 1e-6:
             raise OperatorError(f"{valve}.CMD readback != {pct}")
 

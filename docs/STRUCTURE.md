@@ -158,8 +158,8 @@ zerostate/
 â”‚   â”œâ”€â”€ plan_benchmark.py  read_accuracy.py  p2_validation.py  importer_accuracy.py
 â”‚   â”œâ”€â”€ score.py                   # opens seal, checks every episode (manifest, batch, plan hash, audit chain, replay), labels from truth under both hazard definitions (DECISIONS Nov 3), Wilson CIs -> results/score_<batch>.{json,md}
 â”‚   â”œâ”€â”€ claims_audit.py            # reads claims.yaml: tests exist + pass, result keys exist, README sentence matches
-â”‚   â””â”€â”€ results/                   # committed outputs (json + md) with commit hash: voice_runs.md (every voice run and its notes), timescale_<date>.json, smoke_p1_<date>.md, â€¦
-â”‚       â”œâ”€â”€ bench/<batch>/<episode>/  # scoring episodes of a sealed batch (+ progress.jsonl, signals_sha256.json: hash of each full local signals.jsonl; seal/: the manifest and salt, published after scoring so anyone can check eval/sealed_hash_<batch>.txt); same files as episodes/; p1 S0, S4-small, S1b also carry bundle.json.gz (samples for `zs api --replay`, G9)
+â”‚   â””â”€â”€ results/                   # committed outputs (json + md) with commit hash: voice_runs.md (every voice run and its notes), timescale_<date>.json, smoke_p1_<date>.md, smoke_p2_<date>.md + smoke/p2/<episode>/ (P2 smoke episodes: outside episodes/, so the replay gate does not load them), importer_<date>.json, â€¦
+â”‚       â”œâ”€â”€ bench/<batch>/<episode>/  # scoring episodes of a sealed batch (+ progress.jsonl, signals_sha256.json: hash of each full local signals.jsonl (batch 2 on: in meta.json); plan.json: eval/plan_benchmark.py output for a batch with plan entries; seal/: the manifest and salt, published after scoring so anyone can check eval/sealed_hash_<batch>.txt); same files as episodes/; p1 S0, S4-small, S1b also carry bundle.json.gz (samples for `zs api --replay`, G9)
 â”‚       â””â”€â”€ episodes/<episode>/    # per-episode audit_export, verdict, meta, ids, events, truth.jsonl.gz: anyone can replay and re-score
 â”œâ”€â”€ tests/
 â”‚   â”œâ”€â”€ test_readonly.py           # no plant-protocol write call anywhere; only adapters/ import pymodbus/asyncua; no write*/set* methods in adapters

@@ -290,9 +290,10 @@ def score_episode(ep: dict, fs: dict) -> dict:
         out["time_to_block_process_s"] = round((vt - ep["fault_t"]) * ep["scale"], 1)
     out["hold_fail"] = any(f["rule_id"] == "LIVE-HOLD" and f["status"] == "FAIL"
                            for e in ep["audit"] if e["kind"] == "evaluation" for f in e["payload"]["findings"])
-    cam = ep["track"]["with_camera"]
-    if cam:
-        out["verdict_with_camera"] = ep["verdict"].get("verdict_with_camera") or cam[-1][1]
+    cam = ep["track"]["with_camera"]  # logged only when the camera track's own verdict changes
+    if vc := ep["verdict"].get("verdict_with_camera") or (cam[-1][1] if cam else None):
+        out["verdict_with_camera"] = vc
+        out["camera_own_verdict"] = bool(cam)
     reads = [e["payload"] for e in ep["audit"] if e["kind"] == "camera_reading"]
     if reads or cam:
         out["camera_coverage"] = camera_coverage(reads, ep["verdict"].get("camera_pending"))
@@ -353,7 +354,9 @@ def plan_set(path: Path, entries: set) -> dict:
     pc0 = [r for r in rows if r["case"] == "PC0"]
     return {"n": len(rows), "label_match": sum(bool(r["label_match"]) for r in rows), "per_case": by,
             "false_blocks": rate(sum(bool(r["blocked"]) for r in pc0), len(pc0)),
-            "not_in_manifest": [f"{r['case']} seed {r['seed']}" for r in rows if ("plan", r["case"], r["seed"]) not in entries]}
+            "not_in_manifest": [f"{r['case']} seed {r['seed']}" for r in rows if ("plan", r["case"], r["seed"]) not in entries],
+            "missing": sorted(f"{c} seed {s}" for p, c, s in entries
+                              if p == "plan" and not any((r["case"], r["seed"]) == (c, s) for r in rows))}
 
 
 def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p: Path | None = None,
@@ -370,6 +373,11 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
     folders = sorted(p for p in Path(results_dir).iterdir() if (p / "meta.json").exists() and (p / "audit_export.json").exists())
     loaded = {d.name: load_episode(d) for d in folders}
     problems = {n: episode_problems(ep, batch, all_entries) for n, ep in loaded.items()}
+    progress = _jsonl(Path(results_dir) / "progress.jsonl")
+    inv = {p["episode"]: p["reason"] for p in progress if p.get("kind") == "invalidated"}  # run_benchmark --invalidate-unfired
+    for n, found in problems.items():
+        if n in inv:
+            found.append(f"invalidated: {inv[n]}")
 
     chosen, invalid = {}, []
     for e in entries:
@@ -420,7 +428,6 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
         if "time_to_block_process_s" in r:
             ttb.setdefault(r["scenario"], []).append(r["time_to_block_process_s"])
     cam_rows = [r for r in rows if "verdict_with_camera" in r]
-    progress = _jsonl(Path(results_dir) / "progress.jsonl")
     attempts = [p for p in progress if p.get("kind") == "attempt"]
 
     out = {
@@ -456,7 +463,7 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
         "severity_at_release": {r["episode"]: r["severity_at_release"] for r in rows if "severity_at_release" in r},
         "hold_by_leak_bin": bins,
         "invalid": {"k": len(invalid), "n": len(entries), "attempts": len(attempts),
-                    "invalid_attempts": sum(1 for p in attempts if not p.get("valid"))},
+                    "invalid_attempts": sum(1 for p in attempts if not p.get("valid") or p.get("episode") in inv)},
         "invalid_entries": invalid,
         "episode_problems": listed,
         "not_scored": stray,
@@ -464,6 +471,13 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
         "camera": {"with_camera_blocked": count(lambda r: r["verdict_with_camera"] == "BLOCKED", cam_rows),
                    "with_camera_escalated": count(lambda r: r["verdict_with_camera"] == "ESCALATED", cam_rows),
                    "data_only_blocked": count(lambda r: r["verdict"] == "BLOCKED", cam_rows), "n": len(cam_rows),
+                   "camera_added_block": count(lambda r: r["verdict_with_camera"] != NO_DISC and r["verdict"] == NO_DISC, cam_rows),
+                   "camera_removed_block": count(lambda r: r["verdict_with_camera"] == NO_DISC and r["verdict"] != NO_DISC, cam_rows),
+                   "by_scenario": {sc: {"n": len(rs), "with_camera_blocked": count(lambda r: r["verdict_with_camera"] == "BLOCKED", rs),
+                                        "data_only_blocked": count(lambda r: r["verdict"] == "BLOCKED", rs),
+                                        "camera_own_verdict": count(lambda r: r["camera_own_verdict"], rs)}
+                                   for sc in sorted({r["scenario"] for r in cam_rows})
+                                   for rs in [[r for r in cam_rows if r["scenario"] == sc]]},
                    "coverage": {k: sum(r["camera_coverage"][k] for r in rows if "camera_coverage" in r)
                                 for k in ("readings", "readable", "no_frame", "timeouts", "model_unavailable",
                                           "located_by_map", "pending_at_stop")},
@@ -532,7 +546,12 @@ def markdown(s: dict) -> str:
     if s["camera"]["n"]:
         c = s["camera"]
         L += ["", "## Camera vs data-only (idealised camera)", "",
-              f"With-camera track blocked {c['with_camera_blocked']} of {c['n']} (escalated {c['with_camera_escalated']}); data-only blocked {c['data_only_blocked']} of {c['n']}."]
+              (f"With-camera track blocked {c['with_camera_blocked']} of {c['n']} (escalated {c['with_camera_escalated']}); data-only blocked {c['data_only_blocked']} of {c['n']}. "
+              f"The camera added a block where data-only gave NO_DISCREPANCY in {c['camera_added_block']}; "
+              f"with-camera NO_DISCREPANCY where data-only did not: {c['camera_removed_block']}."), "",
+              "| Scenario | n | with-camera BLOCKED | data-only BLOCKED | camera track logged its own verdict |", "|---|---|---|---|---|"]
+        L += [f"| {sc} | {x['n']} | {x['with_camera_blocked']} | {x['data_only_blocked']} | {x['camera_own_verdict']} |"
+              for sc, x in c["by_scenario"].items()]
         v = c["coverage"]
         L += ["", (f"Coverage: {v['readable']} of {v['readings']} camera readings readable; no frame {v['no_frame']} "
                    f"(timeouts {v['timeouts']}), model unavailable {v['model_unavailable']}, located by the calibrated map "
@@ -541,7 +560,10 @@ def markdown(s: dict) -> str:
         L += [f"| {e} | {n} |" for e, n in c["timeouts_per_episode"].items()]
     if "plan_set" in s:
         p = s["plan_set"]
-        L += ["", "## Plan set", "", f"{p['label_match']}/{p['n']} cases match their labels; false blocks on correct plans {show(p['false_blocks'])}."]
+        L += ["", "## Plan set", "", (f"{p['label_match']}/{p['n']} cases match their labels; false blocks on correct plans {show(p['false_blocks'])}. "
+              f"Manifest plan entries without a result: {', '.join(p['missing']) or 'none'}; results not in the manifest: "
+              f"{', '.join(p['not_in_manifest']) or 'none'}."), "", "| Case | n | blocked | label match |", "|---|---|---|---|"]
+        L += [f"| {c} | {x['n']} | {x['blocked']} | {x['label_match']}/{x['n']} |" for c, x in sorted(p["per_case"].items())]
     L += ["", "## INVALID entries and episode problems", ""]
     L += [f"- {e['scenario']} seed {e['seed']}: {e['episodes']}" for e in s["invalid_entries"]] or ["- none"]
     L += [f"- {n}: {'; '.join(p)}" for n, p in s["episode_problems"].items()]

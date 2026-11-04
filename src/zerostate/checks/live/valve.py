@@ -5,7 +5,7 @@ from zerostate.models.envelope import step_targets
 from zerostate.models.verdict import FindingStatus as S
 
 RULE_ID = "LIVE-VALVE"
-RULE_VERSION = "1"
+RULE_VERSION = "2"  # v2: a valve with no flow witness is checked on command + feedback (v1: always UNKNOWN)
 
 
 def targets(plan, step):
@@ -35,7 +35,10 @@ def check(plan, step, window, params, only=None):
             if any(abs(v - req) > 0.5 for v in vals):
                 return finding(RULE_ID, RULE_VERSION, S.FAIL, f"commanded state wrong: {target} is not {req:g}", [target])
             continue
-        rows = [vals for ps, vals in aligned(window, cmd, fb, fl) if ps >= start]
+        # a valve without its own flow meter (most of P2's) is checked on command and feedback alone
+        tags = [x for x in (cmd, fb, fl) if x is not None]
+        rows = [[dict(zip(tags, vals)).get(x) for x in (cmd, fb, fl)]
+                for ps, vals in aligned(window, *tags) if ps >= start]
         if not rows:
             return finding(RULE_ID, RULE_VERSION, S.UNKNOWN, f"no {target} samples after settle", [cmd, fb, fl])
         for c, x, f in rows:

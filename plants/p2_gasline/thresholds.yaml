@@ -2,7 +2,13 @@
 # Copied into the zerostate image at /app/config/p2_gasline/.
 # PROVISIONAL until tuned on P2 tuning seeds (hold at 200 kPa); tuning bumps the version and records
 # a one-line reason in docs/DECISIONS.md.
-version: "p2-1"  # p2-1: default v6 (min_settle_wall_s 3)
+version: "p2-2"  # p2-2: settle floor for the P2 operator's wall delay, cavity bleed rate; p2-1: default v6 (min_settle_wall_s 3)
 # provisional until tuned on P2 tuning seeds: ~3x the window-mean noise expected from +-0.1 % of a
 # 2500 kPa span over 16-sample windows (sd of a window-mean difference ~0.5 kPa)
 hold_max_rise_kpa: 1.5
+# P2's operator acts over docker exec + OPC UA connect + login: its write landed 4.5 s (wall) after the
+# mark on tuning seed 303, past P1's 3 s floor.
+min_settle_wall_s: 10
+# the C-202 cavity (0.05 m3) bled from ~1815 kPa falls up to 79 kPa/process-s over the 20 process-s rate
+# window in P2's own model (128 instantaneous): the default 50 calls real P2 physics impossible
+max_rate_kpa_per_process_s: 200

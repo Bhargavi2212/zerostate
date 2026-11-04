@@ -51,6 +51,27 @@ def test_p2_fail_bleed_gauge_does_not_fall():
     assert run_p2(p2.BLEED, p2.opened(m, "BV-202", 120)).status == S.FAIL
 
 
+def _confirmed_p2_bleed(m):
+    """The owner-confirmed P2 plan as merged (no segments): v2 judged its bleed on F-210's gauges."""
+    import yaml
+
+    from zerostate.models.envelope import IsolationPlan
+    plan = IsolationPlan.model_validate(yaml.safe_load((p2.P2 / "plan.yaml").read_text(encoding="utf-8")))
+    step = next(s for s in plan.steps if s.target == "BV-202")
+    return alive.check(plan, step, p2.opened(m, "BV-202", 120), p2.PARAMS)
+
+
+def test_p2_confirmed_plan_bleed_is_judged_on_the_cavity_gauge():
+    r = _confirmed_p2_bleed(p2.do(p2.line(), ("XV-201", 0), ("XV-203", 0)))
+    assert r.status == S.PASS and r.message.startswith("PT-202 fell")
+
+
+def test_p2_confirmed_plan_bleed_fails_when_the_cavity_gauge_is_frozen():
+    m = p2.do(p2.line(), ("XV-201", 0), ("XV-203", 0))
+    m.set("PT-202.fault_mode", 1)
+    assert _confirmed_p2_bleed(m).status == S.FAIL
+
+
 def test_p2_pass_after_hold_gauges_follow_the_final_vent():
     m = p2.at_hold(p2.isolated(p2.line()))
     m.step(600)

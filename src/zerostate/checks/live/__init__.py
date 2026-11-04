@@ -37,9 +37,12 @@ def gauges(plan: IsolationPlan, side: str) -> list[str]:
 
 
 def vent_gauges(plan: IsolationPlan, vent: str | None) -> list[str]:
-    """Pressure witnesses of the segment this vent or bleed drains; work side if no segment names it."""
+    """Pressure witnesses of the segment this vent or bleed drains; if no segment names it, a bleed drains
+    the cavity between the blocks it proves (between_blocks gauges) and anything else the work side."""
     segs = {s.id for s in plan.segments if vent in s.vents}
     found = [w.signal_ref for w in plan.witnesses if w.role == "pressure" and w.segment in segs]
+    if not found and any(p.tag == vent and p.kind == "bleed" for p in plan.proving):
+        found = gauges(plan, "between_blocks")
     return found or gauges(plan, "work")
 
 

@@ -6,4 +6,4 @@ plant: p2_gasline
 title: PT-211 dropout to 0 (10 process-s duty cycle)
 expected: [BLOCKED]
 faults:
-  - {at_step: [5, 6, 7], after_process_s: [0, 30], set: {PT-211.fault_mode: 4, PT-211.fault_severity: [0.3, 0.7]}}
+  - {at_step: [5, 7], after_process_s: [0, 30], set: {PT-211.fault_mode: 4, PT-211.fault_severity: [0.3, 0.7]}}

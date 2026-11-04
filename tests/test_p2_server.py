@@ -142,3 +142,22 @@ def test_p2_operator_sets_cmd_as_operator_and_never_prints_the_password(plant, m
     assert op.main(["--endpoint", url, "set", "XV-231", "0"]) == 1
     out = capsys.readouterr()
     assert P2_USERS["operator"] not in out.out + out.err and "wrong" not in out.out + out.err
+
+
+def test_p2_operator_write_carries_a_source_timestamp(plant, monkeypatch):
+    """Updates stopped, so no tick re-stamps the node: the value read back is the operator's own write.
+    Unstamped, ZeroState reads it STALE (tuning seed 310)."""
+    url, p, _ = plant
+    monkeypatch.setenv("P2_PASSWORD_OPERATOR", P2_USERS["operator"])
+    op = _p2_operator()
+    p.control({"request": "updates", "on": False})
+    try:
+        assert op.main(["--endpoint", url, "set", "XV-231", "0"]) == 0
+        c = connect(url, "zerostate")
+        try:
+            dv = c.read_attributes([c.get_node("ns=2;s=XV-231.CMD")])[0]
+        finally:
+            c.disconnect()
+        assert dv.SourceTimestamp is not None
+    finally:
+        p.control({"request": "updates", "on": True})

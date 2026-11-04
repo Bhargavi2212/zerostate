@@ -1,0 +1,558 @@
+{
+  "t01": {
+    "route": "text",
+    "list": {
+      "plant": "p1_grfics",
+      "work_equipment": "reactor",
+      "points": [
+        {
+          "tag": "f1",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "non_proved",
+          "lock_id": "L-11",
+          "note": null
+        },
+        {
+          "tag": "f2",
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "non_proved",
+          "lock_id": "L-12",
+          "note": null
+        },
+        {
+          "tag": "product",
+          "required_state": "closed",
+          "seq": 3,
+          "isolation_type": "non_proved",
+          "lock_id": "L-13",
+          "note": null
+        }
+      ],
+      "vent": "purge",
+      "proving": [],
+      "hold_minutes": 10.0,
+      "notes": []
+    },
+    "transcript": null,
+    "error": null
+  },
+  "t02": {
+    "route": "text",
+    "list": {
+      "plant": "p1_grfics",
+      "work_equipment": "Reactor",
+      "points": [
+        {
+          "tag": "product",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "non_proved",
+          "lock_id": "21",
+          "note": null
+        },
+        {
+          "tag": null,
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "non_proved",
+          "lock_id": "22",
+          "note": "cannot tell which feed tag the author means - author states not sure which feed line this job is on"
+        },
+        {
+          "tag": "purge",
+          "required_state": "open",
+          "seq": null,
+          "isolation_type": null,
+          "lock_id": null,
+          "note": null
+        }
+      ],
+      "vent": null,
+      "proving": [],
+      "hold_minutes": null,
+      "notes": [
+        "replace level transmitter nozzle gasket.",
+        "not sure which feed line this job is on, check with the shift lead before anyone touches it."
+      ]
+    },
+    "transcript": null,
+    "error": null
+  },
+  "t03": {
+    "route": "text",
+    "list": {
+      "plant": "p1_grfics",
+      "work_equipment": "reactor",
+      "points": [
+        {
+          "tag": "f2",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "non_proved",
+          "lock_id": "7",
+          "note": null
+        },
+        {
+          "tag": "f1",
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "non_proved",
+          "lock_id": "8",
+          "note": null
+        },
+        {
+          "tag": "product",
+          "required_state": "closed",
+          "seq": 3,
+          "isolation_type": "non_proved",
+          "lock_id": "9",
+          "note": null
+        }
+      ],
+      "vent": "purge",
+      "proving": [],
+      "hold_minutes": 10.0,
+      "notes": [
+        "WO 30502"
+      ]
+    },
+    "transcript": null,
+    "error": null
+  },
+  "t04": {
+    "route": "text",
+    "list": {
+      "plant": "p2_gasline",
+      "work_equipment": "F-210",
+      "points": [
+        {
+          "tag": "XV-201",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "proved",
+          "lock_id": "A-01",
+          "note": null
+        },
+        {
+          "tag": "XV-203",
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "proved",
+          "lock_id": "A-02",
+          "note": null
+        },
+        {
+          "tag": "BV-202",
+          "required_state": "open",
+          "seq": 3,
+          "isolation_type": null,
+          "lock_id": null,
+          "note": null
+        },
+        {
+          "tag": "XV-204",
+          "required_state": "closed",
+          "seq": 4,
+          "isolation_type": "proved",
+          "lock_id": "A-03",
+          "note": null
+        }
+      ],
+      "vent": "VV-213",
+      "proving": [
+        {
+          "tag": "BV-202",
+          "proves": [
+            "XV-201",
+            "XV-203"
+          ]
+        },
+        {
+          "tag": "VV-213",
+          "proves": [
+            "XV-204"
+          ]
+        }
+      ],
+      "hold_minutes": 10.0,
+      "notes": []
+    },
+    "transcript": null,
+    "error": null
+  },
+  "t05": {
+    "route": "text",
+    "list": {
+      "plant": "p2_gasline",
+      "work_equipment": "PT-202 on C-202",
+      "points": [
+        {
+          "tag": "XV-201",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "proved",
+          "lock_id": "B-14",
+          "note": null
+        },
+        {
+          "tag": "XV-203",
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "proved",
+          "lock_id": "B-15",
+          "note": null
+        },
+        {
+          "tag": "BV-202",
+          "required_state": "open",
+          "seq": 3,
+          "isolation_type": null,
+          "lock_id": null,
+          "note": "(bleed C-202 to atmosphere)"
+        }
+      ],
+      "vent": "BV-202",
+      "proving": [
+        {
+          "tag": "BV-202",
+          "proves": [
+            "XV-201",
+            "XV-203"
+          ]
+        }
+      ],
+      "hold_minutes": 10.0,
+      "notes": [
+        "WO 77120"
+      ]
+    },
+    "transcript": null,
+    "error": null
+  },
+  "t06": {
+    "route": "text",
+    "list": {
+      "plant": "p2_gasline",
+      "work_equipment": "L-230",
+      "points": [
+        {
+          "tag": "XV-204",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "proved",
+          "lock_id": "C-3",
+          "note": null
+        },
+        {
+          "tag": "XV-231",
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "non_proved",
+          "lock_id": "C-4",
+          "note": null
+        }
+      ],
+      "vent": null,
+      "proving": [],
+      "hold_minutes": 10.0,
+      "notes": [
+        "spool change downstream of D-220."
+      ]
+    },
+    "transcript": null,
+    "error": null
+  },
+  "s01": {
+    "route": "image",
+    "list": {
+      "plant": "p2_gasline",
+      "work_equipment": "F-210",
+      "points": [
+        {
+          "tag": "XV-201",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "proved",
+          "lock_id": "D-01",
+          "note": null
+        },
+        {
+          "tag": "XV-203",
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "proved",
+          "lock_id": "D-02",
+          "note": null
+        },
+        {
+          "tag": "BV-202",
+          "required_state": "open",
+          "seq": 3,
+          "isolation_type": null,
+          "lock_id": null,
+          "note": null
+        },
+        {
+          "tag": "XV-204",
+          "required_state": "closed",
+          "seq": 4,
+          "isolation_type": "proved",
+          "lock_id": "D-03",
+          "note": null
+        }
+      ],
+      "vent": "VV-213",
+      "proving": [
+        {
+          "tag": "BV-202",
+          "proves": [
+            "XV-201",
+            "XV-203"
+          ]
+        },
+        {
+          "tag": "VV-213",
+          "proves": [
+            "XV-204"
+          ]
+        }
+      ],
+      "hold_minutes": 10.0,
+      "notes": [
+        "Register no.: IR-2211",
+        "Plant area: Gas line"
+      ]
+    },
+    "transcript": "ISOLATION REGISTER\nRegister no.: IR-2211\nEquipment to be worked on: F-210\nPlant area: Gas line\nSeq | Isolation point | Isolated position | Isolation method | Lock no.\n1 | XV-201 | Closed | Proved | D-01\n2 | XV-203 | Closed | Proved | D-02\n3 | BV-202 | Open |  | \n4 | XV-204 | Closed | Proved | D-03\nVent / drain point: VV-213\nProving: BV-202 proves XV-201, XV-203\nProving: VV-213 proves XV-204\nHold before sign-on: 10 min\nPrepared by: -------------\nIssued by: -------------\nReceived by: -------------",
+    "error": null
+  },
+  "s02": {
+    "route": "image",
+    "list": {
+      "plant": "p1_grfics",
+      "work_equipment": "reactor",
+      "points": [
+        {
+          "tag": "f1",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "non_proved",
+          "lock_id": "31",
+          "note": null
+        },
+        {
+          "tag": "f2",
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "non_proved",
+          "lock_id": "32",
+          "note": null
+        },
+        {
+          "tag": "product",
+          "required_state": "closed",
+          "seq": 3,
+          "isolation_type": "non_proved",
+          "lock_id": "33",
+          "note": null
+        }
+      ],
+      "vent": "purge",
+      "proving": [],
+      "hold_minutes": 10.0,
+      "notes": [
+        "Scheme ref: IS-0907",
+        "Area: Reactor unit"
+      ]
+    },
+    "transcript": "ISOLATION SCHEME\nScheme ref: IS-0907\nEquipment: reactor\nArea: Reactor unit\nItem | Tag No. | Position required | Type | Padlock\n1 | f1 | Closed | NP | 31\n2 | f2 | Closed | NP | 32\n3 | product | Closed | NP | 33\nBleed / vent points Proves isolation of\n- -\nVent: purge\nHold before sign-on: 10 min\nType: P = positive, PR = proved, NP = non-proved\nPrepared by: ______________ Issued by: ______________ Received by: ______________",
+    "error": null
+  },
+  "s03": {
+    "route": "image",
+    "list": {
+      "plant": "p2_gasline",
+      "work_equipment": "C-202",
+      "points": [
+        {
+          "tag": "XV-201",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "proved",
+          "lock_id": "E-1",
+          "note": null
+        },
+        {
+          "tag": "XV-203",
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "proved",
+          "lock_id": "E-2",
+          "note": null
+        },
+        {
+          "tag": "BV-202",
+          "required_state": "open",
+          "seq": 3,
+          "isolation_type": null,
+          "lock_id": null,
+          "note": null
+        }
+      ],
+      "vent": "BV-202",
+      "proving": [
+        {
+          "tag": "BV-202",
+          "proves": [
+            "XV-201",
+            "XV-203"
+          ]
+        }
+      ],
+      "hold_minutes": 10.0,
+      "notes": [
+        "List no.: LO-5530",
+        "Unit: Gas line"
+      ]
+    },
+    "transcript": "LINE / EQUIPMENT OPENING - ISOLATION LIST\nList no.: LO-5530\nLine / equipment: C-202\nUnit: Gas line\nStep | Valve | Action | Isolation category | Lock #\n1 | XV-201 | CLOSE | Proved | E-1\n2 | XV-203 | CLOSE | Proved | E-2\n3 | BV-202 | OPEN\nVent / drain point: BV-202\nProving: BV-202 proves XV-201, XV-203\nHold before sign-on: 10 min\nPrepared by: ______________\nIssued by: ______________\nReceived by: ______________",
+    "error": null
+  },
+  "s04": {
+    "route": "image",
+    "list": {
+      "plant": "p1_grfics",
+      "work_equipment": "reactor",
+      "points": [
+        {
+          "tag": "product",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "non_proved",
+          "lock_id": "L-41",
+          "note": null
+        },
+        {
+          "tag": "f1",
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "non_proved",
+          "lock_id": "L-42",
+          "note": null
+        },
+        {
+          "tag": "f2",
+          "required_state": "closed",
+          "seq": 3,
+          "isolation_type": "non_proved",
+          "lock_id": "L-43",
+          "note": null
+        }
+      ],
+      "vent": "purge",
+      "proving": [],
+      "hold_minutes": 10.0,
+      "notes": [
+        "Register no.: IR-2240",
+        "Plant area: Reactor unit"
+      ]
+    },
+    "transcript": "ISOLATION REGISTER\nRegister no.: IR-2240\nEquipment to be worked on: reactor\nPlant area: Reactor unit\nSeq | Isolation point | Isolated position | Isolation method | Lock no.\n1 | product | Closed | Non-proved | L-41\n2 | f1 | Closed | Non-proved | L-42\n3 | f2 | Closed | Non-proved | L-43\nVent / drain point: purge\nHold before sign-on: 10 min\nPrepared by: ______________\nIssued by: ______________\nReceived by: ______________",
+    "error": null
+  },
+  "s05": {
+    "route": "image",
+    "list": {
+      "plant": "p2_gasline",
+      "work_equipment": "F-210",
+      "points": [
+        {
+          "tag": "XV-201",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "proved",
+          "lock_id": "F-1",
+          "note": null
+        },
+        {
+          "tag": "XV-203",
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "proved",
+          "lock_id": "F-2",
+          "note": null
+        },
+        {
+          "tag": "BV-202",
+          "required_state": "open",
+          "seq": 3,
+          "isolation_type": null,
+          "lock_id": null,
+          "note": null
+        },
+        {
+          "tag": null,
+          "required_state": "closed",
+          "seq": 4,
+          "isolation_type": "proved",
+          "lock_id": "F-3",
+          "note": "Tag crossed out and illegible"
+        }
+      ],
+      "vent": "VV-213",
+      "proving": [
+        {
+          "tag": "BV-202",
+          "proves": [
+            "XV-201",
+            "XV-203"
+          ]
+        }
+      ],
+      "hold_minutes": 10.0,
+      "notes": [
+        "Scheme ref: IS-0931",
+        "Area: Gas line",
+        "Type: P = positive, PR = proved, NP = non-proved"
+      ]
+    },
+    "transcript": "ISOLATION SCHEME\nScheme ref: IS-0931\nEquipment: F-210\nArea: Gas line\nItem | Tag No. | Position required | Type | Padlock\n1 | XV-201 | Closed | PR | F-1\n2 | XV-203 | Closed | PR | F-2\n3 | BV-202 | Open |  | \n4 | XV-[crossed out: [illegible]] | Closed | PR | F-3\nBleed / vent points\nProves isolation of\nBV-202\nXV-201, XV-203\nVent: VV-213\nHold before sign-on: 10 min\nType: P = positive, PR = proved, NP = non-proved\nPrepared by: ------------\nIssued by: ------------\nReceived by: ------------",
+    "error": null
+  },
+  "s06": {
+    "route": "image",
+    "list": {
+      "plant": "p2_gasline",
+      "work_equipment": "L-230",
+      "points": [
+        {
+          "tag": "XV-204",
+          "required_state": "closed",
+          "seq": 1,
+          "isolation_type": "proved",
+          "lock_id": "G-1",
+          "note": null
+        },
+        {
+          "tag": "XV-231",
+          "required_state": "closed",
+          "seq": 2,
+          "isolation_type": "non_proved",
+          "lock_id": "G-2",
+          "note": null
+        }
+      ],
+      "vent": null,
+      "proving": [],
+      "hold_minutes": 10.0,
+      "notes": [
+        "List no.: LO-5561",
+        "Unit: Gas line"
+      ]
+    },
+    "transcript": "LINE / EQUIPMENT OPENING - ISOLATION LIST\nList no.: LO-5561\nLine / equipment: L-230\nUnit: Gas line\nStep | Valve | Action | Isolation category | Lock #\n1 | XV-204 | CLOSE | Proved | G-1\n2 | XV-231 | CLOSE | Non-proved | G-2\nVent / drain point: none\nHold before sign-on: 10 min\nPrepared by: ______________\nIssued by: ______________\nReceived by: ______________",
+    "error": null
+  }
+}

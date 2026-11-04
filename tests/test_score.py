@@ -233,3 +233,44 @@ def test_camera_coverage_counts_timeouts_next_to_accuracy():
              {"note": None, "readable": True, "located_by": "map"}]
     assert score.camera_coverage(reads, 2) == {"readings": 5, "readable": 1, "no_frame": 3, "timeouts": 2,
                                                "model_unavailable": 1, "located_by_map": 1, "pending_at_stop": 2}
+
+
+BENCH2 = ROOT / "eval" / "results" / "bench" / "2"
+
+
+@pytest.mark.skipif(not BENCH2.exists(), reason="batch 2 episodes not committed")
+def test_with_camera_verdict_comes_from_verdict_json_when_the_camera_track_logged_none():
+    """The with-camera track logs a verdict event only when its own verdict changes; verdict.json carries it always."""
+    s0 = score.load_episode(next(BENCH2.glob("S0_seed1011091684_*")))
+    s8 = score.load_episode(next(BENCH2.glob("S8_seed155989621_*")))
+    assert not s0["track"]["with_camera"] and s8["track"]["with_camera"]
+    r0, r8 = score.score_episode(s0, FS), score.score_episode(s8, FS)
+    assert (r0["verdict_with_camera"], r0["camera_own_verdict"]) == (score.NO_DISC, False)
+    assert (r8["verdict_with_camera"], r8["camera_own_verdict"]) == ("BLOCKED", True)
+
+
+def test_plan_set_lists_manifest_entries_without_a_result(tmp_path):
+    p = tmp_path / "plan.json"
+    p.write_text(json.dumps({"cases": [{"case": "PC0", "seed": 1, "blocked": False, "label_match": True},
+                                       {"case": "PC1", "seed": 9, "blocked": True, "label_match": True}]}), encoding="utf-8")
+    out = score.plan_set(p, {("plan", "PC0", 1), ("plan", "PC1", 2), ("p1", "S0", 3)})
+    assert out["missing"] == ["PC1 seed 2"] and out["not_in_manifest"] == ["PC1 seed 9"]
+    assert out["false_blocks"]["k"] == 0 and out["per_case"]["PC1"]["blocked"] == 1
+
+
+def test_an_invalidated_attempt_is_listed_and_its_rerun_is_scored(tmp_path):
+    """Batch p2's S2: the first episodes ran with no fault (run_benchmark --invalidate-unfired), the re-runs count."""
+    res = tmp_path / "bench"
+    res.mkdir()
+    seed = int(CLEAN_PASS.split("_seed")[1].split("_")[0])
+    old, new = f"S0_seed{seed}_20261104T090000", f"S0_seed{seed}_20261104T120000"
+    _copy(CLEAN_PASS, res, old)
+    _copy(CLEAN_PASS, res, new)
+    att = {"kind": "attempt", "plant": "p1", "scenario": "S0", "seed": seed, "valid": True}
+    (res / "progress.jsonl").write_text("".join(json.dumps(r) + "\n" for r in (
+        {**att, "episode": old}, {**att, "kind": "invalidated", "episode": old, "reason": "drawn fault never fired"},
+        {**att, "episode": new})), encoding="utf-8")
+    m, s, h = _seal(tmp_path, [{"plant": "p1", "scenario": "S0", "seed": seed}])
+    out = score.score("p1", m, s, res, hash_p=h, muse_results=tmp_path / "none.json")
+    assert out["n_scored"] == 1 and out["invalid"] == {**out["invalid"], "k": 0, "attempts": 2, "invalid_attempts": 1}
+    assert out["episode_problems"] == {old: ["invalidated: drawn fault never fired"]}

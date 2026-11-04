@@ -1,0 +1,1949 @@
+{
+ "batch": "2",
+ "engine": "full engine (live + process + camera)",
+ "seal_hash": "c1a2f5167a9314d6c329f1d78e27140068540840d66dfcc654aa93dba7bcc0f4",
+ "plan_hashes": [
+  "63e1519c52f653b2607444e39baa63973b27cd867ec45c056d017f26e5f1bbc4"
+ ],
+ "definitions": {
+  "primary": "true work-segment pressure > 150 kPa abs; true flow through an isolated line > 1 % of its full scale (P1 scale_max: f1 1000, f2 500, purge 2000, product 500); a required step skipped; an isolation point in the wrong true state (position more than 1 % from the step's required state)",
+  "secondary": "the same four conditions with the flow limit at 0.1 % of full scale",
+  "dangerous_miss": "NO_DISCREPANCY and a condition met at any time from that verdict to the episode end; n = scored episodes",
+  "windows": "a line's flow and state count from its own isolate mark plus the step's settle time, the vent valve's from the vent_close mark plus its settle time, pressure from the vent_close mark (not evaluated if never reached)",
+  "label": "from truth after the isolation marks, whatever the verdict; descriptive only for BLOCKED or ESCALATED",
+  "false_block": "BLOCKED or ESCALATED on an episode labelled clean (as pre-registered in EVAL); the split is reported",
+  "decided_on": "a system decided on an episode when it gave a verdict there; it saw the whole job when every non-final plan step was marked before its decision (an episode ZeroState blocked early stops there, so a baseline never faces the rest of that job)"
+ },
+ "n_scored": 35,
+ "dangerous_miss": {
+  "primary": {
+   "k": 0,
+   "n": 35,
+   "ci_low": 0.0,
+   "ci_high": 0.0989,
+   "ci_high_pct": 10
+  },
+  "secondary": {
+   "k": 0,
+   "n": 35,
+   "ci_low": 0.0,
+   "ci_high": 0.0989,
+   "ci_high_pct": 10
+  }
+ },
+ "missed_faults": {
+  "k": 0,
+  "n": 20
+ },
+ "missed_faults_secondary": {
+  "k": 0,
+  "n": 20
+ },
+ "false_blocks": {
+  "k": 0,
+  "n": 15,
+  "ci_low": 0.0,
+  "ci_high": 0.2039,
+  "ci_high_pct": 20,
+  "blocked": 0,
+  "escalated": 0
+ },
+ "decided_on": {
+  "k": 35,
+  "n": 35,
+  "whole_job": 20
+ },
+ "whole_job_only": {
+  "primary": {
+   "k": 0,
+   "n": 20,
+   "ci_low": 0.0,
+   "ci_high": 0.1611,
+   "ci_high_pct": 16
+  },
+  "secondary": {
+   "k": 0,
+   "n": 20,
+   "ci_low": 0.0,
+   "ci_high": 0.1611,
+   "ci_high_pct": 16
+  }
+ },
+ "labels": {
+  "primary": {
+   "clean": 15,
+   "fault, below hazard limits": 10,
+   "unsafe": 10
+  },
+  "secondary": {
+   "clean": 15,
+   "fault, below hazard limits": 10,
+   "unsafe": 10
+  }
+ },
+ "time_to_block_process_s": {
+  "S8": {
+   "n": 5,
+   "median": 69.2,
+   "min": 68.1,
+   "max": 70.1
+  }
+ },
+ "severity_at_release": {
+  "S0_seed1011091684_20261104T015934": {
+   "max_pressure_kpa": 93.41,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed1876352260_20261104T020702": {
+   "max_pressure_kpa": 93.87,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed627673696_20261104T021550": {
+   "max_pressure_kpa": 94.03,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed1709801965_20261104T022228": {
+   "max_pressure_kpa": 94.1,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed1151298842_20261104T024930": {
+   "max_pressure_kpa": 94.15,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed60426185_20261104T030743": {
+   "max_pressure_kpa": 93.89,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed1849361298_20261104T031654": {
+   "max_pressure_kpa": 94.13,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed227718957_20261104T033910": {
+   "max_pressure_kpa": 93.52,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed204156906_20261104T035822": {
+   "max_pressure_kpa": 93.97,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed1846453526_20261104T041556": {
+   "max_pressure_kpa": 94.07,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed1995247948_20261104T042659": {
+   "max_pressure_kpa": 93.96,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed88445173_20261104T043350": {
+   "max_pressure_kpa": 93.94,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed1369092694_20261104T045249": {
+   "max_pressure_kpa": 93.92,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed181699700_20261104T050454": {
+   "max_pressure_kpa": 94.13,
+   "max_isolated_flow_pct": 0.0
+  },
+  "S0_seed687600279_20261104T052334": {
+   "max_pressure_kpa": 94.09,
+   "max_isolated_flow_pct": 0.0
+  }
+ },
+ "hold_by_leak_bin": {
+  "0.3-0.6 %": {
+   "n": 0,
+   "blocked": 0,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "hold_fail": 0,
+   "episodes": []
+  },
+  "0.6-0.9 %": {
+   "n": 0,
+   "blocked": 0,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "hold_fail": 0,
+   "episodes": []
+  },
+  "0.9-1.2 %": {
+   "n": 0,
+   "blocked": 0,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "hold_fail": 0,
+   "episodes": []
+  },
+  "1.2-1.5 %": {
+   "n": 0,
+   "blocked": 0,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "hold_fail": 0,
+   "episodes": []
+  }
+ },
+ "invalid": {
+  "k": 0,
+  "n": 35,
+  "attempts": 35,
+  "invalid_attempts": 0
+ },
+ "invalid_entries": [],
+ "episode_problems": {},
+ "not_scored": [],
+ "per_scenario": {
+  "S0": {
+   "n": 15,
+   "blocked": 0,
+   "escalated": 0,
+   "no_discrepancy": 15,
+   "match": 15,
+   "notes": []
+  },
+  "S13": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S7": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S7-same": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  },
+  "S8": {
+   "n": 5,
+   "blocked": 5,
+   "escalated": 0,
+   "no_discrepancy": 0,
+   "match": 5,
+   "notes": []
+  }
+ },
+ "camera": {
+  "with_camera_blocked": 20,
+  "with_camera_escalated": 0,
+  "data_only_blocked": 20,
+  "n": 35,
+  "camera_added_block": 0,
+  "camera_removed_block": 0,
+  "by_scenario": {
+   "S0": {
+    "n": 15,
+    "with_camera_blocked": 0,
+    "data_only_blocked": 0,
+    "camera_own_verdict": 0
+   },
+   "S13": {
+    "n": 5,
+    "with_camera_blocked": 5,
+    "data_only_blocked": 5,
+    "camera_own_verdict": 0
+   },
+   "S7": {
+    "n": 5,
+    "with_camera_blocked": 5,
+    "data_only_blocked": 5,
+    "camera_own_verdict": 0
+   },
+   "S7-same": {
+    "n": 5,
+    "with_camera_blocked": 5,
+    "data_only_blocked": 5,
+    "camera_own_verdict": 0
+   },
+   "S8": {
+    "n": 5,
+    "with_camera_blocked": 5,
+    "data_only_blocked": 5,
+    "camera_own_verdict": 5
+   }
+  },
+  "coverage": {
+   "readings": 450,
+   "readable": 438,
+   "no_frame": 0,
+   "timeouts": 0,
+   "model_unavailable": 0,
+   "located_by_map": 25,
+   "pending_at_stop": 0
+  },
+  "timeouts_per_episode": {
+   "S0_seed1011091684_20261104T015934": 0,
+   "S0_seed1876352260_20261104T020702": 0,
+   "S0_seed627673696_20261104T021550": 0,
+   "S0_seed1709801965_20261104T022228": 0,
+   "S7-same_seed1303195242_20261104T023036": 0,
+   "S8_seed155989621_20261104T023450": 0,
+   "S13_seed1969389249_20261104T023839": 0,
+   "S7-same_seed739700797_20261104T024527": 0,
+   "S0_seed1151298842_20261104T024930": 0,
+   "S7-same_seed1870229617_20261104T025615": 0,
+   "S13_seed22487494_20261104T030114": 0,
+   "S0_seed60426185_20261104T030743": 0,
+   "S0_seed1849361298_20261104T031654": 0,
+   "S7-same_seed613598573_20261104T032417": 0,
+   "S13_seed1919072324_20261104T032856": 0,
+   "S8_seed5623454_20261104T033519": 0,
+   "S0_seed227718957_20261104T033910": 0,
+   "S7_seed1278157620_20261104T034714": 0,
+   "S13_seed2070322231_20261104T035145": 0,
+   "S0_seed204156906_20261104T035822": 0,
+   "S7_seed50230632_20261104T040550": 0,
+   "S7_seed1655100685_20261104T041137": 0,
+   "S0_seed1846453526_20261104T041556": 0,
+   "S8_seed1914382681_20261104T042312": 0,
+   "S0_seed1995247948_20261104T042659": 0,
+   "S0_seed88445173_20261104T043350": 0,
+   "S13_seed672731537_20261104T044147": 0,
+   "S8_seed649954990_20261104T044854": 0,
+   "S0_seed1369092694_20261104T045249": 0,
+   "S8_seed1470975726_20261104T050105": 0,
+   "S0_seed181699700_20261104T050454": 0,
+   "S7_seed1263244227_20261104T051135": 0,
+   "S7-same_seed693066144_20261104T051541": 0,
+   "S7_seed994113272_20261104T051943": 0,
+   "S0_seed687600279_20261104T052334": 0
+  }
+ },
+ "baselines": {
+  "gauge_rule": {
+   "dangerous_miss": {
+    "primary": {
+     "k": 0,
+     "n": 35,
+     "ci_low": 0.0,
+     "ci_high": 0.0989,
+     "ci_high_pct": 10
+    },
+    "secondary": {
+     "k": 0,
+     "n": 35,
+     "ci_low": 0.0,
+     "ci_high": 0.0989,
+     "ci_high_pct": 10
+    }
+   },
+   "unanswered": [],
+   "whole_job_only": {
+    "primary": {
+     "k": 0,
+     "n": 20,
+     "ci_low": 0.0,
+     "ci_high": 0.1611,
+     "ci_high_pct": 16
+    },
+    "secondary": {
+     "k": 0,
+     "n": 20,
+     "ci_low": 0.0,
+     "ci_high": 0.1611,
+     "ci_high_pct": 16
+    }
+   },
+   "misses_by_scenario": {
+    "primary": {},
+    "secondary": {}
+   },
+   "false_blocks": {
+    "k": 0,
+    "n": 15,
+    "ci_low": 0.0,
+    "ci_high": 0.2039,
+    "ci_high_pct": 20
+   },
+   "passes": 20,
+   "decided_on": {
+    "k": 35,
+    "n": 35,
+    "whole_job": 20
+   }
+  }
+ },
+ "episodes": [
+  {
+   "episode": "S0_seed1011091684_20261104T015934",
+   "scenario": "S0",
+   "seed": 1011091684,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793757885.266232,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 93.41,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed1876352260_20261104T020702",
+   "scenario": "S0",
+   "seed": 1876352260,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793758437.036708,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 93.87,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed627673696_20261104T021550",
+   "scenario": "S0",
+   "seed": 627673696,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793758851.725245,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 94.03,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 17,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed1709801965_20261104T022228",
+   "scenario": "S0",
+   "seed": 1709801965,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793759281.863533,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 94.1,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S7-same_seed1303195242_20261104T023036",
+   "scenario": "S7-same",
+   "seed": 1303195242,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793759611.547002,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 6,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S8_seed155989621_20261104T023450",
+   "scenario": "S8",
+   "seed": 155989621,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793759863.468273,
+   "fault_t": 1793759856.4602716,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:f1": {
+      "t": 1793759863.4621348,
+      "value": 640.46,
+      "pct_full_scale": 64.046
+     },
+     "state:f1": {
+      "t": 1793759863.4621348,
+      "value": 100
+     }
+    },
+    "secondary": {
+     "flow:f1": {
+      "t": 1793759863.4621348,
+      "value": 640.46,
+      "pct_full_scale": 64.046
+     },
+     "state:f1": {
+      "t": 1793759863.4621348,
+      "value": 100
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 7.01,
+   "time_to_block_process_s": 70.1,
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": true,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 6,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S13_seed1969389249_20261104T023839",
+   "scenario": "S13",
+   "seed": 1969389249,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793760228.670543,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S7-same_seed739700797_20261104T024527",
+   "scenario": "S7-same",
+   "seed": 739700797,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793760502.667092,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 6,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed1151298842_20261104T024930",
+   "scenario": "S0",
+   "seed": 1151298842,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793760867.808593,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 94.15,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S7-same_seed1870229617_20261104T025615",
+   "scenario": "S7-same",
+   "seed": 1870229617,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793761170.131907,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 6,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S13_seed22487494_20261104T030114",
+   "scenario": "S13",
+   "seed": 22487494,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793761585.282224,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed60426185_20261104T030743",
+   "scenario": "S0",
+   "seed": 60426185,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793762106.313428,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 93.89,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 17,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed1849361298_20261104T031654",
+   "scenario": "S0",
+   "seed": 1849361298,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793762515.050769,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 94.13,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 17,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S7-same_seed613598573_20261104T032417",
+   "scenario": "S7-same",
+   "seed": 613598573,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793762852.677609,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 5,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S13_seed1919072324_20261104T032856",
+   "scenario": "S13",
+   "seed": 1919072324,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793763247.70349,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 16,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S8_seed5623454_20261104T033519",
+   "scenario": "S8",
+   "seed": 5623454,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793763491.772212,
+   "fault_t": 1793763484.9582431,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:f1": {
+      "t": 1793763491.8033547,
+      "value": 640.46,
+      "pct_full_scale": 64.046
+     },
+     "state:f1": {
+      "t": 1793763491.8033547,
+      "value": 100
+     }
+    },
+    "secondary": {
+     "flow:f1": {
+      "t": 1793763491.8033547,
+      "value": 640.46,
+      "pct_full_scale": 64.046
+     },
+     "state:f1": {
+      "t": 1793763491.8033547,
+      "value": 100
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 6.81,
+   "time_to_block_process_s": 68.1,
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": true,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 5,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 2,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed227718957_20261104T033910",
+   "scenario": "S0",
+   "seed": 227718957,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793763899.816134,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 93.52,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S7_seed1278157620_20261104T034714",
+   "scenario": "S7",
+   "seed": 1278157620,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793764209.834008,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:product": {
+      "t": 1793764215.8667195,
+      "value": 184.294,
+      "pct_full_scale": 36.859
+     },
+     "state:product": {
+      "t": 1793764215.8667195,
+      "value": 89.07
+     },
+     "skipped:3": {
+      "t": null,
+      "value": null
+     }
+    },
+    "secondary": {
+     "flow:product": {
+      "t": 1793764215.8667195,
+      "value": 184.294,
+      "pct_full_scale": 36.859
+     },
+     "state:product": {
+      "t": 1793764215.8667195,
+      "value": 89.07
+     },
+     "skipped:3": {
+      "t": null,
+      "value": null
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 6,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S13_seed2070322231_20261104T035145",
+   "scenario": "S13",
+   "seed": 2070322231,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793764611.320995,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed204156906_20261104T035822",
+   "scenario": "S0",
+   "seed": 204156906,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793765047.820819,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 93.97,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S7_seed50230632_20261104T040550",
+   "scenario": "S7",
+   "seed": 50230632,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793765434.606974,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:product": {
+      "t": 1793765440.6549857,
+      "value": 207.544,
+      "pct_full_scale": 41.509
+     },
+     "state:product": {
+      "t": 1793765440.6549857,
+      "value": 100
+     },
+     "skipped:3": {
+      "t": null,
+      "value": null
+     }
+    },
+    "secondary": {
+     "flow:product": {
+      "t": 1793765440.6549857,
+      "value": 207.544,
+      "pct_full_scale": 41.509
+     },
+     "state:product": {
+      "t": 1793765440.6549857,
+      "value": 100
+     },
+     "skipped:3": {
+      "t": null,
+      "value": null
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 6,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S7_seed1655100685_20261104T041137",
+   "scenario": "S7",
+   "seed": 1655100685,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793765690.320905,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:product": {
+      "t": 1793765696.4228592,
+      "value": 95.247,
+      "pct_full_scale": 19.049
+     },
+     "state:product": {
+      "t": 1793765696.4228592,
+      "value": 45.89
+     },
+     "skipped:3": {
+      "t": null,
+      "value": null
+     }
+    },
+    "secondary": {
+     "flow:product": {
+      "t": 1793765696.4228592,
+      "value": 95.247,
+      "pct_full_scale": 19.049
+     },
+     "state:product": {
+      "t": 1793765696.4228592,
+      "value": 45.89
+     },
+     "skipped:3": {
+      "t": null,
+      "value": null
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 5,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed1846453526_20261104T041556",
+   "scenario": "S0",
+   "seed": 1846453526,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793766079.975199,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 94.07,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S8_seed1914382681_20261104T042312",
+   "scenario": "S8",
+   "seed": 1914382681,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793766365.593741,
+   "fault_t": 1793766358.6745381,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:f1": {
+      "t": 1793766365.6809328,
+      "value": 640.46,
+      "pct_full_scale": 64.046
+     },
+     "state:f1": {
+      "t": 1793766365.6809328,
+      "value": 100
+     }
+    },
+    "secondary": {
+     "flow:f1": {
+      "t": 1793766365.6809328,
+      "value": 640.46,
+      "pct_full_scale": 64.046
+     },
+     "state:f1": {
+      "t": 1793766365.6809328,
+      "value": 100
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 6.92,
+   "time_to_block_process_s": 69.2,
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": true,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 5,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 4,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed1995247948_20261104T042659",
+   "scenario": "S0",
+   "seed": 1995247948,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793766740.644606,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 93.96,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed88445173_20261104T043350",
+   "scenario": "S0",
+   "seed": 88445173,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793767194.680144,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 93.94,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S13_seed672731537_20261104T044147",
+   "scenario": "S13",
+   "seed": 672731537,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793767616.276638,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 17,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S8_seed649954990_20261104T044854",
+   "scenario": "S8",
+   "seed": 649954990,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793767907.10487,
+   "fault_t": 1793767900.2311327,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:f1": {
+      "t": 1793767907.1546657,
+      "value": 640.46,
+      "pct_full_scale": 64.046
+     },
+     "state:f1": {
+      "t": 1793767907.1546657,
+      "value": 100
+     }
+    },
+    "secondary": {
+     "flow:f1": {
+      "t": 1793767907.1546657,
+      "value": 640.46,
+      "pct_full_scale": 64.046
+     },
+     "state:f1": {
+      "t": 1793767907.1546657,
+      "value": 100
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 6.87,
+   "time_to_block_process_s": 68.7,
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": true,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 5,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 2,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed1369092694_20261104T045249",
+   "scenario": "S0",
+   "seed": 1369092694,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793768355.758421,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 93.92,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 1,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S8_seed1470975726_20261104T050105",
+   "scenario": "S8",
+   "seed": 1470975726,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793768638.325876,
+   "fault_t": 1793768631.3831956,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:f1": {
+      "t": 1793768638.3911824,
+      "value": 640.46,
+      "pct_full_scale": 64.046
+     },
+     "state:f1": {
+      "t": 1793768638.3911824,
+      "value": 100
+     }
+    },
+    "secondary": {
+     "flow:f1": {
+      "t": 1793768638.3911824,
+      "value": 640.46,
+      "pct_full_scale": 64.046
+     },
+     "state:f1": {
+      "t": 1793768638.3911824,
+      "value": 100
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "time_to_block_wall_s": 6.94,
+   "time_to_block_process_s": 69.4,
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": true,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 5,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 3,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed181699700_20261104T050454",
+   "scenario": "S0",
+   "seed": 181699700,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793768992.315687,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 94.13,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S7_seed1263244227_20261104T051135",
+   "scenario": "S7",
+   "seed": 1263244227,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793769280.477185,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "skipped:3": {
+      "t": null,
+      "value": null
+     }
+    },
+    "secondary": {
+     "skipped:3": {
+      "t": null,
+      "value": null
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 6,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S7-same_seed693066144_20261104T051541",
+   "scenario": "S7-same",
+   "seed": 693066144,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793769522.839475,
+   "fault_t": null,
+   "label": {
+    "primary": "fault, below hazard limits",
+    "secondary": "fault, below hazard limits"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 6,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S7_seed994113272_20261104T051943",
+   "scenario": "S7",
+   "seed": 994113272,
+   "verdict": "BLOCKED",
+   "match": true,
+   "fault": true,
+   "leak_pct": null,
+   "verdict_t": 1793769761.057011,
+   "fault_t": null,
+   "label": {
+    "primary": "unsafe",
+    "secondary": "unsafe"
+   },
+   "conditions": {
+    "primary": {
+     "flow:product": {
+      "t": 1793769767.0869873,
+      "value": 112.164,
+      "pct_full_scale": 22.433
+     },
+     "state:product": {
+      "t": 1793769767.0869873,
+      "value": 56.89
+     },
+     "skipped:3": {
+      "t": null,
+      "value": null
+     }
+    },
+    "secondary": {
+     "flow:product": {
+      "t": 1793769767.0869873,
+      "value": 112.164,
+      "pct_full_scale": 22.433
+     },
+     "state:product": {
+      "t": 1793769767.0869873,
+      "value": 56.89
+     },
+     "skipped:3": {
+      "t": null,
+      "value": null
+     }
+    }
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "BLOCKED",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 6,
+    "readable": 6,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  },
+  {
+   "episode": "S0_seed687600279_20261104T052334",
+   "scenario": "S0",
+   "seed": 687600279,
+   "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "match": true,
+   "fault": false,
+   "leak_pct": null,
+   "verdict_t": 1793770109.447028,
+   "fault_t": null,
+   "label": {
+    "primary": "clean",
+    "secondary": "clean"
+   },
+   "conditions": {
+    "primary": {},
+    "secondary": {}
+   },
+   "dangerous_miss": {
+    "primary": false,
+    "secondary": false
+   },
+   "severity_at_release": {
+    "max_pressure_kpa": 94.09,
+    "max_isolated_flow_pct": 0.0
+   },
+   "hold_fail": false,
+   "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+   "camera_own_verdict": false,
+   "camera_coverage": {
+    "readings": 18,
+    "readable": 18,
+    "no_frame": 0,
+    "timeouts": 0,
+    "model_unavailable": 0,
+    "located_by_map": 0,
+    "pending_at_stop": 0
+   }
+  }
+ ],
+ "plan_set": {
+  "n": 45,
+  "label_match": 45,
+  "per_case": {
+   "PC0": {
+    "n": 15,
+    "blocked": 0,
+    "label_match": 15
+   },
+   "PC1": {
+    "n": 5,
+    "blocked": 5,
+    "label_match": 5
+   },
+   "PC2": {
+    "n": 5,
+    "blocked": 5,
+    "label_match": 5
+   },
+   "PC3": {
+    "n": 5,
+    "blocked": 5,
+    "label_match": 5
+   },
+   "PC4": {
+    "n": 5,
+    "blocked": 5,
+    "label_match": 5
+   },
+   "PC5": {
+    "n": 5,
+    "blocked": 5,
+    "label_match": 5
+   },
+   "PC6": {
+    "n": 5,
+    "blocked": 5,
+    "label_match": 5
+   }
+  },
+  "false_blocks": {
+   "k": 0,
+   "n": 15,
+   "ci_low": 0.0,
+   "ci_high": 0.2039,
+   "ci_high_pct": 20
+  },
+  "not_in_manifest": [],
+  "missing": []
+ },
+ "never_say_check": "clean"
+}
