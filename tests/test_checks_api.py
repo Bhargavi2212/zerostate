@@ -128,3 +128,14 @@ def test_resolve_without_the_model_is_503(env, monkeypatch):
     client, _, _ = env
     monkeypatch.delenv("MODEL_API_KEY")
     assert client.post("/api/checks/resolve", json={"text": "reactor"}).status_code == 503
+
+
+def test_voice_audio_goes_through_muse_transcribe_and_only_reads_back(env):
+    """Live step mode: a spoken step is transcribed by Muse Voice Transcribe (plan valve names as keywords),
+    parsed by the existing rules and read back; nothing is marked (no inbox row)."""
+    client, tmp, fake = env
+    fake.contents.append("step one done")
+    r = client.post("/api/voice/command", json={"session": "s8", "audio": base64.b64encode(b"RIFF....WAVE").decode()}).json()
+    assert (r["transcript"], r["asr"], r["intent"], r["k"]) == ("step one done", "muse-voice-transcribe-1.0", "step_done", 1)
+    assert "confirm" in r["read_back"].lower() and fake.requests == [{"asr": True}]
+    untouched(tmp)

@@ -215,11 +215,16 @@ async def voice_command(body: VoiceIn, request: Request) -> VoiceReply:
     ctx = request.app.state
     if ctx.replay:
         raise Replay()
-    if body.audio is not None:
-        return VoiceReply(transcript="", asr=None, intent="unknown", k=None,
-                          read_back="Audio transcription is not set up here; use the browser's speech recognition.")
     d = ctx.detail(body.session) if body.session else None
-    intent, k, read_back = parse_intent(body.transcript, d["plan"] if d else None)
+    transcript, asr = body.transcript, body.asr
+    if body.audio is not None:  # Muse Voice Transcribe, biased to the command words and the plan's valve names
+        try:
+            transcript, asr = model.transcribe(base64.b64decode(body.audio), "voice_command", opener=ctx.opener,
+                                               keywords=voice_keywords(d["plan"] if d else None)), model.ASR
+        except (ModelUnavailable, ValueError):
+            return VoiceReply(transcript="", asr=None, intent="unknown", k=None,
+                              read_back="I could not transcribe that here. Type the step instead.")
+    intent, k, read_back = parse_intent(transcript, d["plan"] if d else None)
     if intent in ("status", "why") and d is None:
         intent, read_back = "unknown", "Which session? Open a job first."
     elif intent == "status":
@@ -229,7 +234,7 @@ async def voice_command(body: VoiceIn, request: Request) -> VoiceReply:
     elif intent == "why":
         reasons = ((d["tracks"]["data_only"] or {}).get("reasons") or [])
         read_back = " ".join(reasons) or f"Data checks: {_say(d['verdict'])}. No open reasons are logged."
-    return VoiceReply(transcript=body.transcript, asr=body.asr, intent=intent, k=k, read_back=read_back)
+    return VoiceReply(transcript=transcript, asr=asr, intent=intent, k=k, read_back=read_back)
 
 
 def _say(verdict: str | None) -> str:
@@ -442,6 +447,7 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
                  "confirmed_date": rec.get("date")} for h, (plan, rec) in found.items()]
 
     app.state.replay = bundles is not None
+    app.state.opener = opener
     app.state.detail = lambda sid: detail(sid, events(sid))
 
     @app.get("/api/plants/{plant}/map")

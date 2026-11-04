@@ -31,6 +31,7 @@ ROOT = Path(__file__).parents[2]
 S8 = ROOT / "eval/results/bench/2/S8_seed1470975726_20261104T050105/bundle.json.gz"
 Q = "I'm about to open the reactor for repair. I've locked out. Check my isolation."
 NDF = "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+PATHS: dict[str, Path] = {}
 
 
 class FakeModel:
@@ -87,7 +88,11 @@ def check_server(tmp_path_factory, monkeypatch_module):
                                                   "path": [], "message": "f1_valve_pos: camera agrees with the feedback in 1 of 1 frames"}]})
     log.append("s0", "verdict", {"verdict": NDF, "reasons": []})
     log.append("s0", "session_stopped", {})
+    start = next(e for e in bundle_events(b) if e["kind"] == "session_start")
+    log.append("live", "session_start", start["payload"])  # still running: the live step mode
+    log.append("live", "ready", {})
     log.close()
+    PATHS.update(audit=tmp / "audit.sqlite", data=data)
     monkeypatch_module.setenv("MODEL_API_KEY", "fake-key-for-tests")  # pragma: allowlist secret
     monkeypatch_module.setenv("ZS_CREDITS", str(tmp / "credits.jsonl"))
     app = server.create_app(data, tmp / "audit.sqlite", tmp / "config", {}, opener=FakeModel(), poll_s=0.05, ui_dir=ROOT / "ui")
@@ -173,3 +178,44 @@ def test_job_camera_panel_reads_models_logged_as_a_dict(page, check_server):
     page.goto(f"{check_server}/ui/#/job/s8")
     page.wait_for_function("document.querySelector('#camera') && document.querySelector('#camera').textContent.includes('models:')", timeout=30000)
     assert "models: sam-3.1, muse-spark-1.3" in page.text_content("#camera")
+
+
+def test_live_step_mode_marks_only_after_the_read_back_and_stops_on_a_fail(page, check_server):
+    """A running session: the worker marks a step by text after confirming the read-back (inbox gets one
+    step_done, nothing else); rows tick as the engine logs findings; on a FAIL the view says STOP and stops
+    prompting. The engine is played by appending to the throwaway audit log."""
+    import sqlite3
+    run(page, check_server, "live")
+    page.wait_for_selector("#step-prompt")
+    assert page.text_content("#step-prompt").startswith('Waiting: do step 1 (manual_mode = 1), then say "step 1 done"')
+    page.fill("#worker-name", "Ana")
+    page.fill("#step-cmd", "step one done")
+    page.click("#step-send")
+    page.wait_for_selector("#confirm-mark")
+    assert "confirm" in page.text_content("#read-back-text").lower()
+    db = PATHS["data"] / "inbox.sqlite"
+    assert not db.exists()  # nothing is marked before the read-back is confirmed
+    page.click("#confirm-mark")
+    page.wait_for_function("document.querySelector('#step-prompt').textContent.includes('ZeroState is checking step 1')")
+    rows = sqlite3.connect(db).execute("SELECT session, kind, payload_json FROM inbox").fetchall()
+    assert [(r[0], r[1], json.loads(r[2])) for r in rows] == [("live", "step_done", {"k": 1, "by": "Ana"})]
+    ok = {"rule_id": "LIVE-VALVE", "rule_version": "2", "status": "PASS", "refs": [], "path": [], "message": "commanded state, position and flow agree with the plan"}
+    log = AuditLog(PATHS["audit"])
+    log.append("live", "step_done", {"k": 1, "by": "Ana"})
+    log.append("live", "evaluation", {"source": "step", "step": 1, "findings": [ok]})
+    page.wait_for_selector('#checklist tr[data-row="1"] td.mark[data-mark="PASS"]', timeout=15000)
+    page.wait_for_function("document.querySelector('#step-prompt').textContent.startsWith('Waiting: do step 2')", timeout=15000)
+    log.append("live", "step_done", {"k": 2, "by": "Ana"})
+    page.wait_for_selector('#verify-wait li[data-verify="2"] a[href="#/job/live"]', timeout=15000)
+    assert "waiting for verification by a second person (console)" in page.text_content("#verify-wait")
+    fail = {**ok, "status": "FAIL", "refs": ["f1_flow", "f1_valve_pos"],
+            "message": "flow through a valve reading closed: f1_flow = 640.6 while f1_valve_pos = 0.0 % (passing valve or false feedback)"}
+    log.append("live", "evaluation", {"source": "step", "step": 2, "findings": [fail]})
+    log.append("live", "verdict", {"verdict": "BLOCKED", "reasons": [f"LIVE-VALVE: {fail['message']}"]})
+    log.close()
+    page.wait_for_selector("#final-line", timeout=30000)
+    assert page.text_content("#final-line").startswith("STOP. Do not open the reactor. f1:")
+    assert page.text_content("#step-prompt") == "No further steps are prompted." and page.locator("#step-form").count() == 0
+    assert page.locator("button:has-text('Verify'), button:has-text('sign'), #sign-open").count() == 0
+    assert len(sqlite3.connect(db).execute("SELECT * FROM inbox").fetchall()) == 1  # still only the one mark
+    assert wording.hits(page.inner_text("body")) == []

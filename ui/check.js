@@ -5,6 +5,8 @@
 // line is the engine's logged verdict. Every logged finding is listed below the checklist, in log order.
 // The request goes to POST /api/checks/resolve (read-only); the microphone records a WAV for Muse Voice
 // Transcribe on the server. Speech output: window.speechSynthesis with an on-device voice only.
+// Recorded session: the rows are stepped through at a readable pace. Running session (live step mode): the
+// worker marks each step here after confirming the voice route's read-back; never verify, reopen or sign.
 import { api, el, errorText, fmt, NDF, time } from "./lib.js";
 
 export const CAMERA_CAPTION = "camera: GRFICSv3 simulator, pre-existing";
@@ -107,6 +109,7 @@ export async function checkScreen(root, params) {
   const list = el("div", { id: "check-list" });
   const camera = el("div", { id: "check-camera", class: "panel" });
   const finalLine = el("div", { id: "check-final" });
+  const stepPanel = el("div", { id: "check-steps" });
   const explain = el("div", { id: "check-explain" });
   const all = el("details", { id: "check-findings" });
   const voiceNote = el("p", { class: "small muted", id: "voice-note" }, voice.note());
@@ -138,7 +141,7 @@ export async function checkScreen(root, params) {
         el("button", { type: "button", id: "check-go", onclick: () => resolve({ text: text.value.trim() || EXAMPLE }) }, "Check"),
         mic, mute, el("span", { class: "small muted" }, "The microphone recording goes to Muse Voice Transcribe through ZeroState's server; no browser speech service is used.")),
       voiceNote, status),
-    sessionLine, spokenLine, el("div", { class: "cols check-cols" }, el("div", {}, list, finalLine, explain), el("div", {}, camera)), all);
+    sessionLine, stepPanel, spokenLine, el("div", { class: "cols check-cols" }, el("div", {}, list, finalLine, explain), el("div", {}, camera)), all);
 
   // ---------- request -> plan (read-only)
   async function resolve(body) {
@@ -191,7 +194,7 @@ export async function checkScreen(root, params) {
     document.getElementById("recorded-label").replaceChildren(
       el("span", { class: recorded ? "badge recorded" : "badge" }, recorded ? "Recorded session" : "Live session"),
       ` ${sid}, started ${sum ? new Date(sum.started * 1000).toLocaleString() : time(st.detail.started)}`);
-    finalLine.replaceChildren(); explain.replaceChildren(); camera.replaceChildren(el("p", { class: "muted" }, "Camera view appears with each valve check."));
+    finalLine.replaceChildren(); explain.replaceChildren(); stepPanel.replaceChildren(); camera.replaceChildren(el("p", { class: "muted" }, "Camera view appears with each valve check."));
     drawList(new Set());
     // the stream carries each evaluation's window (the readings) and every finding, in log order
     await new Promise((ready) => {
@@ -202,11 +205,13 @@ export async function checkScreen(root, params) {
       es.addEventListener("evaluation", (ev) => { const e = JSON.parse(ev.data); st.evals.set(e.id, e.payload); });
       es.addEventListener("finding", () => { seen += 1; if (recorded && seen >= total) { es.close(); ready(); } });
       for (const k of ["verdict", "signature", "session_stopped"]) es.addEventListener(k, () => refreshDetail(run));
+      if (!recorded) for (const k of ["evaluation", "finding", "step", "step_verify", "step_reopen", "verdict", "camera_reading", "signature", "session_stopped"]) es.addEventListener(k, () => liveSoon(run));
       es.onerror = () => { es.close(); ready(); };
       if (!recorded || total === 0) ready();
     });
     if (run !== st.run) return;
-    await walk(run, recorded);
+    if (recorded) await walk(run, recorded);
+    else liveMode(run);
   }
   async function refreshDetail(run) {
     if (run !== st.run || st.closed) return;
@@ -283,7 +288,7 @@ export async function checkScreen(root, params) {
       el("ol", { class: "small" }, fs.map((f) => el("li", { id: `finding-${f.id}` }, `${f.id} · ${f.status} · ${f.source} step ${f.step ?? "—"} · ${f.message}`))));
   }
 
-  async function drawCamera(r, cam) {
+  async function drawCamera(r, cam, animate = true) {
     if (r.kind !== "valve") return; // no camera for this check: the panel keeps the last valve
     const head = el("h2", {}, `Check ${r.n}: ${r.label.split(":")[0]}`);
     const side = el("div", { class: "witnesses", id: "witnesses" },
@@ -303,7 +308,7 @@ export async function checkScreen(root, params) {
     const target = { x: Math.max(0, Math.min(W - zw, cx - zw / 2)), y: Math.max(0, Math.min(H - zh, cy - zh / 2)), w: zw, h: zh };
     const full = { x: 0, y: 0, w: W, h: W * 9 / 16 > H ? H : W * 9 / 16 };
     const g = canvas.getContext("2d");
-    const t0 = performance.now();
+    const t0 = performance.now() - (animate ? 0 : 1200); // the return to the deciding check is shown zoomed at once
     await new Promise((done) => {
       const frame = (now) => {
         const k = Math.min(1, (now - t0) / 1200), e = k * k * (3 - 2 * k);
@@ -378,9 +383,124 @@ export async function checkScreen(root, params) {
       el("p", { class: "small muted" }, "This view only reads the log. Sign-off stays in the job screen, by a person."));
     spokenLine.textContent = `🔈 ${fin.say}`;
     // a STOP brings the camera back to the deciding check
-    const back = fin.row && fin.row.kind === "valve" ? drawCamera(fin.row, await cameraOf(fin.row)) : null;
+    const back = fin.row && fin.row.kind === "valve" ? drawCamera(fin.row, await cameraOf(fin.row), false) : null;
     if (run === st.run && !st.closed) await Promise.all([back, voice.say(fin.say)]);
     return fin;
+  }
+
+  // ---------- live step mode: the worker marks each step here (typed or spoken), only after confirming the
+  // read-back of the existing voice route; it never verifies, reopens or signs. Rows tick as the engine logs them.
+  const live = { shown: new Set(), sig: new Map(), checking: null, pendingK: null, ended: false, timer: null, chain: Promise.resolve() };
+  const stepText = (x) => {
+    const what = (x.targets || []).join(" and ") || x.kind.replace("_", " ");
+    const rs = x.required_state;
+    return `${what}${x.kind === "mode" ? ` = ${rs}` : rs === null || rs === undefined ? "" : rs <= 5 ? " closed" : rs >= 95 ? " open" : ` ${rs} %`}`;
+  };
+  const say = (t) => { spokenLine.textContent = `🔈 ${t}`; return voice.say(t); };
+  function liveSoon(run) {
+    if (live.timer) return;
+    live.timer = setTimeout(() => { live.timer = null; live.chain = live.chain.then(() => liveTick(run)).catch(() => null); }, 250);
+  }
+  function liveMode(run) {
+    Object.assign(live, { shown: new Set(), sig: new Map(), checking: null, pendingK: null, ended: false });
+    const name = el("input", { id: "worker-name", size: 18, placeholder: "your name" });
+    const cmd = el("input", { id: "step-cmd", size: 36, placeholder: "e.g. step 1 done" });
+    const readBack = el("div", { id: "read-back" });
+    let rec = null;
+    const micStep = el("button", { type: "button", id: "step-mic", onclick: async () => {
+      if (rec) { rec.stop(); return; }
+      let stop; const sig = new Promise((r) => { stop = r; });
+      rec = { stop }; micStep.textContent = "■ Stop";
+      try { await command({ audio: await recordWav(sig) }); } catch (e) { readBack.replaceChildren(el("p", { class: "error" }, `Microphone: ${errorText(e)}`)); }
+      rec = null; micStep.textContent = "🎤 Speak";
+    } }, "🎤 Speak");
+    async function command(body) {
+      if (live.ended) return;
+      const r = await api("/api/voice/command", { json: { session: st.sid, ...body } }).catch((e) => ({ intent: "unknown", read_back: errorText(e) }));
+      if (body.audio) cmd.value = r.transcript || "";
+      if (r.intent === "confirm" && live.pendingK !== null) { await confirmMark(); return; }
+      if (r.intent === "cancel") { live.pendingK = null; readBack.replaceChildren(el("p", { id: "read-back-text" }, r.read_back)); say(r.read_back); return; }
+      if (r.intent === "step_done") {
+        live.pendingK = r.k;
+        readBack.replaceChildren(el("p", { id: "read-back-text" }, r.read_back),
+          el("button", { type: "button", id: "confirm-mark", onclick: confirmMark }, "Confirm"), " ",
+          el("button", { type: "button", id: "cancel-mark", onclick: () => { live.pendingK = null; readBack.replaceChildren(el("p", {}, "Cancelled. Nothing was marked.")); } }, "Cancel"));
+      } else readBack.replaceChildren(el("p", { id: "read-back-text" }, r.read_back || "I did not catch that."));
+      say(r.read_back || "I did not catch that.");
+    }
+    async function confirmMark() {
+      const k = live.pendingK, by = name.value.trim();
+      if (k === null) return;
+      if (!by) { readBack.replaceChildren(el("p", { class: "error" }, "Type your name first: the mark is logged under it.")); return; }
+      live.pendingK = null;
+      try {
+        await api(`/api/sessions/${encodeURIComponent(st.sid)}/steps/${k}/done`, { json: { by } });
+        live.checking = k;
+        readBack.replaceChildren(el("p", { id: "read-back-text" }, `Step ${k} marked done by ${by}.`));
+        say(`ZeroState is checking step ${k}.`);
+      } catch (e) { readBack.replaceChildren(el("p", { class: "error" }, errorText(e))); }
+      drawSteps();
+      liveSoon(run);
+    }
+    live.ui = { readBack };
+    live.form = el("div", { class: "actions", id: "step-form" }, el("label", {}, "Your name ", name),
+      el("label", {}, " Step ", cmd),
+      el("button", { type: "button", id: "step-send", onclick: () => cmd.value.trim() && command({ transcript: cmd.value.trim(), asr: "typed" }) }, "Send"),
+      micStep, el("span", { class: "small muted" }, "A step is marked only after you confirm the read-back. Verify, reopen and sign stay in the job screen."));
+    drawSteps();
+    liveSoon(run);
+  }
+  function drawSteps() {
+    const d = st.detail, steps = d.steps.filter((x) => x.kind !== "final");
+    const next = steps.find((x) => !x.marked_by);
+    const checked = (k) => d.findings.some((f) => f.step === k && f.source === "step");
+    if (live.checking !== null && checked(live.checking)) live.checking = null;
+    let prompt;
+    if (live.ended) prompt = "No further steps are prompted.";
+    else if (live.checking !== null) prompt = `ZeroState is checking step ${live.checking}…`;
+    else if (next) prompt = `Waiting: do step ${next.k} (${stepText(next)}), then say "step ${next.k} done".`;
+    else prompt = "Every step is marked. Waiting for the engine's verdict.";
+    const verify = steps.filter((x) => x.kind === "isolate" && x.marked_by && !x.verified_by).map((x) => el("li", { "data-verify": x.k },
+      `Step ${x.k}: waiting for verification by a second person (console) `, el("a", { href: `#/job/${encodeURIComponent(st.sid)}` }, "open the job page")));
+    stepPanel.replaceChildren(el("section", { class: "panel", id: "live-steps" }, el("h2", {}, "Live steps"),
+      el("p", { id: "step-prompt", class: "step-prompt" }, prompt),
+      el("ol", { class: "small" }, steps.map((x) => el("li", { "data-step": x.k },
+        `Step ${x.k}: ${stepText(x)} — ${x.marked_by ? `marked by ${x.marked_by}` : "not marked"}${x.verified_by ? `, verified by ${x.verified_by}` : ""}`))),
+      verify.length ? el("ul", { id: "verify-wait" }, verify) : null,
+      live.ended ? null : live.form, live.ended ? null : live.ui.readBack));
+  }
+  async function liveTick(run) {
+    if (run !== st.run || st.closed) return;
+    await refreshDetail(run);
+    assign();
+    for (const r of st.rows) {
+      if (!(r.findings.length || r.camera.length)) continue;
+      const sig = `${rowStatus(r)}:${r.camera.length > 0}`;
+      if (live.sig.get(r.n) === sig) continue;
+      live.sig.set(r.n, sig);
+      const cam = await cameraOf(r);
+      r.rd = readings(r, cam);
+      live.shown.add(r.n);
+      drawList(live.shown, r.n);
+      drawSteps();
+      await Promise.all([drawCamera(r, cam), say(spoken(r, r.rd))]);
+      if (run !== st.run || st.closed) return;
+    }
+    drawList(live.shown);
+    const d = st.detail, t = d.tracks || {};
+    const v = [t.data_only ? t.data_only.verdict : d.verdict, t.with_camera ? t.with_camera.verdict : d.verdict_with_camera];
+    const stop = v.includes("BLOCKED") || v.includes("ESCALATED");
+    const hold = d.steps.find((x) => x.kind === "hold");
+    const done = v[0] === NDF && d.steps.filter((x) => x.kind !== "final").every((x) => x.marked_by) && (!hold || hold.result !== null);
+    if ((stop || done) && !live.ended) {
+      live.ended = true; // on a STOP no further steps are prompted
+      drawSteps();
+      for (const r of st.rows) live.shown.add(r.n);
+      drawList(live.shown);
+      await showFinal(run);
+      return;
+    }
+    drawSteps();
   }
 
   // ---------- "Why?" -> explain on that finding (read-only)
