@@ -1,11 +1,15 @@
-# Eval only: the P1 operator (DMZ 192.168.90.70). Router rules limit it to PLC:502.
+# Eval only: the eval operator (DMZ 192.168.90.70). Router rules limit it to PLC:502 and P2:4840.
 FROM python:3.13-slim
+# asyncua pins as plants/p2_gasline/Dockerfile (the P2 operator, operator_p2.py)
 RUN apt-get update && apt-get install -y --no-install-recommends iproute2 \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir pymodbus==3.9.2
+    && pip install --no-cache-dir pymodbus==3.9.2 \
+    asyncua==1.1.6 aiofiles==25.1.0 aiosqlite==0.22.1 cryptography==50.0.2 cffi==2.1.1 pycparser==3.12 \
+    pyOpenSSL==26.4.0 python-dateutil==4.0.0 pytz==2026.6 sortedcontainers==2.4.0 typing_extensions==4.16.0
 WORKDIR /app
 # operator.py would shadow the stdlib "operator" module; keep the script dir off sys.path
 ENV PYTHONSAFEPATH=1
 COPY plants/p1_grfics/operator.py ./operator.py
+COPY plants/p2_gasline/operator.py ./operator_p2.py
 # Like the HMI: reach the ICS net through the GRFICS router (needs NET_ADMIN for the route).
 CMD ["sh", "-c", "ip route replace 192.168.95.0/24 via 192.168.90.200 && exec sleep infinity"]

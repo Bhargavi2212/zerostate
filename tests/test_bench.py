@@ -152,3 +152,52 @@ def test_batch_2_is_the_full_engine_set(tmp_path, monkeypatch):
     assert count[("p1", "S0")] == 15 and all(count[("p1", s)] == 5 for s in ("S7", "S7-same", "S13", "S8"))
     assert count[("plan", "PC0")] == 15 and all(count[("plan", f"PC{i}")] == 5 for i in range(1, 7))
     assert len(entries) == 45 + 35
+
+
+def test_no_watchdog_never_skips_s0(tmp_path):
+    late = datetime(2026, 11, 3, 8, 30)
+    entries = [{"plant": "p1", "scenario": "S0", "seed": 10000 + i} for i in range(13)]
+    # 11 valid S0 already logged, an hour each: at 08:30 the watchdog skips the last two
+    history = "".join(json.dumps({"kind": "attempt", **e, "valid": True, "wall_s": 3600}) + "\n" for e in entries[:11])
+    on, off = tmp_path / "on.jsonl", tmp_path / "off.jsonl"
+    on.write_text(history)
+    off.write_text(history)
+    run, calls = fake_run([])
+    assert bench.run_batch({"entries": entries}, on, SimpleNamespace(), run, lambda: late) == 0
+    assert calls == [] and sum(r.get("kind") == "skipped" for r in bench.read_progress(on)) == 2
+    run, calls = fake_run([True, True])
+    assert bench.run_batch({"entries": entries}, off, SimpleNamespace(no_watchdog=True), run, lambda: late) == 0
+    assert calls == [10011, 10012]
+
+
+def test_first_n_runs_sealed_order_prefix_and_is_fixed_on_resume(tmp_path):
+    entries = [{"plant": "p2", "scenario": "S0", "seed": 10000 + i} for i in range(5)]
+    p = tmp_path / "progress.jsonl"
+    run, calls = fake_run([True, None])  # first episode valid, then the runner refuses: batch stops
+    assert bench.run_batch({"entries": entries}, p, SimpleNamespace(first=3), run, lambda: EVENING) == 2
+    assert bench.read_progress(p)[0]["kind"] == "first_n" and bench.read_progress(p)[0]["n"] == 3
+    run2, calls2 = fake_run([True, True])
+    assert bench.run_batch({"entries": entries}, p, SimpleNamespace(first=3), run2, lambda: EVENING) == 0
+    assert calls + calls2 == [10000, 10001, 10001, 10002]
+    assert sum(r.get("kind") == "first_n" for r in bench.read_progress(p)) == 1
+    for other in (SimpleNamespace(first=4), SimpleNamespace()):  # a different N, or none, is refused
+        run3, calls3 = fake_run([True])
+        assert bench.run_batch({"entries": entries}, p, other, run3, lambda: EVENING) == 2 and calls3 == []
+    q = tmp_path / "q.jsonl"  # a batch launched without --first can't take one later
+    assert bench.run_batch({"entries": entries[:1]}, q, SimpleNamespace(), fake_run([True])[0], lambda: EVENING) == 0
+    assert bench.run_batch({"entries": entries}, q, SimpleNamespace(first=2), fake_run([True])[0], lambda: EVENING) == 2
+
+
+
+def test_batch_p2_is_s0_x15_and_every_p2_scenario_x5(tmp_path, monkeypatch):
+    on_disk = {p.stem for p in (EVAL / "scenarios" / "p2").glob("*.yaml")} - {"S0"}
+    assert set(seal.P2_FAULTS) == on_disk and len(seal.P2_FAULTS) == 13
+    monkeypatch.setattr(seal, "ROOT", tmp_path)
+    (tmp_path / "eval").mkdir()
+    seal.seal("p2", tmp_path / "sealed")
+    entries = json.loads((tmp_path / "sealed" / "manifest_p2.json").read_bytes())["entries"]
+    assert {e["plant"] for e in entries} == {"p2"} and len(entries) == 15 + 13 * 5
+    assert sum(e["scenario"] == "S0" for e in entries) == 15
+    assert all(sum(e["scenario"] == s for e in entries) == 5 for s in seal.P2_FAULTS)
+    assert len({e["seed"] for e in entries}) == len(entries) and all(e["seed"] >= seal.MIN_SCORING_SEED for e in entries)
+    assert [e["scenario"] for e in entries[:15]] != ["S0"] * 15  # shuffled, not in table order

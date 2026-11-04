@@ -1,5 +1,5 @@
 """Eval only: P2 faults through the server's unix socket inside the container (never the network):
-    docker exec -i p2 python3 - /run/p2/control.sock '<json request>'   (CLIENT on stdin)
+    docker exec -i zs-p2 python3 - /run/p2/control.sock '<json request>'   (CLIENT on stdin)
 
 Fault keys (model.GasLine.set): '<PT>.fault_mode' 1 frozen / 2 drift (severity per process-hour) / 4 dropout
 (severity = dropped fraction of each 10 process-s), '<PT>.fault_severity', '<V>.pos_fault_mode' 1 frozen /
@@ -11,7 +11,7 @@ import json
 import subprocess
 import sys
 
-CONTAINER, SOCKET = "p2", "/run/p2/control.sock"
+CONTAINER, SOCKET = "zs-p2","/run/p2/control.sock"
 CLIENT = """
 import socket, sys
 s = socket.socket(socket.AF_UNIX)
