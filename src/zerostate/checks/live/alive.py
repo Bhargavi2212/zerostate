@@ -19,7 +19,7 @@ from zerostate.models.envelope import step_targets
 from zerostate.models.verdict import FindingStatus as S
 
 RULE_ID = "LIVE-ALIVE"
-RULE_VERSION = "2"  # v2: gauges by segment, floor from the plan, blocked vent FAILs, bleeds, after-hold check
+RULE_VERSION = "3"  # v3: a bleed no segment names drains the between-blocks gauges (plans merged without segments); v2: gauges by segment, floor from the plan, blocked vent FAILs, bleeds, after-hold check
 
 
 def check(plan, step, window, params):

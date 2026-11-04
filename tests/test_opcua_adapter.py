@@ -98,5 +98,5 @@ def test_unknown_tag_raises():
 
 def test_cli_picks_adapter_from_protocol():
     a = open_adapter(P2_MAP)
-    assert isinstance(a, OpcUaReadOnly) and a.map.process_time_scale == 30
+    assert isinstance(a, OpcUaReadOnly) and a.map.process_time_scale == 10
     assert isinstance(open_adapter(ROOT / "plants" / "p1_grfics" / "modbus_map.yaml"), ModbusReadOnly)
