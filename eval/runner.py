@@ -38,6 +38,7 @@ TUNING_SEEDS = range(1000)  # anything else is a scoring seed
 # Hash of each plant's committed benchmark plan (plan digests, not secrets). None = no plan confirmed by
 # the owner yet: scoring seeds on that plant are refused. The owner fills these in after confirming.
 BENCHMARK_PLAN_HASH = {
+    # pending owner confirmation: 63e1519c52f653b2607444e39baa63973b27cd867ec45c056d017f26e5f1bbc4 (envelope + camera: optional)  # pragma: allowlist secret
     "p1": "89adfcf4fbb0a8e2b058c02ceed5d879d0a72312da92024bf967c8aec14f2a92",  # pragma: allowlist secret
     "p2": None,
 }
