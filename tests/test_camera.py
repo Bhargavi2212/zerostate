@@ -301,6 +301,12 @@ def test_read_accuracy_scoring():
     f1 = rep["per_valve"]["f1"]
     assert (f1["n"], f1["exact_1pct"], f1["within_5pct"], f1["unreadable"]) == (3, 1, 2, 1)
     assert ra.label({"truth": {"measured": {"f1_valve_pos": 12.5}}}, "f1") == 12.5
+    # zero-heavy set rule: a non-zero display read as 0 is listed (it would hide an open valve)
+    rep = ra.score({"z": {"f1": {"value": 0.0, "readable": True}, "f2": {"value": 0.0, "readable": True},
+                          "purge": {"value": 10.0, "readable": True}}},
+                   {"z": {"f1": 0.0, "f2": 10.0, "purge": 10.0}})
+    assert rep["nonzero_read_as_zero"] == ["z f2: shows 10, read 0"]
+    assert rep["by_value"] == {"0": {"n": 1, "exact_1pct": 1, "unreadable": 0}, "10": {"n": 2, "exact_1pct": 1, "unreadable": 0}}
 
 def test_cli_camera_track_wiring(tmp_path, monkeypatch):
     from zerostate import cli

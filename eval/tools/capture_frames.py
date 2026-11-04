@@ -39,15 +39,18 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, required=True, help="outside the repo")
     ap.add_argument("--view", default="default")
     ap.add_argument("--settle-wall-s", type=float, default=15, help="valve travel + the page's 3 s poll")
+    ap.add_argument("--values", help="comma list: draw each valve's position from these (e.g. a zero-heavy set) instead of 0-100")
+    ap.add_argument("--hashes-out", type=Path, default=ROOT / "eval" / "frames_set" / "hashes.txt")
     a = ap.parse_args(argv)
     if a.seed >= 1000 or ROOT in a.out.resolve().parents:
         raise SystemExit("tuning seeds only, and frames are stored outside the repo")
     a.out.mkdir(parents=True, exist_ok=True)
     rng, hashes = random.Random(a.seed), []
+    pool = [float(x) for x in a.values.split(",")] if a.values else None
     operator("manual", "on")
     try:
         for i in range(a.n):
-            pos = {v: round(rng.uniform(0, 100), 1) for v in VALVES}
+            pos = {v: (float(rng.choice(pool)) if pool else round(rng.uniform(0, 100), 1)) for v in VALVES}
             for v, p in pos.items():
                 operator("set", v, str(p))
             time.sleep(a.settle_wall_s)
@@ -60,7 +63,7 @@ def main(argv=None) -> int:
             print(name, cid, flush=True)
     finally:
         operator("manual", "off")
-    dest = ROOT / "eval" / "frames_set" / "hashes.txt"
+    dest = a.hashes_out
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text("\n".join(hashes) + "\n", encoding="utf-8")
     print(f"{len(hashes)} frames in {a.out}; hash list {dest}")

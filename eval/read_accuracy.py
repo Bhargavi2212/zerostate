@@ -27,7 +27,7 @@ def run(frames: Path, display_map: Path, out: Path) -> None:
     from PIL import Image
 
     from zerostate.camera.locate import locate
-    from zerostate.camera.read import read_display
+    from zerostate.camera.read import PROMPT_ID, read_display
     from zerostate.camera.track import load_display_map
     from zerostate.llm.client import ModelUnavailable
 
@@ -46,10 +46,14 @@ def run(frames: Path, display_map: Path, out: Path) -> None:
         except ModelUnavailable as e:
             boxes, res["error"] = dict.fromkeys(regions), str(e)
         for p, box in boxes.items():
+            # same rule as camera/track.burst: SAM ran and missed -> read the calibrated region, say so
+            by = "sam" if box else (None if "error" in res else "map")
+            box = box or (regions[p] if by == "map" else None)
             try:
                 res[p] = read_display(img, box) if box else {"value": None, "readable": False, "note": "not located"}
             except ModelUnavailable as e:
                 res[p] = {"value": None, "readable": False, "note": f"read unavailable: {e}"}
+            res[p] |= {"located_by": by, "prompt": PROMPT_ID}
         results[jpg.stem] = res
         out.write_text(json.dumps(results, indent=1), encoding="utf-8")
         print(jpg.stem, flush=True)
@@ -65,22 +69,31 @@ def label(sidecar: dict, point: str) -> float | None:
 def score(outputs: dict, labels: dict) -> dict:
     """outputs: {frame: {point: {value, readable}}}; labels: {frame: {point: value}}."""
     per: dict[str, dict] = {}
+    by_value: dict[str, dict] = {}  # by the displayed (true) value, rounded: shows whether 0, 1, 5, 10, 100 read right
+    nonzero_as_zero = []  # a display showing a non-zero value read as 0: hides an open valve, the camera's one job
     for frame, reads in outputs.items():
         for point, r in reads.items():
             if not isinstance(r, dict) or labels.get(frame, {}).get(point) is None:
                 continue
             want, s = labels[frame][point], per.setdefault(point, {"n": 0, "exact_1pct": 0, "within_5pct": 0, "unreadable": 0})
+            v = by_value.setdefault(str(round(want)), {"n": 0, "exact_1pct": 0, "unreadable": 0})
             s["n"] += 1
+            v["n"] += 1
             if not r.get("readable") or r.get("value") is None:
                 s["unreadable"] += 1
+                v["unreadable"] += 1
                 continue
             s["exact_1pct"] += abs(r["value"] - want) <= 1
             s["within_5pct"] += abs(r["value"] - want) <= 5
+            v["exact_1pct"] += abs(r["value"] - want) <= 1
+            if round(want) >= 1 and r["value"] == 0:
+                nonzero_as_zero.append(f"{frame} {point}: shows {round(want)}, read 0")
     total = {k: sum(s[k] for s in per.values()) for k in ("n", "exact_1pct", "within_5pct", "unreadable")}
     for s in [*per.values(), total]:
         for k in ("exact_1pct", "within_5pct", "unreadable"):
             s[f"{k}_rate"] = round(s[k] / s["n"], 3) if s["n"] else None
-    return {"set": f"P1 frames set, idealised camera, n = {len(outputs)} frames", "per_valve": per, "all": total}
+    return {"set": f"P1 frames set, idealised camera, n = {len(outputs)} frames", "per_valve": per, "all": total,
+            "by_value": dict(sorted(by_value.items(), key=lambda kv: int(kv[0]))), "nonzero_read_as_zero": nonzero_as_zero}
 
 
 def check_hashes(frames: Path, hash_list: Path) -> list[str]:
