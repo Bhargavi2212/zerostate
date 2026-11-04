@@ -122,8 +122,15 @@ NOT_BY_VOICE = {"sign", "signoff", "signature", "verify", "verified", "reopen", 
 STATE_WORDS = {"closed": {"closed", "close", "shut"}, "open": {"open", "opened"}}
 
 
+def _undouble(t: str) -> str:
+    """A word the transcriber ran together with itself ("confirmconfirm") is that word once. Exact halves
+    only: nothing else is rewritten. Added after voice run 3, unmeasured (eval/results/voice_runs.md)."""
+    h = len(t) // 2
+    return t[:h] if len(t) % 2 == 0 and h >= 2 and t[:h] == t[h:] else t
+
+
 def _tokens(text: str) -> list[str]:
-    return [NUMBERS.get(t, t) for t in re.findall(r"[a-z0-9]+", text.lower())]
+    return [NUMBERS.get(t, t) for t in (_undouble(w) for w in re.findall(r"[a-z0-9]+", text.lower()))]
 
 
 def _norm(target: str) -> str:

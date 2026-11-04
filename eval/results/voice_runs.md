@@ -29,3 +29,8 @@ it runs.
 15/20 correct, 0 wrong-step: the bar is not met. Five misses, all `unknown` (none mapped to a wrong step): three transcripts
 repeat a word run together ("stepstep one, done.", "confirmconfirm", "statusstatus"), two mishear the valve word ("feed one and
 prudge closed.", "raj open"). Across all three runs no clip ever mapped to a step that was not said.
+
+## After run 3 (unmeasured)
+The parser now collapses a word run together with itself (exact doubles only: "confirmconfirm" -> "confirm",
+"statusstatus" -> "status", "stepstep" -> "step"), with unit tests from the run 3 transcripts. Not measured on any clips:
+run 3 is final and there is no run 4. Valve words still need an exact match: "prudge" and "raj" stay unknown.

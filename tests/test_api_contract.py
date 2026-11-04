@@ -321,6 +321,17 @@ def test_voice_hears_a_target_spoken_as_word_and_number():
     assert server.parse_intent("F2 closed", plan)[:2] == ("step_done", 3)
 
 
+def test_voice_collapses_a_word_run_together_with_itself():
+    """Run 3 transcripts (added after run 3, unmeasured): exact doubles collapse; valve words stay exact."""
+    plan = yaml.safe_load((ROOT / "plants" / "p1_grfics" / "envelope.yaml").read_text(encoding="utf-8"))
+    assert server.parse_intent("stepstep one, done.", plan)[:2] == ("step_done", 1)
+    assert server.parse_intent("confirmconfirm", plan)[0] == "confirm"
+    assert server.parse_intent("statusstatus", plan)[0] == "status"
+    assert server.parse_intent("feed one and prudge closed.", plan)[0] == "unknown"  # no fuzzy valve matching
+    assert server.parse_intent("raj open", plan)[0] == "unknown"
+    assert server._undouble("purge") == "purge" and server._undouble("aa") == "aa"  # only exact doubles of 2+ letters
+
+
 def test_voice_keywords_are_command_words_and_plan_valves_only():
     plan = yaml.safe_load((ROOT / "plants" / "p1_grfics" / "envelope.yaml").read_text(encoding="utf-8"))
     kw = server.voice_keywords(plan)
