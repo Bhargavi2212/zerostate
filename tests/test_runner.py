@@ -103,3 +103,132 @@ def test_meta_gets_the_signals_hash(tmp_path):
     h = runner.add_signals_hash(tmp_path)
     assert h == hashlib.sha256(b'{"t": 1}\n{"t": 2}\n').hexdigest()
     assert json.loads((tmp_path / "meta.json").read_text()) == {"seed": 7, "signals_sha256": h}
+
+
+
+# ---------------------------------------------------------------- P2 (offline, stubbed lab)
+P2_PAIRS = [f"-A FORWARD -s {s}/32 -d 192.168.95.2/32 -p tcp -m tcp --dport 502 -j ACCEPT\n"
+            f"-A FORWARD -s {s}/32 -d 192.168.95.50/32 -p tcp -m tcp --dport 4840 -j ACCEPT\n"
+            f"-A FORWARD -s {s}/32 -j DROP" for s in runner.SOURCES]
+
+
+def test_p2_router_rules_need_4840_above_the_drop(monkeypatch):
+    monkeypatch.setattr(runner, "sh", lambda *a, **k: chain(*P2_PAIRS, "-A FORWARD -j ACCEPT"))
+    assert runner.router_rules_ok(runner.P2_TARGETS) and runner.router_rules_ok()
+    monkeypatch.setattr(runner, "sh", lambda *a, **k: chain(*PAIRS, "-A FORWARD -j ACCEPT"))
+    assert runner.router_rules_ok() and not runner.router_rules_ok(runner.P2_TARGETS)  # P1 rules only
+
+
+def test_p2_write_log_counts_users():
+    log = "\n".join(json.dumps(r) for r in [{"user": "operator", "allowed": True}, {"user": "zerostate", "allowed": False},
+                                            {"user": "operator", "allowed": False}])
+    assert runner.p2_writes(log) == {"zerostate": 1, "operator_allowed": 1, "other": 0}
+    assert runner.p2_writes("") == {"zerostate": 0, "operator_allowed": 0, "other": 0}
+
+
+def test_p2_plan_and_code_spec():
+    plan = runner.p2_plan()
+    assert [(s.k, s.kind, s.target) for s in plan.steps][:5] == [
+        (1, "isolate", "XV-201"), (2, "isolate", "XV-203"), (3, "vent_open", "BV-202"), (4, "isolate", "XV-204"), (5, "vent_open", "VV-213")]
+    vent = next(s for s in plan.steps if s.k == 5)
+    final_vent = next(s for s in plan.steps if s.k == 8)
+    bleed = next(s for s in plan.steps if s.k == 3)
+    assert runner.p2_vent_wait(plan, vent, 5) == ("PT-211", plan.hold_pressure_kpa_abs)
+    assert runner.p2_vent_wait(plan, final_vent, 5) == ("PT-211", plan.vent_target_kpa_abs)
+    assert runner.p2_vent_wait(plan, bleed, 5) == ("PT-202", plan.vent_target_kpa_abs)
+    for _, _, local, pat in runner.CODE_SPEC_P2:
+        assert list((runner.ROOT / local).glob(pat)), (local, pat)
+    assert runner.BENCHMARK_PLAN_HASH["p2"] in (None, plan.content_hash())
+
+
+class FakeLab:
+    """zs status / step / session for a clean P2 run: each marked step passes; the 8th gives the end verdict."""
+
+    def __init__(self):
+        self.steps, self.ops, self.verified, self.sh = {}, [], [], []
+
+    def zs(self, *args, check=True):
+        if args[0] == "status":
+            done = "8" in self.steps
+            return json.dumps({"state": "ready", "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF" if done else "PENDING",
+                               "steps": self.steps, "stamp": "x"})
+        if args[:2] == ("step", "done"):
+            self.steps[args[3]] = "PASS"
+        if args[:2] == ("step", "verify"):
+            self.verified.append((args[3], args[5]))
+        return "{}"
+
+    def run_sh(self, *cmd, check=True, timeout=120):
+        self.sh.append(cmd)
+        return json.dumps({"user": "operator", "allowed": True}) + "\n" if "cat" in cmd[-1] else ""
+
+
+def p2_episode(tmp_path, monkeypatch, scenario):
+    from types import SimpleNamespace
+    lab = FakeLab()
+    monkeypatch.setattr(runner, "zs", lab.zs)
+    monkeypatch.setattr(runner, "sh", lab.run_sh)
+    monkeypatch.setattr(runner, "router_rules_ok", lambda *a: True)
+    monkeypatch.setattr(runner, "operator_p2", lambda *a: lab.ops.append(a) or 0)
+    monkeypatch.setattr(runner, "operator", lambda *a: (_ for _ in ()).throw(AssertionError("P1 operator used")))
+    compose = []
+    monkeypatch.setattr(runner.subprocess, "run", lambda cmd, **k: compose.append(cmd) or SimpleNamespace(returncode=0, stderr=""))
+    ep = runner.P2Episode(scenario, 7, tmp_path)
+    fired = []
+    ep.p2faults = SimpleNamespace(read=lambda: {"updating": True, "time_scale": ep.scale, "pressure_kpa_abs": {"F-210": 2000.0}},
+                                  set_inputs=lambda **kw: fired.append(kw), updates=lambda on: fired.append(("updates", on)),
+                                  clear=lambda: fired.append("clear"))
+
+    class Stream:
+        def __init__(self, hz):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *e):
+            return False
+
+        def __iter__(self):
+            yield {"t": 1.0, "pressure_kpa_abs": {"F-210": 2000.0}}
+    monkeypatch.setattr(runner, "_load", lambda name, folder=None: SimpleNamespace(stream=Stream))
+    return ep, lab, compose, fired
+
+
+def test_p2_clean_episode_uses_the_p2_path(tmp_path, monkeypatch):
+    scenario = runner.yaml.safe_load((runner.ROOT / "eval" / "scenarios" / "p2" / "S0.yaml").read_text(encoding="utf-8"))
+    ep, lab, compose, fired = p2_episode(tmp_path, monkeypatch, scenario)
+    r = ep.run()
+    assert r["valid"] and r["match"], r
+    assert "--profile" in compose[0] and compose[0][-1] == "p2"
+    sets = [a[1:] for a in lab.ops if a[0] == "set"]
+    assert sets == [("XV-201", "0.0"), ("XV-203", "0.0"), ("BV-202", "100.0"), ("XV-204", "0.0"),
+                    ("VV-213", "100.0"), ("VV-213", "0.0"), ("VV-213", "100.0")]
+    waits = [a[1:3] for a in lab.ops if a[0] == "wait-pressure-below"]
+    assert waits == [("PT-202", "102.0"), ("PT-211", "200.0"), ("PT-211", "102.0")]
+    assert lab.verified == [("1", "eval-verifier"), ("2", "eval-verifier"), ("4", "eval-verifier")]
+    start = next(c for c in lab.sh if "session" in c)
+    assert "ZS_MAP=/app/config/p2_gasline/opcua_map.yaml" in start and f"/data/plans/{ep.plan.content_hash()}.json" in start
+    assert "clear" in fired
+
+
+def test_p2_wrong_valve_and_same_verifier_variants(tmp_path, monkeypatch):
+    ep, lab, _, _ = p2_episode(tmp_path, monkeypatch, {"id": "S5", "expected": ["BLOCKED"], "operator": "wrong_valve_step4"})
+    ep.run()
+    assert ("set", "XV-231", "0.0") in lab.ops and ("set", "XV-204", "0.0") not in lab.ops
+    ep, lab, _, _ = p2_episode(tmp_path / "b", monkeypatch, {"id": "S7-same", "expected": ["BLOCKED"], "operator": "same_verifier"})
+    (tmp_path / "b").mkdir()
+    ep.run()
+    assert lab.verified[0] == ("1", "eval-operator")
+
+
+def test_p2_fault_actions(tmp_path, monkeypatch):
+    ep, _, _, fired = p2_episode(tmp_path, monkeypatch, {"id": "S12", "expected": ["ESCALATED"]})
+    ep.due = [(0.0, {"action": "stop_updates"}), (0.0, {"set": {"VV-213.flow_scale": 0}})]
+    ep.fire_due()
+    assert fired == [("updates", False), {"VV-213.flow_scale": 0}]
+    ep.p2faults.set_inputs = lambda **kw: (_ for _ in ()).throw(RuntimeError("unknown key"))
+    ep.due = [(0.0, {"set": {"nope": 1}})]
+    import pytest
+    with pytest.raises(runner.EpisodeInvalid):
+        ep.fire_due()
