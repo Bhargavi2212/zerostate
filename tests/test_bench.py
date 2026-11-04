@@ -72,8 +72,8 @@ def test_scoring_seed_runs_only_from_its_sealed_tag(sealed, monkeypatch):
 
 
 def test_refrozen_batch_runs_only_from_its_new_tag(sealed, monkeypatch):
-    """p2 was re-frozen as bench-freeze-p2b (DECISIONS Nov 4): its old tag no longer admits a scoring seed."""
-    assert runner.FREEZE_TAG == {"p2": "bench-freeze-p2b"}
+    """p2 was re-frozen as bench-freeze-p2b, then p2c for the S2 re-run (DECISIONS Nov 4): old tags no longer admit a scoring seed."""
+    assert runner.FREEZE_TAG == {"p2": "bench-freeze-p2c"}
     root, _ = sealed
     m, s = root / "sealed" / "manifest_p1.json", root / "sealed" / "salt_p1"
     e = json.loads(m.read_bytes())["entries"][0]
@@ -256,3 +256,32 @@ def test_p2_episode_with_an_unfired_fault_is_invalid_unless_it_blocked_first():
     assert ep.unfired("BLOCKED") is None  # blocked at step 4: step 5's fault rightly never came
     ep.fired = list(ep.faults)
     assert ep.unfired("NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF") is None
+
+
+def test_invalidate_unfired_reruns_only_the_attempt_whose_fault_never_fired(tmp_path, monkeypatch):
+    monkeypatch.setattr(bench, "ROOT", tmp_path)
+    p = tmp_path / "progress.jsonl"
+    run, _ = fake_run([True, True, True])  # ep1 S0 (no fault), ep2 S1 (its fault never fired), ep3 S0
+    assert bench.run_batch(MANIFEST, p, SimpleNamespace(), run, lambda: EVENING) == 0
+    for ep, faults, events in (("ep1", [], ""), ("ep2", [{"at_step": [5, 6, 7]}], ""),
+                               ("ep3", [{"at_step": 5}], '{"kind": "fault"}\n')):
+        (tmp_path / "runs" / ep).mkdir(parents=True)
+        (tmp_path / "runs" / ep / "meta.json").write_text(json.dumps({"faults": faults}))
+        (tmp_path / "runs" / ep / "events.jsonl").write_text(events)
+    run2, calls2 = fake_run([True])
+    assert bench.run_batch(MANIFEST, p, SimpleNamespace(invalidate_unfired=True), run2, lambda: EVENING) == 0
+    assert calls2 == [10001]  # only S1, once
+    prog = bench.read_progress(p)
+    assert [r["episode"] for r in prog if r["kind"] == "invalidated"] == ["ep2"]
+    assert bench.summary(MANIFEST, prog) == {**bench.summary(MANIFEST, prog), "valid": 3, "attempts": 4, "invalid_attempts": 1}
+    run3, calls3 = fake_run([])  # a second pass logs nothing new and runs nothing
+    assert bench.run_batch(MANIFEST, p, SimpleNamespace(invalidate_unfired=True), run3, lambda: EVENING) == 0
+    assert calls3 == [] and sum(r["kind"] == "invalidated" for r in bench.read_progress(p)) == 1
+
+
+def test_unfired_is_excused_by_a_block_before_the_faults_step(tmp_path):
+    (tmp_path / "e").mkdir()
+    (tmp_path / "e" / "meta.json").write_text(json.dumps({"faults": [{"at_step": "vent_open"}]}))
+    att = {"episode": "e", "valid": True}
+    assert bench.unfired(tmp_path, {**att, "verdict": "BLOCKED"}) is None  # batch p1 S1 seed 260352266
+    assert "never fired" in bench.unfired(tmp_path, {**att, "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"})

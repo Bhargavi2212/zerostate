@@ -9,6 +9,9 @@ the batch (a lab fault, e.g. router rules wiped by a Docker restart): fix it, th
 Watchdog: from 05:00, if the batch would finish after 09:00, S0 entries beyond 10 valid are skipped;
 --no-watchdog turns that off (batch 2: S0 x15 stays whole). --first N runs only the first N entries in
 sealed order (batch p2: N fixed before launch, logged, and the same N required on resume).
+--invalidate-unfired logs an `invalidated` record for every valid attempt whose drawn fault never fired
+(the runner's rule since batch p2's S2, DECISIONS Nov 4), so those entries run again; the record is
+appended, nothing is rewritten.
 """
 
 import argparse
@@ -36,10 +39,32 @@ def read_progress(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+def invalidated(progress: list[dict]) -> set[str]:
+    return {p["episode"] for p in progress if p.get("kind") == "invalidated"}
+
+
+def counts(p: dict, inv: set[str]) -> bool:
+    """A valid attempt, not invalidated afterwards."""
+    return bool(p["valid"]) and p.get("episode") not in inv
+
+
 def done(entry: dict, progress: list[dict]) -> bool:
     tries = [p for p in progress if key(p) == key(entry) and p.get("kind") == "attempt"]
     skipped = any(key(p) == key(entry) and p.get("kind") == "skipped" for p in progress)
-    return skipped or any(t["valid"] for t in tries) or len(tries) >= MAX_ATTEMPTS
+    inv = invalidated(progress)
+    return skipped or any(counts(t, inv) for t in tries) or len(tries) >= MAX_ATTEMPTS
+
+
+def unfired(runs: Path, attempt: dict) -> str | None:
+    """The runner's rule (runner.P2Episode.unfired) on an attempt already run: a drawn fault with no fault
+    event, unless the verdict blocked or escalated first (the fault's step never came)."""
+    d = runs / attempt["episode"]
+    drawn = json.loads((d / "meta.json").read_text(encoding="utf-8")).get("faults") or []
+    ev = d / "events.jsonl"
+    fired = sum(json.loads(x).get("kind") == "fault" for x in ev.read_text(encoding="utf-8").splitlines() if x.strip()) if ev.exists() else 0
+    if attempt["valid"] and len(drawn) > fired and attempt.get("verdict") not in ("BLOCKED", "ESCALATED"):
+        return f"drawn fault never fired: {len(drawn)} drawn, {fired} fault events, verdict {attempt.get('verdict')}"
+    return None
 
 
 def watchdog_skip(entry: dict, now: datetime, remaining: int, mean_wall_s: float | None, s0_valid: int) -> bool:
@@ -87,6 +112,12 @@ def run_batch(manifest: dict, progress_p: Path, a, run=run_episode, clock=dateti
             fh.write(json.dumps({"t": clock().isoformat(), **rec}) + "\n")
 
     entries, in_a_row = manifest["entries"], 0
+    if getattr(a, "invalidate_unfired", False):
+        progress = read_progress(progress_p)
+        inv = invalidated(progress)
+        for p in progress:
+            if p.get("kind") == "attempt" and p.get("episode") not in inv and (why := unfired(ROOT / "runs", p)):
+                log({"kind": "invalidated", **{k: p[k] for k in ("plant", "scenario", "seed", "episode")}, "reason": why})
     if any(e.get("plant") == "p2" for e in entries):  # hard gate, on every launch and resume (DECISIONS Nov 4)
         if (getattr(a, "first", None) or 0) < P2_MIN_FIRST_N:
             print(f"batch with P2 entries needs --first N >= {P2_MIN_FIRST_N}, fixed before launch")
@@ -139,12 +170,12 @@ def run_batch(manifest: dict, progress_p: Path, a, run=run_episode, clock=dateti
 
 
 def summary(manifest: dict, progress: list[dict]) -> dict:
-    attempts = [p for p in progress if p.get("kind") == "attempt"]
+    attempts, inv = [p for p in progress if p.get("kind") == "attempt"], invalidated(progress)
     entries = manifest["entries"]
-    valid = sum(1 for e in entries if any(key(p) == key(e) and p["valid"] for p in attempts))
+    valid = sum(1 for e in entries if any(key(p) == key(e) and counts(p, inv) for p in attempts))
     skipped = sum(1 for e in entries if any(key(p) == key(e) and p.get("kind") == "skipped" for p in progress))
     out = {"entries": len(entries), "valid": valid, "invalid": len(entries) - valid - skipped, "skipped": skipped,
-           "attempts": len(attempts), "invalid_attempts": sum(1 for p in attempts if not p["valid"])}
+           "attempts": len(attempts), "invalid_attempts": sum(1 for p in attempts if not counts(p, inv))}
     out["invalid_rate"] = round(out["invalid_attempts"] / out["attempts"], 3) if attempts else None
     print(json.dumps(out))
     return out
@@ -158,6 +189,7 @@ def main() -> int:
     ap.add_argument("--camera", action="store_true", help="every episode with the frame service on (batch 2)")
     ap.add_argument("--no-watchdog", action="store_true", help="never skip S0 entries (batch 2)")
     ap.add_argument("--first", type=int, help="run only the first N entries in sealed order (batch p2)")
+    ap.add_argument("--invalidate-unfired", action="store_true", help="log valid attempts whose drawn fault never fired as invalidated")
     a = ap.parse_args()
     if a.first is not None and a.first < 1:
         ap.error("--first must be >= 1")

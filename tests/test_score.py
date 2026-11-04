@@ -256,3 +256,21 @@ def test_plan_set_lists_manifest_entries_without_a_result(tmp_path):
     out = score.plan_set(p, {("plan", "PC0", 1), ("plan", "PC1", 2), ("p1", "S0", 3)})
     assert out["missing"] == ["PC1 seed 2"] and out["not_in_manifest"] == ["PC1 seed 9"]
     assert out["false_blocks"]["k"] == 0 and out["per_case"]["PC1"]["blocked"] == 1
+
+
+def test_an_invalidated_attempt_is_listed_and_its_rerun_is_scored(tmp_path):
+    """Batch p2's S2: the first episodes ran with no fault (run_benchmark --invalidate-unfired), the re-runs count."""
+    res = tmp_path / "bench"
+    res.mkdir()
+    seed = int(CLEAN_PASS.split("_seed")[1].split("_")[0])
+    old, new = f"S0_seed{seed}_20261104T090000", f"S0_seed{seed}_20261104T120000"
+    _copy(CLEAN_PASS, res, old)
+    _copy(CLEAN_PASS, res, new)
+    att = {"kind": "attempt", "plant": "p1", "scenario": "S0", "seed": seed, "valid": True}
+    (res / "progress.jsonl").write_text("".join(json.dumps(r) + "\n" for r in (
+        {**att, "episode": old}, {**att, "kind": "invalidated", "episode": old, "reason": "drawn fault never fired"},
+        {**att, "episode": new})), encoding="utf-8")
+    m, s, h = _seal(tmp_path, [{"plant": "p1", "scenario": "S0", "seed": seed}])
+    out = score.score("p1", m, s, res, hash_p=h, muse_results=tmp_path / "none.json")
+    assert out["n_scored"] == 1 and out["invalid"] == {**out["invalid"], "k": 0, "attempts": 2, "invalid_attempts": 1}
+    assert out["episode_problems"] == {old: ["invalidated: drawn fault never fired"]}

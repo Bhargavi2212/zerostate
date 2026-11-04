@@ -115,7 +115,7 @@ def seed_problem(seed: int, plan_hash: str, plant: str = "p1") -> str | None:
 
 # A batch re-frozen after its first freeze (DECISIONS Nov 4: P2 fixes found on tuning seeds) runs from the
 # new tag; the old tag stays where it was, and the sealed manifest and its hash do not change.
-FREEZE_TAG = {"p2": "bench-freeze-p2b"}
+FREEZE_TAG = {"p2": "bench-freeze-p2c"}  # p2b ran 75 of 80 entries; p2c re-ran the 5 S2 (DECISIONS Nov 4)
 
 
 def git(*args) -> tuple[int, str]:

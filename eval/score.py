@@ -373,6 +373,11 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
     folders = sorted(p for p in Path(results_dir).iterdir() if (p / "meta.json").exists() and (p / "audit_export.json").exists())
     loaded = {d.name: load_episode(d) for d in folders}
     problems = {n: episode_problems(ep, batch, all_entries) for n, ep in loaded.items()}
+    progress = _jsonl(Path(results_dir) / "progress.jsonl")
+    inv = {p["episode"]: p["reason"] for p in progress if p.get("kind") == "invalidated"}  # run_benchmark --invalidate-unfired
+    for n, found in problems.items():
+        if n in inv:
+            found.append(f"invalidated: {inv[n]}")
 
     chosen, invalid = {}, []
     for e in entries:
@@ -423,7 +428,6 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
         if "time_to_block_process_s" in r:
             ttb.setdefault(r["scenario"], []).append(r["time_to_block_process_s"])
     cam_rows = [r for r in rows if "verdict_with_camera" in r]
-    progress = _jsonl(Path(results_dir) / "progress.jsonl")
     attempts = [p for p in progress if p.get("kind") == "attempt"]
 
     out = {
@@ -459,7 +463,7 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
         "severity_at_release": {r["episode"]: r["severity_at_release"] for r in rows if "severity_at_release" in r},
         "hold_by_leak_bin": bins,
         "invalid": {"k": len(invalid), "n": len(entries), "attempts": len(attempts),
-                    "invalid_attempts": sum(1 for p in attempts if not p.get("valid"))},
+                    "invalid_attempts": sum(1 for p in attempts if not p.get("valid") or p.get("episode") in inv)},
         "invalid_entries": invalid,
         "episode_problems": listed,
         "not_scored": stray,
