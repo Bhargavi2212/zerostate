@@ -71,6 +71,22 @@ def test_scoring_seed_runs_only_from_its_sealed_tag(sealed, monkeypatch):
     assert "do not match" in runner.scoring_problem("p1", m, s, e["scenario"], e["seed"])
 
 
+def test_refrozen_batch_runs_only_from_its_new_tag(sealed, monkeypatch):
+    """p2 was re-frozen as bench-freeze-p2b (DECISIONS Nov 4): its old tag no longer admits a scoring seed."""
+    assert runner.FREEZE_TAG == {"p2": "bench-freeze-p2b"}
+    root, _ = sealed
+    m, s = root / "sealed" / "manifest_p1.json", root / "sealed" / "salt_p1"
+    e = json.loads(m.read_bytes())["entries"][0]
+    monkeypatch.setattr(runner, "FREEZE_TAG", {"p1": "bench-freeze-p1b"})
+    monkeypatch.setattr(runner, "ROOT", root)
+    refs = {"refs/tags/bench-freeze-p1^{commit}": (0, "old"), "refs/tags/bench-freeze-p1b^{commit}": (0, "new")}
+    for head, ok in (("new", True), ("old", False)):
+        calls = {("rev-parse", "HEAD"): (0, head), ("diff", "--quiet", "HEAD"): (0, "")}
+        monkeypatch.setattr(runner, "git", lambda *a, c=calls: c.get(a) or refs.get(a[1], (128, "")))
+        got = runner.scoring_problem("p1", m, s, e["scenario"], e["seed"])
+        assert (got is None) if ok else "is not bench-freeze-p1b" in got
+
+
 def test_fingerprint_ignores_line_endings_and_names_differences(tmp_path):
     (tmp_path / "a").mkdir()
     (tmp_path / "b").mkdir()

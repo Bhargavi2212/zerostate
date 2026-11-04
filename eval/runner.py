@@ -113,6 +113,11 @@ def seed_problem(seed: int, plan_hash: str, plant: str = "p1") -> str | None:
     return None
 
 
+# A batch re-frozen after its first freeze (DECISIONS Nov 4: P2 fixes found on tuning seeds) runs from the
+# new tag; the old tag stays where it was, and the sealed manifest and its hash do not change.
+FREEZE_TAG = {"p2": "bench-freeze-p2b"}
+
+
 def git(*args) -> tuple[int, str]:
     r = subprocess.run(["git", *args], check=False, capture_output=True, text=True, timeout=60, cwd=ROOT)
     return r.returncode, r.stdout.strip()
@@ -128,10 +133,11 @@ def scoring_problem(batch: str | None, manifest_p, salt_p, scenario: str, seed: 
         return f"manifest and salt do not match eval/sealed_hash_{batch}.txt"
     if {"plant": plant, "scenario": scenario, "seed": seed} not in manifest["entries"]:
         return f"{scenario} seed {seed} is not in the sealed {batch} manifest"
-    rc, tag = git("rev-parse", f"refs/tags/bench-freeze-{batch}^{{commit}}")
+    name = FREEZE_TAG.get(batch, f"bench-freeze-{batch}")
+    rc, tag = git("rev-parse", f"refs/tags/{name}^{{commit}}")
     head = git("rev-parse", "HEAD")[1]
     if rc != 0 or head != tag:
-        return f"HEAD {head[:12]} is not bench-freeze-{batch}"
+        return f"HEAD {head[:12]} is not {name}"
     if git("diff", "--quiet", "HEAD")[0] != 0:
         return "tracked files differ from the frozen tag"
     return None
