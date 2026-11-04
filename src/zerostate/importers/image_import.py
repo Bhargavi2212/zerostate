@@ -6,7 +6,7 @@ two model calls so every route shares one guard against invented points:
 2. The transcript goes through the typed-text route (text_import), whose code guard nulls any tag that
    is not in the transcript, which blocks confirmation until a person resolves it.
 
-Not covered: a misread tag in step 1 (e.g. XV-203 read as XV-208) passes the guard. The importer
+Not covered: a misread tag in step 1 (e.g. one digit of a tag misread) passes the guard. The importer
 accuracy set measures how often; the person's confirmation is the backstop.
 """
 

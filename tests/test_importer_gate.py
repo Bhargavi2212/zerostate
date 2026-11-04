@@ -170,6 +170,7 @@ def lab(tmp_path, monkeypatch):
     monkeypatch.setenv("ZS_DATA", str(tmp_path / "data"))
     monkeypatch.setenv("ZS_CONFIG", str(tmp_path / "config"))
     monkeypatch.setenv("ZS_THRESHOLDS", str(ROOT / "plants/p1_grfics/thresholds.yaml"))
+    monkeypatch.setenv("ZS_MAP", str(ROOT / "plants/p1_grfics/modbus_map.yaml"))  # as deploy/Dockerfile sets it
 
     def no_lab(*_a, **_k):
         raise ReachedAdapter  # past every refusal: would now open the plant connection

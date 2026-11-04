@@ -1,7 +1,8 @@
 """`zs` command line. Run inside the zerostate container, e.g. `docker exec -u zs zerostate zs status s1 --json`.
 
 Paths come from the environment: ZS_DATA (default /data), ZS_MAP and ZS_THRESHOLDS (plant files
-copied into the image under /app/config/<plant>/); the map's `protocol` picks the adapter.
+copied into the image under /app/config/<plant>/, set by deploy/Dockerfile or per episode; no plant
+default here); the map's `protocol` picks the adapter.
 """
 
 import argparse
@@ -39,8 +40,15 @@ def _audit() -> Path:
     return Path(os.environ.get("ZS_AUDIT", _data() / "audit.sqlite"))
 
 
+def _env_path(name: str) -> str:
+    """A plant file named by the environment only: the engine carries no plant default."""
+    if not os.environ.get(name):
+        raise SystemExit(f"{name} is not set: point it at the plant's file under /app/config/<plant>/")
+    return os.environ[name]
+
+
 def _thresholds() -> dict:
-    return load_thresholds(os.environ.get("ZS_THRESHOLDS", "/app/config/p1_grfics/thresholds.yaml"))
+    return load_thresholds(_env_path("ZS_THRESHOLDS"))
 
 
 def _config() -> Path:
@@ -164,7 +172,7 @@ def session_start(a) -> int:
     confirmation = is_confirmed(plan.content_hash(), [Path(a.plan).parent, _config() / plan.plant], _data())
     if confirmation is None:
         return refuse(f"plan {plan.content_hash()} is not confirmed by a person (zs plan confirm)")
-    adapter = open_adapter(os.environ.get("ZS_MAP", "/app/config/p1_grfics/modbus_map.yaml"))
+    adapter = open_adapter(_env_path("ZS_MAP"))
     spans = {e.tag: (e.scale_min, e.scale_max) for e in adapter.map.tags}
     pmap = (PlantMap.model_validate(yaml.safe_load(Path(a.plan_map).read_text(encoding="utf-8-sig")))
             if a.plan_map else None)
