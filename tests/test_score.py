@@ -224,3 +224,12 @@ def test_real_never_say_checker_runs_on_score_output(batch):
     pytest.importorskip("zerostate.wording")
     s, _ = batch
     assert score.never_say(json.dumps(s, default=str)) == []
+
+def test_camera_coverage_counts_timeouts_next_to_accuracy():
+    reads = [{"note": "no frame: TimeoutError: timed out", "readable": False},
+             {"note": "no frame: URLError: <urlopen error timed out>", "readable": False},
+             {"note": "no frame: ConnectionRefusedError: refused", "readable": False},
+             {"note": "read unavailable: HTTP 500", "readable": False},
+             {"note": None, "readable": True, "located_by": "map"}]
+    assert score.camera_coverage(reads, 2) == {"readings": 5, "readable": 1, "no_frame": 3, "timeouts": 2,
+                                               "model_unavailable": 1, "located_by_map": 1, "pending_at_stop": 2}

@@ -92,6 +92,24 @@ def test_burst_turns_model_and_fetch_failures_into_unreadable_readings():
     assert rs[0]["frame_sha256"] and "locate unavailable" in rs[0]["note"]
 
 
+def test_a_frame_service_timeout_is_an_unreadable_reading_and_never_raises():
+    """Chromium's screenshot can hang (seen Nov 3): fetch_frame times out -> that reading is unreadable
+    (LIVE-CAMERA: UNKNOWN), logged with the reason; the other frames are still read."""
+    calls = {"n": 0}
+
+    def fetch(view):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise TimeoutError("timed out")
+        return frame(), 5.0
+    spark = lambda msgs, schema, purpose: schema(value=0.0, readable=True)
+    out = burst({"step": 2, "points": {"f1": ("default", F1_BOX)}}, fetch=fetch,
+                sam=lambda img, prompt, purpose: [], spark=spark, sleep=lambda s: None)
+    rs = out[0]["readings"]
+    assert rs[0]["readable"] is False and rs[0]["value"] is None and rs[0]["note"] == "no frame: TimeoutError: timed out"
+    assert [r["readable"] for r in rs[1:]] == [True, True]
+
+
 def test_burst_reads_each_located_display():
     sam = lambda img, prompt, purpose: [{"x1": 100, "y1": 100, "x2": 220, "y2": 150, "c": 0.9}]
     spark = lambda msgs, schema, purpose: schema(value=100.0, readable=True)

@@ -293,6 +293,9 @@ def score_episode(ep: dict, fs: dict) -> dict:
     cam = ep["track"]["with_camera"]
     if cam:
         out["verdict_with_camera"] = ep["verdict"].get("verdict_with_camera") or cam[-1][1]
+    reads = [e["payload"] for e in ep["audit"] if e["kind"] == "camera_reading"]
+    if reads or cam:
+        out["camera_coverage"] = camera_coverage(reads, ep["verdict"].get("camera_pending"))
     if not out["match"]:
         out["note"] = mismatch_note(ep)
     elif (ep["meta"].get("scenario") or {}).get("faults") and not out["fault"]:
@@ -318,6 +321,17 @@ def score_decisions(decisions: dict, eps: dict, fs: dict) -> dict:
     out["passes"] = sum(1 for d in answered.values() if d["answer"] == "pass")
     out["decided_on"] = {"k": len(answered), "n": len(eps), "whole_job": sum(whole_job(eps[n]) for n in answered)}
     return out
+
+
+def camera_coverage(reads: list[dict], pending) -> dict:
+    """How much of the camera's work produced a reading: next to its accuracy, never instead of it."""
+    note = [str(r.get("note") or "") for r in reads]
+    return {"readings": len(reads), "readable": sum(bool(r.get("readable")) for r in reads),
+            "no_frame": sum(n.startswith("no frame") for n in note),
+            "timeouts": sum(n.startswith("no frame") and ("timeout" in n.lower() or "timed out" in n.lower()) for n in note),
+            "model_unavailable": sum(n.startswith(("locate unavailable", "read unavailable")) for n in note),
+            "located_by_map": sum(r.get("located_by") == "map" for r in reads),
+            "pending_at_stop": int(pending or 0)}
 
 
 def whole_job(ep: dict) -> bool:
@@ -449,7 +463,12 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
         "per_scenario": dict(sorted(per_scenario.items())),
         "camera": {"with_camera_blocked": count(lambda r: r["verdict_with_camera"] == "BLOCKED", cam_rows),
                    "with_camera_escalated": count(lambda r: r["verdict_with_camera"] == "ESCALATED", cam_rows),
-                   "data_only_blocked": count(lambda r: r["verdict"] == "BLOCKED", cam_rows), "n": len(cam_rows)},
+                   "data_only_blocked": count(lambda r: r["verdict"] == "BLOCKED", cam_rows), "n": len(cam_rows),
+                   "coverage": {k: sum(r["camera_coverage"][k] for r in rows if "camera_coverage" in r)
+                                for k in ("readings", "readable", "no_frame", "timeouts", "model_unavailable",
+                                          "located_by_map", "pending_at_stop")},
+                   "timeouts_per_episode": {r["episode"]: r["camera_coverage"]["timeouts"]
+                                            for r in rows if "camera_coverage" in r}},
         "baselines": baselines(chosen, fs, muse_results or ROOT / "eval" / "results" / f"muse_alone_{batch}.json"),
         "episodes": rows,
     }
@@ -514,6 +533,12 @@ def markdown(s: dict) -> str:
         c = s["camera"]
         L += ["", "## Camera vs data-only (idealised camera)", "",
               f"With-camera track blocked {c['with_camera_blocked']} of {c['n']} (escalated {c['with_camera_escalated']}); data-only blocked {c['data_only_blocked']} of {c['n']}."]
+        v = c["coverage"]
+        L += ["", (f"Coverage: {v['readable']} of {v['readings']} camera readings readable; no frame {v['no_frame']} "
+                   f"(timeouts {v['timeouts']}), model unavailable {v['model_unavailable']}, located by the calibrated map "
+                   f"{v['located_by_map']}, reads still pending at stop {v['pending_at_stop']}."), "",
+              "| Episode | camera timeouts |", "|---|---|"]
+        L += [f"| {e} | {n} |" for e, n in c["timeouts_per_episode"].items()]
     if "plan_set" in s:
         p = s["plan_set"]
         L += ["", "## Plan set", "", f"{p['label_match']}/{p['n']} cases match their labels; false blocks on correct plans {show(p['false_blocks'])}."]

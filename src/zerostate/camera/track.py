@@ -63,7 +63,7 @@ def burst(job: dict, fetch=fetch_frame, sam=sam_boxes, spark=spark_json, sleep=t
             try:
                 frames.append((v, *fetch(v)))
             except Exception as e:  # noqa: BLE001 - no frame = unreadable reading, never a crash
-                frames.append((v, None, time.time(), f"no frame: {type(e).__name__}"))
+                frames.append((v, None, time.time(), f"no frame: {type(e).__name__}: {e}"[:160]))  # e.g. "timed out"
     out = {p: [] for p in points}
     for v, data, t, *err in frames:
         regions = {p: box for p, (view, box) in points.items() if view == v}
