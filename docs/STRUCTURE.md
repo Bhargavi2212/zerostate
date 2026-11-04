@@ -124,7 +124,7 @@ zerostate/
 â”‚   â”‚                              # zero-position leak term, time scale; Dockerfile.derived, LICENSE, README listing every change
 â”‚   â”œâ”€â”€ p2_gasline/
 â”‚   â”‚   â”œâ”€â”€ SPEC.md                # gas, equipment, valves, sensors, OPC UA nodes, physics + analytic check (committed before code)
-â”‚   â”‚   â”œâ”€â”€ plant_map.yaml  isolation_list.yaml  confirmed.yaml   # the plan = map + list (also the plan-check set's base)
+â”‚   â”‚   â”œâ”€â”€ plant_map.yaml  isolation_list.yaml  plan.yaml  confirmed.yaml   # the plan = map + list (also the plan-check set's base); plan.yaml is that merge as a file, what the owner confirms
 â”‚   â”‚   â”œâ”€â”€ opcua_map.yaml  thresholds.yaml   # protocol: opcua; tags, spans, freshness; P2 thresholds (tuned on P2 tuning seeds)
 â”‚   â”‚   â”œâ”€â”€ model.py               # physics (isothermal N2 volumes, gas valve law), pure
 â”‚   â”‚   â”œâ”€â”€ server.py              # asyncua server at 192.168.95.50:4840; users zerostate (read) / operator (*.CMD); write-attempt log

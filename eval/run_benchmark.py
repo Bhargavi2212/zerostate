@@ -65,7 +65,21 @@ def run_episode(entry: dict, a) -> dict:
     return {"episode": new[-1].name, **json.loads((new[-1] / "verdict.json").read_text(encoding="utf-8"))}
 
 
-def run_batch(manifest: dict, progress_p: Path, a, run=run_episode, clock=datetime.now) -> int:
+P2_NET_TESTS = "test_p2_opcua_reachable or test_zerostate_account_cannot_write_p2"
+P2_MIN_FIRST_N = 30  # DECISIONS Nov 3: below 30, P2 is a no-go
+
+
+def p2_net_gate() -> tuple[bool, str]:
+    """The two live-P2 network tests, inside zerostate with P2 up: 4840 reachable through the allowlist, and
+    ZeroState's own OPC UA account refused on a write with the value unchanged. Both must PASS (a skip fails)."""
+    r = subprocess.run(["docker", "exec", "-e", "ZS_NET_P2=1", "-u", "zs", "zerostate", "pytest", "-m", "net", "-q", "-rA",
+                        "-p", "no:cacheprovider", "tests/net/test_container_isolation.py", "-k", P2_NET_TESTS],
+                       capture_output=True, text=True, timeout=300, check=False)
+    tail = (r.stdout or r.stderr).strip().splitlines()[-1:] or ["no output"]
+    return r.returncode == 0 and "2 passed" in tail[0] and "skipped" not in tail[0], tail[0]
+
+
+def run_batch(manifest: dict, progress_p: Path, a, run=run_episode, clock=datetime.now, net_gate=p2_net_gate) -> int:
     progress_p.parent.mkdir(parents=True, exist_ok=True)
 
     def log(rec):
@@ -73,6 +87,15 @@ def run_batch(manifest: dict, progress_p: Path, a, run=run_episode, clock=dateti
             fh.write(json.dumps({"t": clock().isoformat(), **rec}) + "\n")
 
     entries, in_a_row = manifest["entries"], 0
+    if any(e.get("plant") == "p2" for e in entries):  # hard gate, on every launch and resume (DECISIONS Nov 4)
+        if (getattr(a, "first", None) or 0) < P2_MIN_FIRST_N:
+            print(f"batch with P2 entries needs --first N >= {P2_MIN_FIRST_N}, fixed before launch")
+            return 2
+        ok, detail = net_gate()
+        log({"kind": "p2_net_gate", "passed": ok, "detail": detail})
+        if not ok:
+            print(f"P2 network gate failed ({detail}): batch p2 does not launch")
+            return 2
     first_n = getattr(a, "first", None)
     logged = [p["n"] for p in read_progress(progress_p) if p.get("kind") == "first_n"]
     if logged and logged[0] != first_n:  # N is fixed before launch: a resume can't change it or drop it

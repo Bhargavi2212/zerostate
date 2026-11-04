@@ -122,6 +122,17 @@ def make_app(data_dir: Path, config_dir: Path, params: dict, ui_dir: Path = ROOT
     def live_detail():
         return live
 
+    # both tracks at NO DISCREPANCY while 2 camera reads are still pending (seen in the Nov 3 smoke S0 runs)
+    pending = {**copy.deepcopy(details[s0]), "id": "ui-camera-pending", "camera_pending": 2}
+
+    @app.get("/api/sessions/ui-camera-pending")
+    def pending_detail():
+        return pending
+
+    @app.get("/api/sessions/ui-camera-pending/stream")
+    def pending_events():
+        return StreamingResponse(iter([]), media_type="text/event-stream")
+
     @app.get("/api/sessions/ui-live/stream")
     def live_events():
         return StreamingResponse(iter([live_stream]), media_type="text/event-stream")

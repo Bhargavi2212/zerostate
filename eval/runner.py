@@ -38,12 +38,11 @@ TERMINAL = ("BLOCKED", "ESCALATED")
 IO_DEVICES = "python (feed1|feed2|purge|product|tank|analyzer).py"  # GRFICS remote I/O device scripts
 MIN_VENT_START_KPA = 1500  # below this the vent rules get too little range to judge: episode INVALID
 TUNING_SEEDS = range(1000)  # anything else is a scoring seed
-# Hash of each plant's committed benchmark plan (plan digests, not secrets). None = no plan confirmed by
-# the owner yet: scoring seeds on that plant are refused. The owner fills these in after confirming.
+# Hash of each plant's committed benchmark plan (plan digests, not secrets), as confirmed by the owner in
+# plants/<p>/confirmed.yaml (Nov 4, Bhargavi). Scoring seeds on a plant whose plan differs are refused.
 BENCHMARK_PLAN_HASH = {
-    # pending owner confirmation: 63e1519c52f653b2607444e39baa63973b27cd867ec45c056d017f26e5f1bbc4 (envelope + camera: optional)  # pragma: allowlist secret
-    "p1": "89adfcf4fbb0a8e2b058c02ceed5d879d0a72312da92024bf967c8aec14f2a92",  # pragma: allowlist secret
-    "p2": None,
+    "p1": "63e1519c52f653b2607444e39baa63973b27cd867ec45c056d017f26e5f1bbc4",  # pragma: allowlist secret
+    "p2": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",  # pragma: allowlist secret
 }
 
 
@@ -566,8 +565,10 @@ class P2Episode(Episode):
         self.sc, self.seed, self.out, self.scoring, self.camera = scenario, seed, out, scoring, False
         self.rng = random.Random(seed)
         self.faults = [draw(f, self.rng) for f in scenario.get("faults", [])]
-        self.plan = p2_plan()
-        self.plan_path = None
+        self.plan_path = P2 / "plan.yaml"  # the merged plan as a file: what the owner confirms (zs plan confirm)
+        self.plan = IsolationPlan.model_validate(yaml.safe_load(self.plan_path.read_text(encoding="utf-8")))
+        if self.plan.content_hash() != p2_plan().content_hash():
+            raise SystemExit("plants/p2_gasline/plan.yaml no longer equals the merge of plant_map.yaml + isolation_list.yaml")
         self.scale = yaml.safe_load((P2 / "opcua_map.yaml").read_text(encoding="utf-8"))["process_time_scale"]
         self.sid = out.name
         self.due: list[tuple[float, dict]] = []
@@ -643,9 +644,9 @@ class P2Episode(Episode):
         threading.Thread(target=self.truth_logger, daemon=True).start()
         plan_hash = self.plan.content_hash()
         self.session_started = True
-        # the owner-confirmed P2 plan is /data/plans/<hash>.json (zs plan confirm stores it there)
+        # the owner confirms plants/p2_gasline/plan.yaml; the image carries it and confirmed.yaml in /app/config/p2_gasline/
         sh("docker", "exec", "-d", "-u", "zs", *P2_ENV, "zerostate", "zs", "session", "start",
-           "--plan", f"/data/plans/{plan_hash}.json", "--plan-hash", plan_hash, "--session", self.sid)
+           "--plan", "/app/config/p2_gasline/plan.yaml", "--plan-hash", plan_hash, "--session", self.sid)
         time.sleep(1)
         st = self.wait(lambda st: st["state"] == "ready", 60)
         variant = self.sc.get("operator")

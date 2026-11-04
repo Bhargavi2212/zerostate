@@ -213,3 +213,12 @@ def test_never_say_over_rendered_text(page, ui_server):
     page.wait_for_selector("body")
     texts["new"] = page.locator("body").inner_text()
     assert {k: h for k, t in texts.items() if (h := hits(t))} == {}
+
+def test_sign_off_waits_while_the_camera_is_still_checking(page, ui_server):
+    """Both tracks read NO DISCREPANCY but camera reads are pending: a late reading can still block, so
+    Accept and sign is not offered until they are in."""
+    open_job(page, ui_server, "ui-camera-pending")
+    assert NDF_TEXT in page.locator("[data-track='Data-only track']").inner_text()
+    wait = page.locator("#sign-wait")
+    assert wait.is_disabled() and "Camera still checking (2 reads pending)" in wait.inner_text()
+    assert page.locator("#sign-open").count() == 0

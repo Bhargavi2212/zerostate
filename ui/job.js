@@ -74,8 +74,15 @@ export async function jobScreen(root, sid, params) {
         : `Closed — not accepted, by ${who(sig.by)} (${sig.role}) at ${time(sig.t)}. This records that the job was not accepted.`));
     } else {
       const tr = tracks();
-      const accept = tr.data === NDF && tr.cam === NDF;
-      out.push(el("button", { type: "button", id: "sign-open", onclick: () => signDialog(accept) }, accept ? "Accept and sign…" : "Close — not accepted…"));
+      const pending = d.camera_pending || 0;
+      if (tr.data === NDF && tr.cam === NDF && pending > 0) {
+        // a late camera reading can still block: acceptance waits until every started read is in
+        out.push(el("button", { type: "button", id: "sign-wait", disabled: true },
+          `Camera still checking (${pending} read${pending === 1 ? "" : "s"} pending) — sign-off waits`));
+      } else {
+        const accept = tr.data === NDF && tr.cam === NDF;
+        out.push(el("button", { type: "button", id: "sign-open", onclick: () => signDialog(accept) }, accept ? "Accept and sign…" : "Close — not accepted…"));
+      }
     }
     if (st.msg) out.push(el("p", { class: "msg", id: "action-msg" }, st.msg));
     parts.actions.replaceChildren(el("div", { class: "actions" }, out));

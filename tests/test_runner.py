@@ -85,12 +85,12 @@ def test_plan_hash_is_per_plant_and_unconfirmed_refuses(monkeypatch):
 def test_benchmark_plan_is_the_committed_plan():
     plan = runner.IsolationPlan.model_validate(runner.yaml.safe_load(
         (runner.P1 / "envelope.yaml").read_text(encoding="utf-8")))
-    # Until the owner confirms the envelope with `camera: optional`, the committed plan may be the one
-    # named in the runner's "pending owner confirmation" comment; scoring seeds stay refused meanwhile.
-    import re
-    pending = re.findall(r"pending owner confirmation: ([0-9a-f]{64})", Path(runner.__file__).read_text(encoding="utf-8"))
-    assert plan.content_hash() in (runner.BENCHMARK_PLAN_HASH["p1"], *pending)
+    assert plan.content_hash() == runner.BENCHMARK_PLAN_HASH["p1"]
     assert plan.camera == "optional"  # batch 2 runs the camera on P1
+    # the active benchmark hashes are exactly what the owner confirmed (plants/<p>/confirmed.yaml)
+    for p in ("p1_grfics", "p2_gasline"):
+        book = runner.yaml.safe_load((runner.ROOT / "plants" / p / "confirmed.yaml").read_text(encoding="utf-8"))
+        assert runner.BENCHMARK_PLAN_HASH[p[:2]] in {r["plan_hash"] for r in book}
     assert any(s.targets for s in plan.steps)  # block-in
 
 
@@ -126,6 +126,12 @@ def test_p2_write_log_counts_users():
     assert runner.p2_writes("") == {"zerostate": 0, "operator_allowed": 0, "other": 0}
 
 
+def test_p2_plan_file_is_the_merge_the_owner_confirms():
+    """plants/p2_gasline/plan.yaml (confirmed by the owner, like P1's envelope) must hash like a fresh merge."""
+    f = runner.IsolationPlan.model_validate(runner.yaml.safe_load((runner.P2 / "plan.yaml").read_text(encoding="utf-8")))
+    assert f.content_hash() == runner.p2_plan().content_hash()
+
+
 def test_p2_plan_and_code_spec():
     plan = runner.p2_plan()
     assert [(s.k, s.kind, s.target) for s in plan.steps][:5] == [
@@ -138,7 +144,7 @@ def test_p2_plan_and_code_spec():
     assert runner.p2_vent_wait(plan, bleed, 5) == ("PT-202", plan.vent_target_kpa_abs)
     for _, _, local, pat in runner.CODE_SPEC_P2:
         assert list((runner.ROOT / local).glob(pat)), (local, pat)
-    assert runner.BENCHMARK_PLAN_HASH["p2"] in (None, plan.content_hash())
+    assert runner.BENCHMARK_PLAN_HASH["p2"] == plan.content_hash()
 
 
 class FakeLab:
@@ -208,7 +214,7 @@ def test_p2_clean_episode_uses_the_p2_path(tmp_path, monkeypatch):
     assert waits == [("PT-202", "102.0"), ("PT-211", "200.0"), ("PT-211", "102.0")]
     assert lab.verified == [("1", "eval-verifier"), ("2", "eval-verifier"), ("4", "eval-verifier")]
     start = next(c for c in lab.sh if "session" in c)
-    assert "ZS_MAP=/app/config/p2_gasline/opcua_map.yaml" in start and f"/data/plans/{ep.plan.content_hash()}.json" in start
+    assert "ZS_MAP=/app/config/p2_gasline/opcua_map.yaml" in start and "/app/config/p2_gasline/plan.yaml" in start
     assert "clear" in fired
 
 

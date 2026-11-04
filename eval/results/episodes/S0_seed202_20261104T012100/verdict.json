@@ -1,0 +1,52 @@
+{
+ "scenario": "S0",
+ "seed": 202,
+ "expected": [
+  "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+ ],
+ "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+ "match": true,
+ "valid": true,
+ "problems": [],
+ "stamp": {
+  "assumptions": [
+   "positive isolation upstream assumed"
+  ],
+  "package_version": "0.1.0",
+  "plan_hash": "63e1519c52f653b2607444e39baa63973b27cd867ec45c056d017f26e5f1bbc4",
+  "reasons": [],
+  "rules": {
+   "LIVE-ALIVE": "2",
+   "LIVE-HOLD": "3",
+   "LIVE-QUALITY": "2",
+   "LIVE-RELATION": "2",
+   "LIVE-UPSTREAM": "1",
+   "LIVE-VALVE": "1",
+   "PLAN-BOXEDIN": "1",
+   "PLAN-LIVESIDE": "1",
+   "PLAN-MAPPING": "1",
+   "PLAN-PATHS": "1",
+   "PLAN-PROVING": "1",
+   "PLAN-SOFTWARE": "1",
+   "PLAN-TYPE": "1",
+   "PROC-INDEPENDENCE": "1",
+   "PROC-RESET": "1",
+   "PROC-SEQUENCE": "1"
+  },
+  "source": "step",
+  "thresholds_version": "6+p1-3",
+  "verdict": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF"
+ },
+ "steps": {
+  "1": "PASS",
+  "2": "PASS",
+  "3": "PASS",
+  "4": "PASS",
+  "5": "PASS",
+  "6": "PASS",
+  "7": "PASS",
+  "8": "PASS"
+ },
+ "verdict_with_camera": "NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF",
+ "camera_pending": 0
+}

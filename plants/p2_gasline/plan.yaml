@@ -1,0 +1,283 @@
+# P2 gas line plan = plant_map.yaml merged with isolation_list.yaml (zerostate.graph.build.merge).
+# Generated, not hand-edited: tests/test_runner.py checks it hashes like a fresh merge. The owner confirms THIS file.
+plant: p2_gasline
+work:
+  equipment: F-210
+  task: ''
+  permit_ids: []
+sources:
+- tag: S-200
+  type: nitrogen
+  max_magnitude: 2000.0
+- tag: D-220
+  type: nitrogen
+  max_magnitude: 1500.0
+points:
+- tag: XV-201
+  device: block_valve
+  isolation_type: proved
+  normal_state: open
+  required_state: closed
+  apply_seq: 1
+  remove_seq: 3
+  lock_id: null
+  tag_id: null
+- tag: XV-203
+  device: block_valve
+  isolation_type: proved
+  normal_state: open
+  required_state: closed
+  apply_seq: 2
+  remove_seq: 2
+  lock_id: null
+  tag_id: null
+- tag: XV-204
+  device: block_valve
+  isolation_type: proved
+  normal_state: open
+  required_state: closed
+  apply_seq: 4
+  remove_seq: 1
+  lock_id: null
+  tag_id: null
+proving:
+- tag: BV-202
+  kind: bleed
+  proves:
+  - XV-201
+  - XV-203
+  discharges_to: atmosphere
+- tag: VV-213
+  kind: vent
+  proves:
+  - XV-204
+  discharges_to: atmosphere
+segments: []
+witnesses:
+- segment: S-200
+  signal_ref: PT-200
+  role: pressure
+  side: upstream
+  redundancy_group: null
+  point: null
+- segment: C-202
+  signal_ref: PT-202
+  role: pressure
+  side: between_blocks
+  redundancy_group: null
+  point: null
+- segment: F-210
+  signal_ref: PT-211
+  role: pressure
+  side: work
+  redundancy_group: null
+  point: null
+- segment: F-210
+  signal_ref: PT-212
+  role: pressure
+  side: work
+  redundancy_group: null
+  point: null
+- segment: VV-213
+  signal_ref: FT-213
+  role: flow
+  side: work
+  redundancy_group: null
+  point: VV-213
+- segment: XV-201
+  signal_ref: XV-201.FB
+  role: feedback
+  side: between_blocks
+  redundancy_group: null
+  point: XV-201
+- segment: XV-201
+  signal_ref: XV-201.CMD
+  role: command
+  side: between_blocks
+  redundancy_group: null
+  point: XV-201
+- segment: BV-202
+  signal_ref: BV-202.FB
+  role: feedback
+  side: between_blocks
+  redundancy_group: null
+  point: BV-202
+- segment: BV-202
+  signal_ref: BV-202.CMD
+  role: command
+  side: between_blocks
+  redundancy_group: null
+  point: BV-202
+- segment: XV-203
+  signal_ref: XV-203.FB
+  role: feedback
+  side: work
+  redundancy_group: null
+  point: XV-203
+- segment: XV-203
+  signal_ref: XV-203.CMD
+  role: command
+  side: work
+  redundancy_group: null
+  point: XV-203
+- segment: VV-213
+  signal_ref: VV-213.FB
+  role: feedback
+  side: work
+  redundancy_group: null
+  point: VV-213
+- segment: VV-213
+  signal_ref: VV-213.CMD
+  role: command
+  side: work
+  redundancy_group: null
+  point: VV-213
+- segment: XV-204
+  signal_ref: XV-204.FB
+  role: feedback
+  side: work
+  redundancy_group: null
+  point: XV-204
+- segment: XV-204
+  signal_ref: XV-204.CMD
+  role: command
+  side: work
+  redundancy_group: null
+  point: XV-204
+- segment: XV-231
+  signal_ref: XV-231.FB
+  role: feedback
+  side: upstream
+  redundancy_group: null
+  point: XV-231
+- segment: XV-231
+  signal_ref: XV-231.CMD
+  role: command
+  side: upstream
+  redundancy_group: null
+  point: XV-231
+relations:
+- type: redundant_pair
+  signals:
+  - PT-211
+  - PT-212
+  params:
+  - - tol_pct
+    - 2.0
+- type: valve_flow_gas
+  signals:
+  - FT-213
+  - VV-213.FB
+  - PT-211
+  - PT-212
+  params:
+  - - cv
+    - 0.035
+  - - p_floor
+    - 101.0
+assumptions: []
+hold_test:
+  hold_process_s: 600.0
+  window_process_s: 120.0
+  max_rise_kpa: 1.5
+  upstream_min: 1500.0
+steps:
+- k: 1
+  kind: isolate
+  target: XV-201
+  targets: []
+  required_state: 0.0
+  checks:
+  - LIVE-QUALITY
+  - LIVE-VALVE
+  settle_process_s: 30.0
+  timeout_process_s: null
+- k: 2
+  kind: isolate
+  target: XV-203
+  targets: []
+  required_state: 0.0
+  checks:
+  - LIVE-QUALITY
+  - LIVE-VALVE
+  settle_process_s: 30.0
+  timeout_process_s: null
+- k: 3
+  kind: vent_open
+  target: BV-202
+  targets: []
+  required_state: 100.0
+  checks:
+  - LIVE-QUALITY
+  - LIVE-ALIVE
+  - LIVE-VALVE
+  settle_process_s: 30.0
+  timeout_process_s: null
+- k: 4
+  kind: isolate
+  target: XV-204
+  targets: []
+  required_state: 0.0
+  checks:
+  - LIVE-QUALITY
+  - LIVE-VALVE
+  settle_process_s: 30.0
+  timeout_process_s: null
+- k: 5
+  kind: vent_open
+  target: VV-213
+  targets: []
+  required_state: 100.0
+  checks:
+  - LIVE-QUALITY
+  - LIVE-ALIVE
+  - LIVE-RELATION
+  - LIVE-VALVE
+  settle_process_s: 30.0
+  timeout_process_s: null
+- k: 6
+  kind: vent_close
+  target: VV-213
+  targets: []
+  required_state: 0.0
+  checks:
+  - LIVE-QUALITY
+  - LIVE-VALVE
+  settle_process_s: 30.0
+  timeout_process_s: null
+- k: 7
+  kind: hold
+  target: null
+  targets: []
+  required_state: null
+  checks:
+  - LIVE-QUALITY
+  - LIVE-HOLD
+  - LIVE-UPSTREAM
+  - LIVE-VALVE
+  settle_process_s: 0.0
+  timeout_process_s: null
+- k: 8
+  kind: vent_open
+  target: VV-213
+  targets: []
+  required_state: 100.0
+  checks:
+  - LIVE-QUALITY
+  - LIVE-ALIVE
+  - LIVE-HOLD
+  - LIVE-VALVE
+  settle_process_s: 30.0
+  timeout_process_s: null
+- k: 9
+  kind: final
+  target: null
+  targets: []
+  required_state: null
+  checks: []
+  settle_process_s: 0.0
+  timeout_process_s: null
+vent_target_kpa_abs: 102.0
+p_depressurised_kpa_abs: 105.0
+hold_pressure_kpa_abs: 200.0
+camera: null
