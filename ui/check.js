@@ -331,16 +331,22 @@ export async function checkScreen(root, params) {
       const f = d.findings.find((x) => x.status === want && reason.some((s) => s === `${x.rule_id}: ${x.message}`)) || d.findings.find((x) => x.status === want);
       const r = f && st.rows.find((x) => [...x.findings, ...x.camera].some((y) => y.id === f.id));
       let plain = f ? f.message : reason[0] || "see the logged findings";
+      const head = blocked ? `STOP. Do not open the ${equip}.` : "STOP: ZeroState could not tell.";
+      let say = `${head} ${r ? `Check ${r.n}, ${r.label.split(":")[0]}` : f ? f.rule_id : "A check"} ${blocked ? "failed" : "could not be read"}.`;
       if (r && r.kind === "valve" && r.rd) {
         const flowSays = r.findings.some((x) => x.status === "FAIL" && r.tags.flow && (x.refs || []).includes(r.tags.flow));
         const camSays = r.camera.some((x) => x.status === "FAIL");
         const n = (flowSays ? 1 : 0) + (camSays ? 1 : 0);
         plain = `${r.point}: the PLC reads ${r.rd.plc}, the flow meter reads ${r.rd.flow}, the camera reads ${r.rd.cam}.${n ? ` ${n} of 3 witnesses disagree with the PLC.` : ""} Logged finding ${f.id}: ${f.message}.`;
+        const what = [flowSays ? "the flow meter reads flow" : null, camSays ? "the camera reads it open" : null].filter(Boolean);
+        if (what.length) say = `${head} ${r.point}: ${what.join(" and ")} while the PLC reads ${r.rd.plc}. ${n} of 3 witnesses disagree.`;
       } else if (f) plain = `Logged finding ${f.id}: ${f.message}.`;
-      return blocked ? { stop: true, text: `STOP. Do not open the ${equip}. ${plain}`, f }
-        : { stop: true, text: `STOP: ZeroState could not tell. ${plain}`, f };
+      return { stop: true, text: `${head} ${plain}`, say, f, row: r };
     }
-    if (data === NDF && (cam === NDF || cam === null || cam === undefined)) return { stop: false, text: `No discrepancy found in ${checked} checks. This is not a safety call; the issuer signs.` };
+    if (data === NDF && (cam === NDF || cam === null || cam === undefined)) {
+      const text = `No discrepancy found in ${checked} checks. This is not a safety call; the issuer signs.`;
+      return { stop: false, text, say: text };
+    }
     return null;
   }
 
@@ -362,12 +368,19 @@ export async function checkScreen(root, params) {
     if (run !== st.run || st.closed) return;
     drawList(shown);
     if (!recorded) await refreshDetail(run);
+    await showFinal(run);
+  }
+
+  async function showFinal(run) {
     const fin = finalText(st.rows.filter((r) => r.findings.length || r.camera.length).length);
-    if (!fin) { finalLine.replaceChildren(el("p", { class: "final evaluating", id: "final-line" }, "Evaluating… no verdict is logged yet.")); return; }
+    if (!fin) { finalLine.replaceChildren(el("p", { class: "final evaluating", id: "final-line" }, "Evaluating… no verdict is logged yet.")); return null; }
     finalLine.replaceChildren(el("p", { class: `final ${fin.stop ? "final-stop" : "final-ndf"}`, id: "final-line" }, fin.text),
       el("p", { class: "small muted" }, "This view only reads the log. Sign-off stays in the job screen, by a person."));
-    spokenLine.textContent = `🔈 ${fin.text}`;
-    await voice.say(fin.text);
+    spokenLine.textContent = `🔈 ${fin.say}`;
+    // a STOP brings the camera back to the deciding check
+    const back = fin.row && fin.row.kind === "valve" ? drawCamera(fin.row, await cameraOf(fin.row)) : null;
+    if (run === st.run && !st.closed) await Promise.all([back, voice.say(fin.say)]);
+    return fin;
   }
 
   // ---------- "Why?" -> explain on that finding (read-only)

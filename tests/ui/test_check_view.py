@@ -128,7 +128,9 @@ def test_s8_walks_rows_in_order_zooms_and_ends_with_stop(page, check_server):
     assert marks["valve f1: closed"] == "FAIL" and marks["Hold test"] == "none"  # never reached: not checked
     final = page.text_content("#final-line")
     assert final.startswith("STOP. Do not open the reactor. f1:") and "LIVE-VALVE" in final and "2 of 3 witnesses disagree" in final
-    assert "flow through a valve reading closed" in page.text_content("#spoken-line") or final in page.text_content("#spoken-line")
+    said = page.text_content("#spoken-line")  # one short sentence; the full text with the finding id stays on screen
+    assert "STOP. Do not open the reactor. f1:" in said and "2 of 3 witnesses disagree." in said and "LIVE-VALVE" not in said
+    page.wait_for_function("document.querySelector('#check-camera h2').textContent.includes('f1')")  # back on the deciding check
     page.click("button.why")
     page.wait_for_selector("#why-answer")
     assert page.text_content("#why-answer") == "f1 reads closed while its flow meter reads flow."
