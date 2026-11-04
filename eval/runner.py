@@ -578,6 +578,7 @@ class P2Episode(Episode):
         self.scale = yaml.safe_load((P2 / "opcua_map.yaml").read_text(encoding="utf-8"))["process_time_scale"]
         self.sid = out.name
         self.due: list[tuple[float, dict]] = []
+        self.fired: list[dict] = []
         self.stop_truth = threading.Event()
         self.last_truth_t = None
         self.last_pressure = None
@@ -597,7 +598,16 @@ class P2Episode(Episode):
                     self.p2faults.set_inputs(**f["set"])
             except (RuntimeError, subprocess.SubprocessError, ValueError) as e:
                 raise EpisodeInvalid(f"fault did not take: {e}") from e
+            self.fired.append(f)
             self.log_event("fault", {**f, "t_vm": self.last_truth_t})
+
+    def unfired(self, verdict: str) -> str | None:
+        """A drawn fault that never fired leaves a clean plant under a fault label (batch p2's S2: at_step
+        [5, 6, 7] matched no step). Only a block or escalation before the fault's step excuses it."""
+        left = [f for f in self.faults if f not in self.fired]
+        if left and verdict not in ("BLOCKED", "ESCALATED"):
+            return f"drawn fault never fired: {[f.get('at_step') for f in left]}"
+        return None
 
     def truth_logger(self):
         with open(self.out / "truth.jsonl", "a", encoding="utf-8") as fh, self.p2truth.stream(4) as samples:
@@ -693,6 +703,9 @@ class P2Episode(Episode):
         self.stop_truth.set()
         post = self.postflight()
         final = self.status()
+        if problem := self.unfired(final["verdict"]):
+            post["problems"].append(problem)
+            post["valid"] = False
         (self.out / "audit_export.json").write_text(zs("audit", "export", self.sid), encoding="utf-8")
         sh("docker", "cp", f"zerostate:/data/runs/{self.sid}/signals.jsonl", str(self.out / "signals.jsonl"), check=False)
         result = {"scenario": self.sc["id"], "seed": self.seed, "expected": self.sc["expected"],

@@ -233,3 +233,26 @@ def test_batch_p2_is_s0_x15_and_every_p2_scenario_x5(tmp_path, monkeypatch):
     assert all(sum(e["scenario"] == s for e in entries) == 5 for s in seal.P2_FAULTS)
     assert len({e["seed"] for e in entries}) == len(entries) and all(e["seed"] >= seal.MIN_SCORING_SEED for e in entries)
     assert [e["scenario"] for e in entries[:15]] != ["S0"] * 15  # shuffled, not in table order
+
+
+@pytest.mark.parametrize("plant,plan", [("", "p1_grfics/envelope.yaml"), ("p2", "p2_gasline/plan.yaml")])
+def test_every_scenario_fault_lands_on_a_plan_step(plant, plan):
+    """Batch p2's S2 had at_step [5, 6, 7]: draw() kept the list, it matched no step and the fault never fired."""
+    import random
+
+    import yaml
+    steps = yaml.safe_load((EVAL.parent / "plants" / plan).read_text(encoding="utf-8"))["steps"]
+    names = {s["k"] for s in steps} | {s["kind"] for s in steps}
+    for path in (EVAL / "scenarios" / plant).glob("*.yaml"):
+        for f in yaml.safe_load(path.read_text(encoding="utf-8")).get("faults") or []:
+            for seed in range(50):
+                assert runner.draw(f, random.Random(seed)).get("at_step") in names, path.name
+
+
+def test_p2_episode_with_an_unfired_fault_is_invalid_unless_it_blocked_first():
+    ep = runner.P2Episode.__new__(runner.P2Episode)
+    ep.faults, ep.fired = [{"at_step": 5, "set": {}}], []
+    assert "never fired" in ep.unfired("NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF")
+    assert ep.unfired("BLOCKED") is None  # blocked at step 4: step 5's fault rightly never came
+    ep.fired = list(ep.faults)
+    assert ep.unfired("NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF") is None
