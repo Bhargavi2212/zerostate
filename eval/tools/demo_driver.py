@@ -32,6 +32,7 @@ REMIND_S = 600
 POLL_S = 0.5
 EXPORT_S = 5  # and at least this often, so a repeated mark that leaves the step map unchanged is still seen
 SCENARIOS = ("S0", "S8")
+CAMERA_WAIT_S = 180
 
 
 def _done(st: dict) -> bool:
@@ -102,6 +103,18 @@ class Demo(runner.Episode):
                 since = time.time()
             time.sleep(POLL_S)
 
+    def camera_settled(self, st: dict, timeout_s: float = CAMERA_WAIT_S) -> dict:
+        """Keep the plant as it is until the camera's pending reads are in. Restoring it first lets the camera
+        read the restored plant (rehearsal 1: purge read 100 % after AUTO reopened it)."""
+        end, told = time.time() + timeout_s, False
+        while st.get("camera_pending") and time.time() < end:
+            if not told:
+                print(f"waiting for {st['camera_pending']} camera reads before restoring the plant")
+                told = True
+            time.sleep(POLL_S * 4)
+            st = self.status()
+        return st
+
     def drive(self) -> dict:
         self.pre, st = self.start()
         print(f"session {self.sid}\nready: mark step 1 in the console")
@@ -126,6 +139,7 @@ class Demo(runner.Episode):
             if step.kind == "vent_open" and not _done(st):
                 print(f"venting to {self.plan.vent_target_kpa_abs:g} kPa; mark step {k + 1} when it is down")
                 self.vent_down()
+        st = self.camera_settled(st)
         if not _done(st):
             print(f"all steps marked, verdict {st['verdict'] or 'pending'}: the person signs or closes the session in the console")
             st = self.wait_end()

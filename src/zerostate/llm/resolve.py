@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from zerostate import wording
 from zerostate.llm.client import spark_json
 
-PROMPT_ID = "resolve_request_v1"
+PROMPT_ID = "resolve_request_v2"  # v2 (Nov 4 rehearsal): naming the equipment is enough; v1 also wanted the task words
 
 
 class Pick(BaseModel):
