@@ -233,3 +233,26 @@ def test_camera_coverage_counts_timeouts_next_to_accuracy():
              {"note": None, "readable": True, "located_by": "map"}]
     assert score.camera_coverage(reads, 2) == {"readings": 5, "readable": 1, "no_frame": 3, "timeouts": 2,
                                                "model_unavailable": 1, "located_by_map": 1, "pending_at_stop": 2}
+
+
+BENCH2 = ROOT / "eval" / "results" / "bench" / "2"
+
+
+@pytest.mark.skipif(not BENCH2.exists(), reason="batch 2 episodes not committed")
+def test_with_camera_verdict_comes_from_verdict_json_when_the_camera_track_logged_none():
+    """The with-camera track logs a verdict event only when its own verdict changes; verdict.json carries it always."""
+    s0 = score.load_episode(next(BENCH2.glob("S0_seed1011091684_*")))
+    s8 = score.load_episode(next(BENCH2.glob("S8_seed155989621_*")))
+    assert not s0["track"]["with_camera"] and s8["track"]["with_camera"]
+    r0, r8 = score.score_episode(s0, FS), score.score_episode(s8, FS)
+    assert (r0["verdict_with_camera"], r0["camera_own_verdict"]) == (score.NO_DISC, False)
+    assert (r8["verdict_with_camera"], r8["camera_own_verdict"]) == ("BLOCKED", True)
+
+
+def test_plan_set_lists_manifest_entries_without_a_result(tmp_path):
+    p = tmp_path / "plan.json"
+    p.write_text(json.dumps({"cases": [{"case": "PC0", "seed": 1, "blocked": False, "label_match": True},
+                                       {"case": "PC1", "seed": 9, "blocked": True, "label_match": True}]}), encoding="utf-8")
+    out = score.plan_set(p, {("plan", "PC0", 1), ("plan", "PC1", 2), ("p1", "S0", 3)})
+    assert out["missing"] == ["PC1 seed 2"] and out["not_in_manifest"] == ["PC1 seed 9"]
+    assert out["false_blocks"]["k"] == 0 and out["per_case"]["PC1"]["blocked"] == 1

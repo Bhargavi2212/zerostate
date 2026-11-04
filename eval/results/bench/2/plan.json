@@ -1,0 +1,691 @@
+{
+ "date": "2026-11-03",
+ "commit": "6c7676ec3a670a9a9a64e0badfac1ec65b17d8ea",
+ "n": 45,
+ "label_match": 45,
+ "cases": [
+  {
+   "case": "PC0",
+   "seed": 1131107510,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 1188415032,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 1380636006,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 143326346,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 1530896397,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 1818761095,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 1866092585,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 1943506403,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 1959371886,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 203407299,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 2080463366,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 2108499286,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 2141731031,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 506682550,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC0",
+   "seed": 792725976,
+   "variant": "correct",
+   "expected_fail": [],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": false,
+   "fired": [],
+   "messages": [],
+   "label_match": true
+  },
+  {
+   "case": "PC1",
+   "seed": 1041004855,
+   "variant": "drop XV-201 and XV-203",
+   "expected_fail": [
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "5dc137477f5f18117b4927d458eb010cd97f9ef5b7bc720c773c9ec792a86fa1",
+   "blocked": true,
+   "fired": [
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from S-200 to F-210: S-200 -> XV-201 -> C-202 -> XV-203 -> F-210"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC1",
+   "seed": 1359122579,
+   "variant": "drop XV-201 and XV-203",
+   "expected_fail": [
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "5dc137477f5f18117b4927d458eb010cd97f9ef5b7bc720c773c9ec792a86fa1",
+   "blocked": true,
+   "fired": [
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from S-200 to F-210: S-200 -> XV-201 -> C-202 -> XV-203 -> F-210"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC1",
+   "seed": 811302079,
+   "variant": "drop XV-201 and XV-203",
+   "expected_fail": [
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "5dc137477f5f18117b4927d458eb010cd97f9ef5b7bc720c773c9ec792a86fa1",
+   "blocked": true,
+   "fired": [
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from S-200 to F-210: S-200 -> XV-201 -> C-202 -> XV-203 -> F-210"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC1",
+   "seed": 861152512,
+   "variant": "drop XV-201 and XV-203",
+   "expected_fail": [
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "5dc137477f5f18117b4927d458eb010cd97f9ef5b7bc720c773c9ec792a86fa1",
+   "blocked": true,
+   "fired": [
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from S-200 to F-210: S-200 -> XV-201 -> C-202 -> XV-203 -> F-210"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC1",
+   "seed": 924240946,
+   "variant": "drop XV-204",
+   "expected_fail": [
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "4cdcec29201e1ce38b6ed066bc3725574e4a024b78fba4c305f4d9a1e8d9063a",
+   "blocked": true,
+   "fired": [
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from D-220 to F-210: D-220 -> XV-204 -> F-210"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC2",
+   "seed": 1201372295,
+   "variant": "work on XV-201",
+   "expected_fail": [
+    "PLAN-LIVESIDE",
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "d14d2fbdcb97c188ac979ef586a12c59127dfdbdf63d33806b683219d88bb0fe",
+   "blocked": true,
+   "fired": [
+    "PLAN-LIVESIDE",
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from S-200 to XV-201: S-200 -> XV-201",
+    "PLAN-LIVESIDE: the work is on XV-201, a listed isolation device: the device relied on is the one being opened"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC2",
+   "seed": 1795075346,
+   "variant": "work on XV-203",
+   "expected_fail": [
+    "PLAN-LIVESIDE"
+   ],
+   "plan_hash": "d433f045f0d7c5c29753b00d8545ae7d58d68c756737f7a4967b937269287bb3",
+   "blocked": true,
+   "fired": [
+    "PLAN-LIVESIDE"
+   ],
+   "messages": [
+    "PLAN-LIVESIDE: the work is on XV-203, a listed isolation device: the device relied on is the one being opened"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC2",
+   "seed": 1916288061,
+   "variant": "work on XV-201",
+   "expected_fail": [
+    "PLAN-LIVESIDE",
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "d14d2fbdcb97c188ac979ef586a12c59127dfdbdf63d33806b683219d88bb0fe",
+   "blocked": true,
+   "fired": [
+    "PLAN-LIVESIDE",
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from S-200 to XV-201: S-200 -> XV-201",
+    "PLAN-LIVESIDE: the work is on XV-201, a listed isolation device: the device relied on is the one being opened"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC2",
+   "seed": 311945286,
+   "variant": "work on XV-203",
+   "expected_fail": [
+    "PLAN-LIVESIDE"
+   ],
+   "plan_hash": "d433f045f0d7c5c29753b00d8545ae7d58d68c756737f7a4967b937269287bb3",
+   "blocked": true,
+   "fired": [
+    "PLAN-LIVESIDE"
+   ],
+   "messages": [
+    "PLAN-LIVESIDE: the work is on XV-203, a listed isolation device: the device relied on is the one being opened"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC2",
+   "seed": 606631635,
+   "variant": "work on XV-203",
+   "expected_fail": [
+    "PLAN-LIVESIDE"
+   ],
+   "plan_hash": "d433f045f0d7c5c29753b00d8545ae7d58d68c756737f7a4967b937269287bb3",
+   "blocked": true,
+   "fired": [
+    "PLAN-LIVESIDE"
+   ],
+   "messages": [
+    "PLAN-LIVESIDE: the work is on XV-203, a listed isolation device: the device relied on is the one being opened"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC3",
+   "seed": 1820656259,
+   "variant": "heater E-215, PSV-214 removed",
+   "expected_fail": [
+    "PLAN-BOXEDIN"
+   ],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": true,
+   "fired": [
+    "PLAN-BOXEDIN"
+   ],
+   "messages": [
+    "PLAN-BOXEDIN: E-215 can heat the isolated region around F-210 with no relief or open vent to atmosphere or flare"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC3",
+   "seed": 1890503319,
+   "variant": "heater E-215, PSV-214 removed",
+   "expected_fail": [
+    "PLAN-BOXEDIN"
+   ],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": true,
+   "fired": [
+    "PLAN-BOXEDIN"
+   ],
+   "messages": [
+    "PLAN-BOXEDIN: E-215 can heat the isolated region around F-210 with no relief or open vent to atmosphere or flare"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC3",
+   "seed": 273427284,
+   "variant": "heater E-215, PSV-214 removed",
+   "expected_fail": [
+    "PLAN-BOXEDIN"
+   ],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": true,
+   "fired": [
+    "PLAN-BOXEDIN"
+   ],
+   "messages": [
+    "PLAN-BOXEDIN: E-215 can heat the isolated region around F-210 with no relief or open vent to atmosphere or flare"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC3",
+   "seed": 537251393,
+   "variant": "heater E-215, PSV-214 removed",
+   "expected_fail": [
+    "PLAN-BOXEDIN"
+   ],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": true,
+   "fired": [
+    "PLAN-BOXEDIN"
+   ],
+   "messages": [
+    "PLAN-BOXEDIN: E-215 can heat the isolated region around F-210 with no relief or open vent to atmosphere or flare"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC3",
+   "seed": 783383886,
+   "variant": "heater E-215, PSV-214 removed",
+   "expected_fail": [
+    "PLAN-BOXEDIN"
+   ],
+   "plan_hash": "43c12297d6b7bdc78a668b823cb636e7e9dcd438bd6699c89c8e574a69343ecb",
+   "blocked": true,
+   "fired": [
+    "PLAN-BOXEDIN"
+   ],
+   "messages": [
+    "PLAN-BOXEDIN: E-215 can heat the isolated region around F-210 with no relief or open vent to atmosphere or flare"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC4",
+   "seed": 1503351117,
+   "variant": "XV-201 an actuated control valve",
+   "expected_fail": [
+    "PLAN-SOFTWARE"
+   ],
+   "plan_hash": "56abbf7f0e24ac1aa0166d809884381d43ef2aaed4dd301389f8b7099733bcab",
+   "blocked": true,
+   "fired": [
+    "PLAN-SOFTWARE"
+   ],
+   "messages": [
+    "PLAN-SOFTWARE: isolation relies on control-system commands: XV-201 are actuated control valves with no positive isolation on their source side"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC4",
+   "seed": 1572222890,
+   "variant": "XV-201 an actuated control valve",
+   "expected_fail": [
+    "PLAN-SOFTWARE"
+   ],
+   "plan_hash": "56abbf7f0e24ac1aa0166d809884381d43ef2aaed4dd301389f8b7099733bcab",
+   "blocked": true,
+   "fired": [
+    "PLAN-SOFTWARE"
+   ],
+   "messages": [
+    "PLAN-SOFTWARE: isolation relies on control-system commands: XV-201 are actuated control valves with no positive isolation on their source side"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC4",
+   "seed": 1702029538,
+   "variant": "XV-203 an actuated control valve",
+   "expected_fail": [
+    "PLAN-SOFTWARE"
+   ],
+   "plan_hash": "82e861a827b7ebf34ea5e613782e6a1bcf1eae224f94b6cb4ad52ea0e225787d",
+   "blocked": true,
+   "fired": [
+    "PLAN-SOFTWARE"
+   ],
+   "messages": [
+    "PLAN-SOFTWARE: isolation relies on control-system commands: XV-203 are actuated control valves with no positive isolation on their source side"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC4",
+   "seed": 215229282,
+   "variant": "XV-201 an actuated control valve",
+   "expected_fail": [
+    "PLAN-SOFTWARE"
+   ],
+   "plan_hash": "56abbf7f0e24ac1aa0166d809884381d43ef2aaed4dd301389f8b7099733bcab",
+   "blocked": true,
+   "fired": [
+    "PLAN-SOFTWARE"
+   ],
+   "messages": [
+    "PLAN-SOFTWARE: isolation relies on control-system commands: XV-201 are actuated control valves with no positive isolation on their source side"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC4",
+   "seed": 633169498,
+   "variant": "XV-204 an actuated control valve",
+   "expected_fail": [
+    "PLAN-SOFTWARE"
+   ],
+   "plan_hash": "2b4b02be93a1262edc7b1c3d0779a6d21a45eb4bb79f49195c4ac394e1641b04",
+   "blocked": true,
+   "fired": [
+    "PLAN-SOFTWARE"
+   ],
+   "messages": [
+    "PLAN-SOFTWARE: isolation relies on control-system commands: XV-204 are actuated control valves with no positive isolation on their source side"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC5",
+   "seed": 1099358562,
+   "variant": "XV-231 instead of XV-204",
+   "expected_fail": [
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "f7c257ff3b1a8543e864cc9b0e84626f6e8d1935dbaaa1ac9e4cd329a8d8cb98",
+   "blocked": true,
+   "fired": [
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from D-220 to F-210: D-220 -> XV-204 -> F-210"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC5",
+   "seed": 1434625600,
+   "variant": "XV-231 instead of XV-204",
+   "expected_fail": [
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "f7c257ff3b1a8543e864cc9b0e84626f6e8d1935dbaaa1ac9e4cd329a8d8cb98",
+   "blocked": true,
+   "fired": [
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from D-220 to F-210: D-220 -> XV-204 -> F-210"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC5",
+   "seed": 1794954855,
+   "variant": "XV-231 instead of XV-204",
+   "expected_fail": [
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "f7c257ff3b1a8543e864cc9b0e84626f6e8d1935dbaaa1ac9e4cd329a8d8cb98",
+   "blocked": true,
+   "fired": [
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from D-220 to F-210: D-220 -> XV-204 -> F-210"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC5",
+   "seed": 2071640015,
+   "variant": "XV-231 instead of XV-204",
+   "expected_fail": [
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "f7c257ff3b1a8543e864cc9b0e84626f6e8d1935dbaaa1ac9e4cd329a8d8cb98",
+   "blocked": true,
+   "fired": [
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from D-220 to F-210: D-220 -> XV-204 -> F-210"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC5",
+   "seed": 970108724,
+   "variant": "XV-231 instead of XV-204",
+   "expected_fail": [
+    "PLAN-PATHS"
+   ],
+   "plan_hash": "f7c257ff3b1a8543e864cc9b0e84626f6e8d1935dbaaa1ac9e4cd329a8d8cb98",
+   "blocked": true,
+   "fired": [
+    "PLAN-PATHS"
+   ],
+   "messages": [
+    "PLAN-PATHS: open path from D-220 to F-210: D-220 -> XV-204 -> F-210"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC6",
+   "seed": 1822625098,
+   "variant": "BV-202 bleeds into header D-220",
+   "expected_fail": [
+    "PLAN-PROVING"
+   ],
+   "plan_hash": "ac393824afa9a62a91fe1a02b0fc8db93a9bf75b50ce9119f3f649a199293ae9",
+   "blocked": true,
+   "fired": [
+    "PLAN-PROVING"
+   ],
+   "messages": [
+    "PLAN-PROVING: BV-202 (proving XV-201) discharges to D-220, which is pressurised; BV-202 (proving XV-203) discharges to D-220, which is pressurised"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC6",
+   "seed": 1929340517,
+   "variant": "BV-202 bleeds into header D-220",
+   "expected_fail": [
+    "PLAN-PROVING"
+   ],
+   "plan_hash": "ac393824afa9a62a91fe1a02b0fc8db93a9bf75b50ce9119f3f649a199293ae9",
+   "blocked": true,
+   "fired": [
+    "PLAN-PROVING"
+   ],
+   "messages": [
+    "PLAN-PROVING: BV-202 (proving XV-201) discharges to D-220, which is pressurised; BV-202 (proving XV-203) discharges to D-220, which is pressurised"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC6",
+   "seed": 265217310,
+   "variant": "BV-202 bleeds into header D-220",
+   "expected_fail": [
+    "PLAN-PROVING"
+   ],
+   "plan_hash": "ac393824afa9a62a91fe1a02b0fc8db93a9bf75b50ce9119f3f649a199293ae9",
+   "blocked": true,
+   "fired": [
+    "PLAN-PROVING"
+   ],
+   "messages": [
+    "PLAN-PROVING: BV-202 (proving XV-201) discharges to D-220, which is pressurised; BV-202 (proving XV-203) discharges to D-220, which is pressurised"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC6",
+   "seed": 296327342,
+   "variant": "no proving point for XV-201/XV-203",
+   "expected_fail": [
+    "PLAN-PROVING"
+   ],
+   "plan_hash": "474349df85a3917316ac8ed03f583b3e409972200364102a15b09236eab97716",
+   "blocked": true,
+   "fired": [
+    "PLAN-PROVING"
+   ],
+   "messages": [
+    "PLAN-PROVING: XV-201 is listed as proved but no proving point proves it; XV-203 is listed as proved but no proving point proves it"
+   ],
+   "label_match": true
+  },
+  {
+   "case": "PC6",
+   "seed": 530933086,
+   "variant": "no proving point for XV-204",
+   "expected_fail": [
+    "PLAN-PROVING"
+   ],
+   "plan_hash": "94dc69008b6b34c749027c12ef299156370b8023fb9a0758b4040d3a672bd0e7",
+   "blocked": true,
+   "fired": [
+    "PLAN-PROVING"
+   ],
+   "messages": [
+    "PLAN-PROVING: XV-204 is listed as proved but no proving point proves it"
+   ],
+   "label_match": true
+  }
+ ],
+ "batch": "2",
+ "sealed_hash": "c1a2f5167a9314d6c329f1d78e27140068540840d66dfcc654aa93dba7bcc0f4"
+}
