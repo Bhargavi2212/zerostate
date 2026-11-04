@@ -85,9 +85,9 @@ zerostate/
 â”‚   â”‚                              # not built: align.py (lag is a measured threshold), redact.py (no people in simulator frames)
 â”‚   â”œâ”€â”€ llm/
 â”‚   â”‚   â”œâ”€â”€ client.py              # the only Meta API caller: via zs-proxy (explicit), spark_json / sam_boxes, ledger /data/credits.jsonl, budget stop ZS_BUDGET_USD
-â”‚   â”‚   â”œâ”€â”€ prompts/               # one .md per prompt, versioned (import_list_v1.md: list from text; transcribe_sheet_v1.md: verbatim sheet transcript for the photo route; read_display_v1.md: one display crop -> {value, readable}; read_display_v2.md: same, right-aligned single digits incl. 0 are complete; resolve_request_v1.md: a worker's request -> one confirmed plan id or null)
+â”‚   â”‚   â”œâ”€â”€ prompts/               # one .md per prompt, versioned (import_list_v1.md: list from text; transcribe_sheet_v1.md: verbatim sheet transcript for the photo route; read_display_v1.md: one display crop -> {value, readable}; read_display_v2.md: same, right-aligned single digits incl. 0 are complete; explain_v1.md: explain from logged findings; resolve_request_v1.md: a worker's request -> one confirmed plan id or null)
 â”‚   â”‚   â”œâ”€â”€ resolve.py             # P3-3: a worker's request ("check my isolation on ...") -> one confirmed plan id from the list, or none; a made-up id is none; read-only
-â”‚   â”‚   â””â”€â”€ explain.py             # Phase 3: plain-language answer from logged findings only (never changes a verdict)
+â”‚   â”‚   â””â”€â”€ explain.py             # P3-4: plain-language answer from logged findings only, cites >= 1 finding id (retry once, then a fixed fallback quoting the finding); fixed reply to override/approve/pass/unblock; never-say hit -> fallback; no write path
 â”‚   â”œâ”€â”€ session.py                 # session lifecycle: warm-in â†’ ready â†’ steps (pending â†’ evaluated) â†’ verdict; continuous monitor; inbox/audit I/O
 â”‚   â”œâ”€â”€ gate.py                    # pure verdict policy: findings â†’ verdict, monotonic, signature closes, verdict stamping; no model judge
 │   ├── wording.py                 # the one never-say checker (PROJECT.md list + `\bsafe\b` + banned labels); `python -m zerostate.wording <files>`; eval, site and tests import it
@@ -190,6 +190,7 @@ zerostate/
 â”‚   â”œâ”€â”€ test_baselines.py          # gauge rule on committed p1 episodes; Muse alone with a fake client only (one call, temperature 0, pinned mapping, unavailable listed, dry run calls nothing); both scored by score.py
 â”‚   â”œâ”€â”€ test_api_contract.py       # API (docs/API.md): every endpoint returns its schema, error codes, audit opened read-only, steps/sign/start only add inbox rows, playwright-test refused on real /data, voice never reaches sign/verify/reopen; replay mode serves every published episode and refuses writes
 â”‚   â”œâ”€â”€ test_checks_api.py         # P3-3: GET /api/checks/plans lists confirmed plans; POST /api/checks/resolve good pick / none / made-up id is none / audio via Muse Transcribe; read-only (fake model client)
+â”‚   â”œâ”€â”€ test_explain.py            # P3-4: explain cites an existing finding id, retry then fixed fallback, fixed reply to change requests (no model call), never-say hit -> fallback, no write path (fake model client)
 â”‚   â”œâ”€â”€ test_bench.py              # seal hash, scoring refusals (manifest, tag, dirty tree), batch resume/retry/stop, watchdog
 â”‚   â”œâ”€â”€ test_gate.py               # no approval member; FAIL beats UNKNOWN; monotonic; signature closes; stamping; no never-say words; camera only on the with-camera track
 │   ├── test_wording.py            # never-say checker: list matches PROJECT.md; docs/*.md and src/ string literals clean

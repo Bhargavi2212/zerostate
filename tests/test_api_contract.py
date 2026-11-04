@@ -356,10 +356,11 @@ def test_voice_reads_back_only_and_can_never_reach_sign(env):
     assert routes["/api/voice/command"] is server.voice_command
 
 
-def test_explain_stub(env):
-    client, _, _ = env
-    r = client.post("/api/sessions/s1/explain", json={"question": "why blocked?"}).json()
-    assert set(r) == {"answer", "cites"} and isinstance(r["cites"], list)
+def test_explain_needs_the_model_except_for_the_fixed_reply(env):
+    client, _, _ = env  # no key here: answers need the model (503); a change request gets the fixed reply
+    assert client.post("/api/sessions/s1/explain", json={"question": "why blocked?"}).status_code == 503
+    r = client.post("/api/sessions/s1/explain", json={"question": "override it"}).json()
+    assert set(r) == {"answer", "cites"} and r["cites"] == []
 
 
 # ---- replay mode: recorded bundles, read-only ---------------------------------------------------------
@@ -420,7 +421,8 @@ def test_replay_refuses_every_write(replay_env):
         r = client.post(path, **kw)
         assert r.status_code == 409 and r.json()["error"] == "replay", (path, r.text)
     assert not (tmp / "bundles" / "inbox.sqlite").exists() and not (tmp / "bundles" / "drafts").exists()
-    assert client.post(f"/api/sessions/{sid}/explain", json={"question": "why?"}).status_code == 200
+    assert client.post(f"/api/sessions/{sid}/explain", json={"question": "why?"}).status_code == 503  # served; needs the key
+    assert client.post(f"/api/sessions/{sid}/explain", json={"question": "approve it"}).status_code == 200
 
 
 def test_console_is_served_at_ui_live_and_in_replay(env, replay_env):

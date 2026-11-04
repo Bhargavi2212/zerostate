@@ -6,9 +6,8 @@ Trust boundaries kept here:
 - the voice route only reads back; it never touches the inbox, so it can't mark a step, verify, reopen or sign;
 - the name `playwright-test` can't confirm or sign while the data dir is the real /data (G10);
 - replay mode (`zs api --replay <bundle_dir>`) serves recorded bundles; every write is 409 "replay";
-- the check-request resolver (llm/resolve.py) only reads: it gets plain data, returns text, and touches no
-  inbox, log or session. The data-only verdict path never imports it.
-Explain is a stub until P3-4.
+- explain and the check-request resolver (llm/explain.py, llm/resolve.py) only read: they get plain data,
+  return text, and touch no inbox, log or session. The data-only verdict path never imports them.
 """
 
 import asyncio
@@ -40,6 +39,7 @@ from zerostate.importers import draft as dr
 from zerostate.importers.confirm import NotConfirmable, confirm, is_confirmed
 from zerostate.llm import client as model
 from zerostate.llm.client import ModelUnavailable
+from zerostate.llm.explain import explain as explain_answer
 from zerostate.llm.resolve import resolve
 from zerostate.models.envelope import IsolationList, IsolationPlan
 from zerostate.models.plant_map import PlantMap
@@ -666,8 +666,8 @@ def create_app(data_dir: str | Path, audit_path: str | Path, config_dir: str | P
 
     @app.post("/api/sessions/{sid}/explain")
     def explain(sid: str, body: Question):
-        events(sid)
-        return {"answer": "Explanations arrive with P3-4; see the logged findings.", "cites": []}
+        """Read only: the answer is built from the session's logged findings and returned; nothing is written."""
+        return explain_answer(body.question, detail(sid, events(sid)), opener=opener)
 
     @app.get("/api/checks/plans")
     def check_plans():
