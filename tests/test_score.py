@@ -160,6 +160,7 @@ def test_batch_keys_and_counts(batch):
                                        "notes": s["per_scenario"]["S0"]["notes"]}
     assert {"with_camera_blocked", "n"} <= set(s["camera"]) and s["camera"]["n"] == 0
     assert s["engine"] == "live checks only (Phase 1 engine)"
+    assert s["ids"] == {"n": 4, "zerostate_writes": 0, "operator_missing": 0}  # C1: from each scored episode's ids.json
 
 
 def test_labels_per_definition(batch):
@@ -256,6 +257,7 @@ def test_plan_set_lists_manifest_entries_without_a_result(tmp_path):
     out = score.plan_set(p, {("plan", "PC0", 1), ("plan", "PC1", 2), ("p1", "S0", 3)})
     assert out["missing"] == ["PC1 seed 2"] and out["not_in_manifest"] == ["PC1 seed 9"]
     assert out["false_blocks"]["k"] == 0 and out["per_case"]["PC1"]["blocked"] == 1
+    assert out["cases"] == 2 and out["errors"] == {"k": 1, "n": 1}  # C3: planted errors are the non-PC0 cases
 
 
 def test_an_invalidated_attempt_is_listed_and_its_rerun_is_scored(tmp_path):
@@ -274,3 +276,14 @@ def test_an_invalidated_attempt_is_listed_and_its_rerun_is_scored(tmp_path):
     out = score.score("p1", m, s, res, hash_p=h, muse_results=tmp_path / "none.json")
     assert out["n_scored"] == 1 and out["invalid"] == {**out["invalid"], "k": 0, "attempts": 2, "invalid_attempts": 1}
     assert out["episode_problems"] == {old: ["invalidated: drawn fault never fired"]}
+
+
+def test_p2_write_log_counts_come_from_each_scored_episode(tmp_path):
+    res = tmp_path / "bench"
+    res.mkdir()
+    d = _copy(CLEAN_PASS, res, CLEAN_PASS)
+    (d / "ids.json").write_text(json.dumps({"p2_writes": {"zerostate": 0, "operator_allowed": 7, "other": 0}}), encoding="utf-8")
+    seed = int(CLEAN_PASS.split("_seed")[1].split("_")[0])
+    m, s, h = _seal(tmp_path, [{"plant": "p1", "scenario": "S0", "seed": seed}])
+    out = score.score("p1", m, s, res, hash_p=h, muse_results=tmp_path / "none.json")
+    assert out["p2_writes"] == {"n": 1, "zerostate": 0, "other": 0, "operator_missing": 0} and "ids" not in out

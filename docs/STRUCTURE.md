@@ -227,7 +227,7 @@ zerostate/
 | Claim | Code | Proof |
 |---|---|---|
 | C1 read-only, reaches only PLC Modbus | adapters/, deploy/ network rules | test_readonly, test_firewall, net/test_container_isolation, check_ids |
-| C2 same engine, one commit, both plants; no plant name in src/ | plants/p1, p2 | test_plant_agnostic + run_benchmark (bench-freeze-2 and bench-freeze-p2 on one commit) |
+| C2 one engine, both plants; no plant name in src/; src/ diff between the batch tags = the two listed rule fixes | plants/p1, p2 | test_plant_agnostic + test_published_replay + claims.yaml src_diff |
 | C3 plan errors | checks/plan/* | plan_benchmark |
 | C4 instrument evidence | checks/live/alive, relation | test_alive, test_relation + S1/S2/S3 |
 | C5/C6 misses, false blocks | gate + all checks | run_benchmark + score |

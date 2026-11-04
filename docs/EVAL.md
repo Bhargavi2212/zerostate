@@ -27,7 +27,7 @@ P2 faults and physics are fixed (committed) before any P2 threshold is tuned.
 - Episode validity: the runner checks router rules and Suricata rules before and after each episode, and requires sid 9100002 > 0 (operator writes seen) and 9100001 = 0. Any failure → episode invalid, re-run, and the count of invalid episodes is reported.
 - **P2 gas line** (OPC UA, ours) — plan + live testbed (spec due Nov 1 night).
 - **Plan-check set** on P2's plant map (if P2 is cut: on a hand-drawn plant map of the same design, stated as synthetic).
-Generality claim (C2, decision D4 in PHASE_3.md): the same engine, from one commit, ran both plants; no plant-specific name appears in `src/` (`tests/test_plant_agnostic.py`). If batch p2 doesn't run, C2 is withdrawn.
+Generality claim (C2, decision D4 in PHASE_3.md; reworded Nov 4): one engine ran both plants and no plant-specific name appears in `src/` (`tests/test_plant_agnostic.py`); the `src/` changes between batch 2 and batch p2 are exactly the two rule fixes found on P2 tuning (LIVE-VALVE v2, LIVE-ALIVE v3), checked from git by the claims audit, and the published P1 episodes replay unchanged under them. If batch p2 doesn't run, C2 is withdrawn.
 
 ## Plan-check set
 | ID | Planted error | Real case |

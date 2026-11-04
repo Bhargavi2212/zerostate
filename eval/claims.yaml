@@ -6,7 +6,8 @@
 # README sentence; {dotted.key} or {dotted.key:format} placeholders), tests (pytest node ids, run with
 # --runxfail so an xfail test counts as failing), results (one file under eval/; a * picks the newest match),
 # keys (every dotted key the claim needs), require (key: value that must hold, e.g. a "0" the sentence states),
-# tags_same_commit (git tags that must point at one commit).
+# tags_same_commit (git tags that must point at one commit), src_diff (from, to, files: exactly the src/ files
+# changed between two tags; no files = identical src/).
 #
 # Result keys in eval/results/score_<batch>.json (eval/score.py must write these names):
 #   dangerous_miss.primary.{k,n,ci_low,ci_high}      pre-registered hazard definition (EVAL.md, DECISIONS Nov 3)
@@ -46,11 +47,14 @@ claims:
   - id: C2
     batch: p2
     engine: gas line, full engine
-    sentence: "The same engine, from one commit, ran both plants; no plant-specific name appears in `src/` (P1 GRFICS over Modbus in batch 2; P2, our gas line over OPC UA, in batch p2)."
-    tests: [tests/test_plant_agnostic.py]
+    # reworded Nov 4 (DECISIONS): batch p2 re-froze after batch 2, so "from one commit" no longer holds
+    sentence: "One engine ran both plants, and no plant-specific name appears in `src/` (P1 GRFICS over Modbus in batch 2; P2, our gas line over OPC UA, in batch p2). Between the two batches, two rule fixes found on P2 tuning seeds changed `src/` (LIVE-VALVE v2, LIVE-ALIVE v3); every published P1 episode replays to its logged verdict under them."
+    tests: [tests/test_plant_agnostic.py, tests/test_published_replay.py]
     results: eval/results/score_p2.json
     keys: [invalid.n]  # score_p2.json exists = batch p2 ran
-    tags_same_commit: [bench-freeze-2, bench-freeze-p2]
+    src_diff:  # batch 2 ran bench-freeze-2; batch p2 ran bench-freeze-p2b (75 entries) and bench-freeze-p2c (the 5 S2 re-runs)
+      - {from: bench-freeze-2, to: bench-freeze-p2b, files: [src/zerostate/checks/live/__init__.py, src/zerostate/checks/live/alive.py, src/zerostate/checks/live/valve.py]}
+      - {from: bench-freeze-p2b, to: bench-freeze-p2c}
 
   - id: C3
     batch: plan
@@ -129,10 +133,10 @@ claims:
   - id: C8.2
     batch: "2"
     engine: full engine (live + process + camera)
-    sentence: "In batch 2 (full engine (live + process + camera)), on {per_scenario.S8.n} episodes where valve position feedback lied, the data-only track blocked {per_scenario.S8.blocked}, and the with-camera track blocked {camera.with_camera_blocked} of {camera.n} (idealised camera, renders the simulator's true state)."
+    sentence: "In batch 2 (full engine (live + process + camera)), on {per_scenario.S8.n} episodes where valve position feedback lied, the data-only track blocked {per_scenario.S8.blocked}, and the with-camera track blocked {camera.by_scenario.S8.with_camera_blocked} of {camera.by_scenario.S8.n} (idealised camera, renders the simulator's true state)."
     tests: [tests/test_camera.py]
     results: eval/results/score_2.json
-    keys: [per_scenario.S8.n, per_scenario.S8.blocked, camera.with_camera_blocked, camera.n]
+    keys: [per_scenario.S8.n, per_scenario.S8.blocked, camera.by_scenario.S8.with_camera_blocked, camera.by_scenario.S8.n]
 
   - id: C9
     batch: p1

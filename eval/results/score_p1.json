@@ -248,6 +248,11 @@
   "invalid_attempts": 0
  },
  "invalid_entries": [],
+ "ids": {
+  "n": 65,
+  "zerostate_writes": 0,
+  "operator_missing": 0
+ },
  "episode_problems": {},
  "not_scored": [],
  "per_scenario": {
@@ -348,7 +353,20 @@
   "with_camera_blocked": 0,
   "with_camera_escalated": 0,
   "data_only_blocked": 0,
-  "n": 0
+  "n": 0,
+  "camera_added_block": 0,
+  "camera_removed_block": 0,
+  "by_scenario": {},
+  "coverage": {
+   "readings": 0,
+   "readable": 0,
+   "no_frame": 0,
+   "timeouts": 0,
+   "model_unavailable": 0,
+   "located_by_map": 0,
+   "pending_at_stop": 0
+  },
+  "timeouts_per_episode": {}
  },
  "baselines": {
   "gauge_rule": {

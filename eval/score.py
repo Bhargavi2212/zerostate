@@ -352,7 +352,9 @@ def plan_set(path: Path, entries: set) -> dict:
         b["blocked"] += bool(r["blocked"])
         b["label_match"] += bool(r["label_match"])
     pc0 = [r for r in rows if r["case"] == "PC0"]
-    return {"n": len(rows), "label_match": sum(bool(r["label_match"]) for r in rows), "per_case": by,
+    planted = [r for r in rows if r["case"] != "PC0"]
+    return {"n": len(rows), "cases": len(rows), "label_match": sum(bool(r["label_match"]) for r in rows), "per_case": by,
+            "errors": {"k": sum(bool(r["blocked"]) for r in planted), "n": len(planted)},
             "false_blocks": rate(sum(bool(r["blocked"]) for r in pc0), len(pc0)),
             "not_in_manifest": [f"{r['case']} seed {r['seed']}" for r in rows if ("plan", r["case"], r["seed"]) not in entries],
             "missing": sorted(f"{c} seed {s}" for p, c, s in entries
@@ -429,6 +431,7 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
             ttb.setdefault(r["scenario"], []).append(r["time_to_block_process_s"])
     cam_rows = [r for r in rows if "verdict_with_camera" in r]
     attempts = [p for p in progress if p.get("kind") == "attempt"]
+    ids = [json.loads((Path(results_dir) / n / "ids.json").read_text(encoding="utf-8")) for n in chosen]
 
     out = {
         "batch": batch, "engine": ENGINE.get(batch, batch), "seal_hash": h,
@@ -465,6 +468,14 @@ def score(batch: str, manifest_p: Path, salt_p: Path, results_dir: Path, hash_p:
         "invalid": {"k": len(invalid), "n": len(entries), "attempts": len(attempts),
                     "invalid_attempts": sum(1 for p in attempts if not p.get("valid") or p.get("episode") in inv)},
         "invalid_entries": invalid,
+        # the write witnesses per scored episode: P1's IDS (9100001 ZeroState Modbus writes, 9100002 the operator's),
+        # P2's server write log (runner postflight); C1
+        **({"p2_writes": {"n": len(ids), "zerostate": sum(i["p2_writes"]["zerostate"] for i in ids),
+                          "other": sum(i["p2_writes"]["other"] for i in ids),
+                          "operator_missing": sum(i["p2_writes"]["operator_allowed"] == 0 for i in ids)}}
+           if ids and "p2_writes" in ids[0] else
+           {"ids": {"n": len(ids), "zerostate_writes": sum(i["9100001"] for i in ids),
+                    "operator_missing": sum(i["9100002"] == 0 for i in ids)}} if ids else {}),
         "episode_problems": listed,
         "not_scored": stray,
         "per_scenario": dict(sorted(per_scenario.items())),
