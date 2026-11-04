@@ -87,18 +87,18 @@ def make(case: str, seed: int) -> tuple[dict, dict, dict]:
     return m, lst, {"case": case, "seed": seed, "variant": variant, "expected_fail": sorted(expected)}
 
 
+def write_one(out: Path, case: str, seed: int) -> Path:
+    m, lst, label = make(case, seed)
+    d = out / f"{case}_seed{seed}"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "label.json").write_text(json.dumps(label, indent=1), encoding="utf-8")  # label first
+    (d / "plant_map.yaml").write_text(yaml.safe_dump(m, sort_keys=False), encoding="utf-8")
+    (d / "isolation_list.yaml").write_text(yaml.safe_dump(lst, sort_keys=False), encoding="utf-8")
+    return d
+
+
 def write(out: Path, seeds: list[int]) -> list[Path]:
-    dirs = []
-    for seed in seeds:
-        for case in CASES:
-            m, lst, label = make(case, seed)
-            d = out / f"{case}_seed{seed}"
-            d.mkdir(parents=True, exist_ok=True)
-            (d / "label.json").write_text(json.dumps(label, indent=1), encoding="utf-8")  # label first
-            (d / "plant_map.yaml").write_text(yaml.safe_dump(m, sort_keys=False), encoding="utf-8")
-            (d / "isolation_list.yaml").write_text(yaml.safe_dump(lst, sort_keys=False), encoding="utf-8")
-            dirs.append(d)
-    return dirs
+    return [write_one(out, case, seed) for seed in seeds for case in CASES]
 
 
 if __name__ == "__main__":

@@ -113,7 +113,7 @@ def git(*args) -> tuple[int, str]:
     return r.returncode, r.stdout.strip()
 
 
-def scoring_problem(batch: str | None, manifest_p, salt_p, scenario: str, seed: int) -> str | None:
+def scoring_problem(batch: str | None, manifest_p, salt_p, scenario: str, seed: int, plant: str = "p1") -> str | None:
     """A scoring seed runs only from its sealed batch, on that batch's frozen tag, with nothing edited."""
     if not (batch and manifest_p and salt_p):
         return f"scoring seed {seed} needs --batch, --manifest and --salt"
@@ -121,7 +121,7 @@ def scoring_problem(batch: str | None, manifest_p, salt_p, scenario: str, seed: 
     sealed = ROOT / "eval" / f"sealed_hash_{batch}.txt"
     if not sealed.exists() or sealed.read_text(encoding="utf-8").strip() != h:
         return f"manifest and salt do not match eval/sealed_hash_{batch}.txt"
-    if {"plant": "p1", "scenario": scenario, "seed": seed} not in manifest["entries"]:
+    if {"plant": plant, "scenario": scenario, "seed": seed} not in manifest["entries"]:
         return f"{scenario} seed {seed} is not in the sealed {batch} manifest"
     rc, tag = git("rev-parse", f"refs/tags/bench-freeze-{batch}^{{commit}}")
     head = git("rev-parse", "HEAD")[1]
