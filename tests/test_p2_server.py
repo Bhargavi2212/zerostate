@@ -115,3 +115,30 @@ def test_control_sets_faults_and_reads_truth(plant):
     assert truth["faults"]["leak_pct"]["XV-204"] == 0.5 and truth["faults"]["sensor"]["PT-211"]["mode"] == 1
     assert "F-210" in truth["pressure_kpa_abs"] and p.control({"request": "nope"})["error"]
     p.control({"request": "set", "data": {"XV-204.leak_pct": 0, "PT-211.fault_mode": 0}})
+
+
+
+def _p2_operator():
+    import importlib.util
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location("p2_operator", Path(__file__).parents[1] / "plants" / "p2_gasline" / "operator.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_p2_operator_sets_cmd_as_operator_and_never_prints_the_password(plant, monkeypatch, capsys):
+    url, _, path = plant
+    op = _p2_operator()
+    monkeypatch.setenv("P2_PASSWORD_OPERATOR", P2_USERS["operator"])
+    assert op.main(["--endpoint", url, "set", "XV-231", "0"]) == 0
+    assert [(r["user"], r["allowed"], r["nodes"]) for r in log(path)] == [("operator", True, ["XV-231.CMD"])]
+    assert op.main(["--endpoint", url, "status"]) == 0
+    assert json.loads(capsys.readouterr().out)["command_pct"]["XV-231"] == 0
+    assert op.main(["--endpoint", url, "wait-pressure-below", "PT-211", "1", "--mean-of", "2",
+                    "--timeout-process-s", "30", "--process-time-scale", "30"]) == 2  # 1 kPa never reached: timeout
+    assert op.main(["--endpoint", url, "set", "XV-231", "100"]) == 0
+    monkeypatch.setenv("P2_PASSWORD_OPERATOR", "wrong")
+    assert op.main(["--endpoint", url, "set", "XV-231", "0"]) == 1
+    out = capsys.readouterr()
+    assert P2_USERS["operator"] not in out.out + out.err and "wrong" not in out.out + out.err

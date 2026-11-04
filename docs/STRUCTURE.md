@@ -129,6 +129,7 @@ zerostate/
 â”‚   â”‚   â”œâ”€â”€ model.py               # physics (isothermal N2 volumes, gas valve law), pure
 â”‚   â”‚   â”œâ”€â”€ server.py              # asyncua server at 192.168.95.50:4840; users zerostate (read) / operator (*.CMD); write-attempt log
 â”‚   â”‚   â”œâ”€â”€ faults.py  truth.py    # via docker exec on a unix socket inside the container, never the network (eval only)
+â”‚   â”‚   â”œâ”€â”€ operator.py            # P2 operator: *.CMD over OPC UA as user operator (P2_PASSWORD_OPERATOR, never logged); zs-operator has it as operator_p2.py (eval only)
 â”‚   â”‚   â”œâ”€â”€ Dockerfile
 â”‚   â”‚   â””â”€â”€ validation/            # analytic blowdown comparison â†’ blowdown_overlay.svg (stdlib, no plot dependency); error % in eval/results/p2_validation_<date>.json
 â”‚   â””â”€â”€ p3_wntr/                   # stretch
