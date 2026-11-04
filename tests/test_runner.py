@@ -85,12 +85,12 @@ def test_plan_hash_is_per_plant_and_unconfirmed_refuses(monkeypatch):
 def test_benchmark_plan_is_the_committed_plan():
     plan = runner.IsolationPlan.model_validate(runner.yaml.safe_load(
         (runner.P1 / "envelope.yaml").read_text(encoding="utf-8")))
-    # Until the owner confirms the envelope with `camera: optional`, the committed plan may be the one
-    # named in the runner's "pending owner confirmation" comment; scoring seeds stay refused meanwhile.
-    import re
-    pending = re.findall(r"pending owner confirmation: ([0-9a-f]{64})", Path(runner.__file__).read_text(encoding="utf-8"))
-    assert plan.content_hash() in (runner.BENCHMARK_PLAN_HASH["p1"], *pending)
+    assert plan.content_hash() == runner.BENCHMARK_PLAN_HASH["p1"]
     assert plan.camera == "optional"  # batch 2 runs the camera on P1
+    # the active benchmark hashes are exactly what the owner confirmed (plants/<p>/confirmed.yaml)
+    for p in ("p1_grfics", "p2_gasline"):
+        book = runner.yaml.safe_load((runner.ROOT / "plants" / p / "confirmed.yaml").read_text(encoding="utf-8"))
+        assert runner.BENCHMARK_PLAN_HASH[p[:2]] in {r["plan_hash"] for r in book}
     assert any(s.targets for s in plan.steps)  # block-in
 
 
@@ -144,7 +144,7 @@ def test_p2_plan_and_code_spec():
     assert runner.p2_vent_wait(plan, bleed, 5) == ("PT-202", plan.vent_target_kpa_abs)
     for _, _, local, pat in runner.CODE_SPEC_P2:
         assert list((runner.ROOT / local).glob(pat)), (local, pat)
-    assert runner.BENCHMARK_PLAN_HASH["p2"] in (None, plan.content_hash())
+    assert runner.BENCHMARK_PLAN_HASH["p2"] == plan.content_hash()
 
 
 class FakeLab:
