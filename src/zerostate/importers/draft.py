@@ -50,6 +50,15 @@ def unresolved(lst: IsolationList) -> list[str]:
     return out
 
 
+def vent_as_point(lst: IsolationList, pmap: PlantMap) -> list[str]:
+    """A drafted isolation point the plant map lists as a vent: name the cause, first (importer case t02, after
+    the measured run): the row was flagged before, but only for the fields it lacked. A bleed stays allowed: in a
+    double block and bleed it is a list point, open."""
+    kinds = {n.id: n.kind for n in pmap.nodes}
+    return [f"{p.tag} is a vent/bleed on this plant, listed here as an isolation point. Move it to the vent field or remove it."
+            for p in lst.points if kinds.get(p.tag) == "vent"]
+
+
 def defaults_used(lst: IsolationList, pmap: PlantMap) -> list[dict]:
     """Values the person did not write that the plan takes from the plant: shown and confirmed knowingly."""
     if lst.hold_minutes is not None:
@@ -61,7 +70,7 @@ def check_draft(draft: dict, pmap: PlantMap, params: dict) -> tuple[IsolationPla
     """Merge with the map and run the plan checks. A list with nulls isn't merged: a plan built from
     guesses would not be the person's plan."""
     lst = IsolationList.model_validate(draft["list"])
-    todo = unresolved(lst)
+    todo = vent_as_point(lst, pmap) + unresolved(lst)
     plan, findings = None, []
     if not todo:
         from zerostate.checks.plan import run_plan_checks
