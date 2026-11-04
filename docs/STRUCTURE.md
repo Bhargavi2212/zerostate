@@ -145,6 +145,7 @@ zerostate/
 â”‚   â”œâ”€â”€ tools/timescale_test.py    # Phase 1: time-scale stability runs (Ã—1 / Ã—10 / Ã—5) â†’ results/timescale_<date>.json
 â”‚   â”œâ”€â”€ tools/vent_fidelity.py     # Phase 1 rev 3: manual-mode vent at Ã—1 vs chosen scale vs physics â†’ results/vent_fidelity_<date>.json
 â”‚   â”œâ”€â”€ tools/smoke_table.py       # Phase 1: smoke table from runs/<episode>/ â†’ results/smoke_p1_<date>.md
+â”‚   â”œâ”€â”€ tools/demo_driver.py       # P3-8 live P1 demo: the person marks steps in the console; after each in-order mark it moves the plant as the runner's operator does and fires the scenario fault (S0/S8, tuning seeds); marks, verifies, signs, stops nothing; record in runs/<sid>/
 â”‚   â”œâ”€â”€ seal.py                    # one sealed batch: scoring seeds â‰¥ 10000 from os.urandom, shuffled; manifest + salt OUTSIDE the repo (D:\grfics\sealed\)
 â”‚   â”œâ”€â”€ sealed_hash_<batch>.txt    # committed SHA-256(salt + manifest) per batch, before its first scoring episode, then tag bench-freeze-<batch>
 â”‚   â”œâ”€â”€ claims.yaml                # claim id â†’ tests â†’ result key â†’ exact README sentence
@@ -180,6 +181,7 @@ zerostate/
 â”‚   â”œâ”€â”€ test_modbus_scan.py        # scan script offset check
 â”‚   â”œâ”€â”€ test_timescale_judge.py    # time-scale pass/fail criteria (eval/tools/timescale_test.py)
 â”‚   â”œâ”€â”€ test_runner.py             # runner logic without the lab: seeded draws, router-rule order
+â”‚   â”œâ”€â”€ test_demo_driver.py        # demo driver with a fake lab: acts only on in-order marks by a person, S8 fault cue, every issued command is a read or a plant move, scoring seeds / --batch refused
 â”‚   â”œâ”€â”€ test_published_replay.py   # C11 regression gate: every published P1 episode replays identically under today's rules
 â”‚   â”œâ”€â”€ test_llm_client.py         # fake opener: box parsing, strict-JSON retry then fail, ledger, budget stop, key never logged
 â”‚   â”œâ”€â”€ test_camera.py             # fake models + Pillow fixtures: region matching, unreadable, freeze, LIVE-CAMERA, optional/required, data-only track untouched, status, two-track replay
