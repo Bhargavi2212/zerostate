@@ -9,7 +9,7 @@ repos:
       - id: detect-secrets
         args: ["--baseline", ".secrets.baseline"]
         # generated episode and benchmark logs: SHA-256 plan/chain hashes and image digests, no config or keys
-        exclude: ^eval/results/((episodes|bench)/|score_[^/]+\.json$)  # score files carry public seal and plan hashes
+        exclude: ^(eval/results/((episodes|bench)/|score_[^/]+\.json$)|plants/[^/]+/confirmed\.yaml$)  # public seal and plan hashes
   - repo: local
     hooks:
       - id: pytest
