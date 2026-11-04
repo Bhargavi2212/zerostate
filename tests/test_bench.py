@@ -170,8 +170,24 @@ def test_no_watchdog_never_skips_s0(tmp_path):
     assert calls == [10011, 10012]
 
 
+def test_p2_batch_needs_the_live_p2_network_gate_and_n_at_least_30(tmp_path):
+    entries = [{"plant": "p2", "scenario": "S0", "seed": 10000 + i} for i in range(40)]
+    p = tmp_path / "progress.jsonl"
+    run, calls = fake_run([True] * 30)
+    fail = lambda: (False, "1 passed, 1 failed")
+    assert bench.run_batch({"entries": entries}, p, SimpleNamespace(first=30), run, lambda: EVENING, net_gate=fail) == 2
+    assert calls == [] and bench.read_progress(p)[-1] == {**bench.read_progress(p)[-1], "kind": "p2_net_gate", "passed": False}
+    skip = lambda: (False, "1 passed, 1 skipped")  # a skipped write test is not a pass
+    assert bench.run_batch({"entries": entries}, tmp_path / "s.jsonl", SimpleNamespace(first=30), run, lambda: EVENING, net_gate=skip) == 2
+    assert bench.run_batch({"entries": entries}, tmp_path / "n.jsonl", SimpleNamespace(first=29), run, lambda: EVENING,
+                           net_gate=lambda: (True, "2 passed")) == 2  # N below 30: no-go
+    ok = lambda: (True, "2 passed")
+    assert bench.run_batch({"entries": entries}, tmp_path / "o.jsonl", SimpleNamespace(first=30), run, lambda: EVENING, net_gate=ok) == 0
+    assert len(calls) == 30
+
+
 def test_first_n_runs_sealed_order_prefix_and_is_fixed_on_resume(tmp_path):
-    entries = [{"plant": "p2", "scenario": "S0", "seed": 10000 + i} for i in range(5)]
+    entries = [{"plant": "p1", "scenario": "S0", "seed": 10000 + i} for i in range(5)]
     p = tmp_path / "progress.jsonl"
     run, calls = fake_run([True, None])  # first episode valid, then the runner refuses: batch stops
     assert bench.run_batch({"entries": entries}, p, SimpleNamespace(first=3), run, lambda: EVENING) == 2
