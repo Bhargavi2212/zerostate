@@ -394,7 +394,9 @@ class Episode:
                     return
 
     # run ------------------------------------------------------------------
-    def run(self) -> dict:
+    def start(self) -> tuple[dict, dict]:
+        """Preflight, recreate and settle the simulator, camera, truth log, session start; returns
+        (preflight, status at ready). Shared with eval/tools/demo_driver.py."""
         s = str(self.scale)
         if self.scoring and (problem := code_problem()):
             raise EpisodeInvalid(problem)
@@ -416,7 +418,32 @@ class Episode:
         sh("docker", "exec", "-d", "-u", "zs", *cam_env, "zerostate", "zs", "session", "start",
            "--plan", "/app/config/p1_grfics/envelope.yaml", "--plan-hash", plan_hash, "--session", self.sid)
         time.sleep(1)
-        st = self.wait(lambda st: st["state"] == "ready", 60)
+        return pre, self.wait(lambda st: st["state"] == "ready", 60)
+
+    def operate(self, step, variant=None) -> None:
+        """The operator's plant actions for step k, done after ZeroState has registered k's mark."""
+        k = step.k
+        if step.kind == "mode":
+            if variant != "no_manual_mode":
+                act("manual", "on")
+        elif step.kind in ("isolate", "vent_close"):
+            for i, target in enumerate(step_targets(step)):  # e.g. block in: inlet first, then outlet
+                if variant == "wrong_valve_step2" and k == 2 and target == "f1":
+                    target = "f2"
+                if i:
+                    time.sleep(2)
+                act("set", target, str(step.required_state))
+        elif step.kind == "vent_open":
+            act("set", step.target, str(step.required_state))
+
+    def vent_down(self) -> None:
+        """Keep venting until the plan's vent target (rolling mean); a timeout is allowed."""
+        act("wait-pressure-below", str(self.plan.vent_target_kpa_abs), "--mean-of", "8",
+            "--timeout-process-s", "900", "--process-time-scale", str(self.scale))
+        self.fire_due()
+
+    def run(self) -> dict:
+        pre, st = self.start()
         variant = self.sc.get("operator")
         for step in self.plan.steps:
             if st["verdict"] in TERMINAL or step.kind == "final":
@@ -430,28 +457,14 @@ class Episode:
             st = self.mark(k)  # declare the step first, then act on the plant
             if st["verdict"] in TERMINAL:
                 break
-            if step.kind == "mode":
-                if variant != "no_manual_mode":
-                    act("manual", "on")
-            elif step.kind in ("isolate", "vent_close"):
-                for i, target in enumerate(step_targets(step)):  # e.g. block in: inlet first, then outlet
-                    if variant == "wrong_valve_step2" and k == 2 and target == "f1":
-                        target = "f2"
-                    if i:
-                        time.sleep(2)
-                    act("set", target, str(step.required_state))
-            elif step.kind == "vent_open":
-                act("set", step.target, str(step.required_state))
+            self.operate(step, variant)
             st = self.evaluated(k)
             if step.kind == "isolate" and st["verdict"] not in TERMINAL:  # a second person checks it (PROC-INDEPENDENCE)
                 zs("step", "verify", self.sid, str(k), "--by", "eval-operator" if variant == "same_verifier" else "eval-verifier")
             if variant == "reopen_test" and k == self.sc["reopen_after"] and st["verdict"] not in TERMINAL:
                 st = self.reopen_test(self.sc["reopen_step"])
             if step.kind == "vent_open" and st["verdict"] not in TERMINAL:
-                # keep venting until the plan's vent target (rolling mean); mark on regardless, like a hurried human
-                act("wait-pressure-below", str(self.plan.vent_target_kpa_abs), "--mean-of", "8",
-                         "--timeout-process-s", "900", "--process-time-scale", s)
-                self.fire_due()
+                self.vent_down()  # mark on regardless of the timeout, like a hurried human
         if st["verdict"] not in TERMINAL:
             time.sleep(30 / self.scale)
         self.fire_due()
