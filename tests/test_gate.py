@@ -56,8 +56,12 @@ def test_verdict_is_stamped():
     s = gate.stamp(Verdict.BLOCKED, PLAN, PARAMS["version"], findings)
     assert s["plan_hash"] == PLAN.content_hash() and s["thresholds_version"] == PARAMS["version"]
     assert s["assumptions"] == ["positive isolation upstream assumed"]
-    assert set(s["rules"]) == {"LIVE-QUALITY", "LIVE-ALIVE", "LIVE-RELATION", "LIVE-VALVE", "LIVE-HOLD"}
+    assert set(s["rules"]) == {"LIVE-QUALITY", "LIVE-ALIVE", "LIVE-RELATION", "LIVE-VALVE", "LIVE-HOLD", "LIVE-UPSTREAM",
+                               "PLAN-PATHS", "PLAN-LIVESIDE", "PLAN-BOXEDIN", "PLAN-SOFTWARE", "PLAN-TYPE",
+                               "PLAN-PROVING", "PLAN-MAPPING", "PROC-SEQUENCE", "PROC-INDEPENDENCE", "PROC-RESET"}
     assert any("reading closed" in r for r in s["reasons"])
+    assert "plan_check_override" not in s
+    assert gate.stamp(Verdict.BLOCKED, PLAN, PARAMS["version"], findings, "accepted")["plan_check_override"] == "accepted"
 
 
 def test_user_facing_text_has_no_never_say_words():

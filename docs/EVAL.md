@@ -6,12 +6,17 @@ Status: approved design, revised Oct 31 after independent review. Written before
 - **Plan case**: one envelope (correct, or with one planted error) → plan-check verdict. Truth = planted label.
 - **Live episode**: plan → steps by `plants/*/operator.py` → proof → verdict. Truth from simulator internals (`plants/*/truth.py`), which ZeroState can't reach (network test).
 - **Unsafe** live episode: at the moment ZeroState returns `NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF`, any of: true work-segment pressure > 150 kPa abs (P1 and P2); true flow through an isolated line > 1% of that line's full scale (P2: > 1 % of the line's flow fully open at its design pressure difference); a required step skipped; an isolation point in the wrong true state.
+  **Fixed Nov 3, before the seal was opened** (DECISIONS, Nov 3; can only add misses, never remove them):
+  - **Primary hazard definition** = the four conditions above, as pre-registered. References pinned per plant: P1 full scale = `scale_max` in `plants/p1_grfics/modbus_map.yaml` at `bench-freeze-p1` (f1 1000, f2 500, purge 2000, product 500); P2 = the line's flow fully open at its design pressure difference. A required step skipped = a plan step with no mark in the audit; wrong true state = truth `state.<valve>_valve_pos` more than 1 % from the step's required state.
+  - **Secondary hazard definition** (stricter), added Nov 3, before the seal was opened: the same four conditions with the flow limit at 0.1 % of the same reference.
+  - **Dangerous miss** = `NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF` and a condition met at any time from that verdict to the episode end. Counted under each definition, each with its own figure.
+  - **Episode label** (unsafe / fault below hazard limits / clean) comes from truth after the isolation marks, whatever the verdict: a line's flow and state count from its own isolate mark, the vent valve's from the vent_close mark, pressure from the vent_close mark (not evaluated if never reached). For BLOCKED or ESCALATED episodes the label is descriptive only.
 - Hold window fixed per plant before sealing (P1: `hold_process_s: 600`, real 10-minute practice; wall time = 600 / `process_time_scale`).
 - Episodes are **pre-registered by seed and replayable from logs**: a seed fixes fault type, severity and onset; the plant's noise is not seeded (it runs on wall-clock ticks), so episodes are never claimed to be regenerable. Reproducibility = replay of every logged evaluation window (C11).
 
 ## Pre-registration (not "blind" — one person builds both sides)
 1. Before scoring: write `eval/scenarios/*.yaml`; `eval/seal.py --batch <b>` draws scoring seeds (≥ 10000, `os.urandom`, shuffled order) into a manifest kept with a random salt **outside the repo** (`D:\grfics\sealed\`); only `eval/sealed_hash_<b>.txt = SHA-256(salt + manifest)` is committed, then the batch is tagged `bench-freeze-<b>`. Tuning seeds are 0–999. The runner refuses a scoring seed unless it is in the manifest matching the committed hash, HEAD is the batch tag, tracked files are unchanged, the plan is the committed one and the ZeroState container holds the tag's code.
-   **Batches** (separately sealed; every result names its batch): **p1** — P1 headline, data-only, on the Phase 1 code: S0 ×15 + S1, S1b, S2, S3, S4-small, S4-large, S5, S6, S8, S12 ×5 (65; no S7) → C5, C6. **2** — plan set (PC0 ×15, PC1–PC6 ×5) → C3; P1 S7 ×5 → C13; camera-on P1 S0 ×5 + S8 ×5 → camera half of C8. **p2** — P2 S0 ×15 + 12 fault scenarios ×5 → P2 rows of C5/C6, C2.
+   **Batches** (separately sealed; every result names its batch): **p1 — "live checks only"** (the Phase 1 engine, data-only): S0 ×15 + S1, S1b, S2, S3, S4-small, S4-large, S5, S6, S8, S12 ×5 (65; no S7) → C5, C6. **2 — "full engine (live + process + camera)"**: plan set (PC0 ×15, PC1–PC6 ×5) → C3; P1 with the camera on: S0 ×15 (the full engine's own false-block rate, C6), S7 ×5, S7-same ×5, S13 ×5 (C13), S8 ×5 (camera half of C8). **p2 — "gas line, full engine"** (own seal, only if P2's live smoke passes by Nov 3 18:00): P2 S0 ×15 + 12 fault scenarios ×5 → P2 rows of C5/C6, C2. Every result names its batch and engine label.
    An INVALID episode (pre/postflight, guard, fault not applied, vent start < 1500 kPa) is retried once with the same seed, then recorded INVALID and not counted; the INVALID rate is reported.
 2. Tune thresholds only on tuning seeds.
 3. Score run uses scoring seeds; then publish manifest + salt so anyone can verify the hash and re-score from committed logs.
@@ -22,7 +27,7 @@ P2 faults and physics are fixed (committed) before any P2 threshold is tuned.
 - Episode validity: the runner checks router rules and Suricata rules before and after each episode, and requires sid 9100002 > 0 (operator writes seen) and 9100001 = 0. Any failure → episode invalid, re-run, and the count of invalid episodes is reported.
 - **P2 gas line** (OPC UA, ours) — plan + live testbed (spec due Nov 1 night).
 - **Plan-check set** on P2's plant map (if P2 is cut: on a hand-drawn plant map of the same design, stated as synthetic).
-Generality claim (C2) requires the same code with only `plants/*` changed, on ≥ 2 plants; otherwise C2 is withdrawn.
+Generality claim (C2, decision D4 in PHASE_3.md): the same engine, from one commit, ran both plants; no plant-specific name appears in `src/` (`tests/test_plant_agnostic.py`). If batch p2 doesn't run, C2 is withdrawn.
 
 ## Plan-check set
 | ID | Planted error | Real case |
@@ -52,6 +57,7 @@ Target: 5 variants per error, 15 correct. P1's real GRFICS plan is run separatel
 | S10 | blocked vent (no flow when opened) | Tosco drains | — | ✓ (LIVE-ALIVE: open, no flow, no fall → FAIL) |
 | S11 | dry test (no upstream pressure during hold) | WMC MHS-07 | — | ✓ |
 | S12 | comms loss / stale registers (incl. whole-path freeze: every tag behind the PLC, also closed-valve groups, must leave GOOD) | Modbus last-value behaviour; seen live Oct 31 (~50 s frozen with successful reads) | ✓ | ✓ |
+| S13 | inch and test: f1 reopened after the block-in, closed again, not verified again (PROC-RESET) | temporary de-isolation (ETUG) | ✓ | — |
 | S9 | replayed values | Stuxnet | stretch | stretch |
 Target: 5 episodes per scenario per plant, 15 clean per plant (Decision 8). Run overnight Nov 2.
 
@@ -59,18 +65,18 @@ Target: 5 episodes per scenario per plant, 15 clean per plant (Decision 8). Run 
 1. Gauge rule (hurried human): pass when pressure < threshold and flows ≈ 0.
 2. Muse Spark alone, same data.
 3. ZeroState data-only — **headline** (the data-only verdict track, logged live and confirmed by replay).
-4. ZeroState + idealised camera (P1) — the with-camera track of the same episodes (batch 2 subset), reported separately, labelled.
+4. ZeroState + idealised camera (renders the simulator's true state; P1) — the with-camera track of the same episodes (batch 2 subset), reported separately, labelled.
 Ablations: LIVE-ALIVE off; LIVE-RELATION off.
 
 ## Metrics
-- Dangerous misses (truth unsafe at NO_DISCREPANCY): count/n, Wilson 95% CI; 0/n reported as upper bound ≈ 3/n.
-- Missed faults (fault present, truth safe, NO_DISCREPANCY): reported separately, never folded into dangerous misses.
+- Dangerous misses (NO_DISCREPANCY, then a hazard condition met at any time until the episode end; primary and secondary definitions each reported): count/n, Wilson 95% CI; 0/n reported as upper bound ≈ 3/n.
+- Missed faults (fault present, no hazard limit crossed, NO_DISCREPANCY): reported separately, never folded into dangerous misses.
 - INVALID rate per batch.
 - LIVE-HOLD detection rate by leak size (S4-small, S1b).
 - False blocks on clean episodes / correct plans.
 - Time to block; severity at release (true pressure/flow when released; Urbina 2016).
 - Camera reading: exact match and `unreadable` rate on a sealed frame set: 100 frames per plant state class, labelled from truth at the frame's capture time (frame service stamps truth beside each frame; ZeroState never sees it).
-- Importer: field-level precision/recall per route (CSV, text, image) on 12 cases authored by us (6 typed texts, 6 sheets rendered from our own templates in the field layouts of public procedures — Seqwater, NPDC, Marathon — with no real names or logos; 2 deliberately ambiguous, which must come back null), gold lists committed before any importer run; invented points must be 0. Stated as "authored by us, n = 12".
+- Importer: field-level precision/recall per route (CSV, text, image) on 12 cases authored by us (6 typed texts, 6 sheets rendered from our own templates in the field layouts of public procedures — Seqwater, NPDC, Marathon — with no real names or logos; 2 deliberately ambiguous, which must come back null), gold lists committed before any importer run; invented points must be 0. Stated as "authored by us, n = 12". All three routes share one guard against invented points: the photo route first transcribes the sheet verbatim, then the transcript goes through the typed route, whose code nulls any tag the author's text doesn't contain (which blocks confirmation). Stated limit: a tag misread in the transcription (e.g. XV-203 read as XV-208) passes that guard; the accuracy set measures how often, and the person's confirmation (photo, transcript and table side by side) is the backstop.
 - Not used: point-adjusted F1, text similarity, LLM-as-judge scoring.
 
 ## Checks on our own work

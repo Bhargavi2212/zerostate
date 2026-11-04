@@ -1,0 +1,7 @@
+WO 30418 - reactor internal inspection (P1)
+
+Isolate the reactor before we open it up:
+1. close f1 (feed 1 control valve) - non-proved, lock L-11
+2. close f2 (feed 2 control valve) - non-proved, lock L-12
+3. close product - non-proved, lock L-13
+Vent through the purge valve to bring it down. Hold 10 min before sign-on.

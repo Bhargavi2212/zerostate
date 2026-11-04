@@ -1,0 +1,9 @@
+# P2 gas line (plants/p2_gasline/SPEC.md). Steps: 1 close XV-201, 2 close XV-203, 3 open BV-202, 4 close XV-204,
+# 5 vent to 200 kPa, 6 close VV-213, 7 hold 600 process-s, 8 final vent (VV-213 stays open), 9 final.
+# Fault keys are model.GasLine.set keys, sent by plants/p2_gasline/faults.py; ranges are drawn per seed.
+id: S4-large
+plant: p2_gasline
+title: XV-204 commanded closed but passing (backflow from D-220), large
+expected: [BLOCKED]  # LIVE-HOLD, or the vent can't reach the hold pressure against the backflow
+faults:
+  - {at_step: 4, before_mark: true, set: {XV-204.leak_pct: [2.0, 5.0]}}

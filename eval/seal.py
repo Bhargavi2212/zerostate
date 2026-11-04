@@ -15,8 +15,16 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 SEALED = Path(os.environ.get("ZS_SEALED", r"D:\grfics\sealed"))
 P1_FAULTS = ("S1", "S1b", "S2", "S3", "S4-small", "S4-large", "S5", "S6", "S8", "S12")
+# every fault scenario in eval/scenarios/p2/ (S7 and S7-same are the spec's one "S7" row, as two files)
+P2_FAULTS = ("S1", "S1b", "S2", "S3", "S4-small", "S4-large", "S5", "S7", "S7-same", "S8", "S10", "S11", "S12")
 BATCHES = {
-    "p1": [("p1", "S0", 15)] + [("p1", s, 5) for s in P1_FAULTS],  # headline, phase-1.1 code, no S7
+    "p1": [("p1", "S0", 15)] + [("p1", s, 5) for s in P1_FAULTS],  # live checks only: phase-1.1 engine, no S7
+    # full engine (live + process + camera): plan set + P1 with the camera on; its own clean runs give the
+    # full engine its own false-block rate. Plan-set entries are run by eval/plan_benchmark.py, not the runner.
+    "2": [("plan", "PC0", 15)] + [("plan", f"PC{i}", 5) for i in range(1, 7)]
+         + [("p1", "S0", 15)] + [("p1", s, 5) for s in ("S7", "S7-same", "S13", "S8")],
+    # P2 gas line over OPC UA; run as the first N in sealed order (N fixed before launch, run_benchmark --first)
+    "p2": [("p2", "S0", 15)] + [("p2", s, 5) for s in P2_FAULTS],
     "dryrun": [("p1", "S0", 1)],  # exercises the scoring path once; never part of a result
 }
 MIN_SCORING_SEED = 10000

@@ -1,0 +1,330 @@
+{
+ "batch": "p1",
+ "entries": [
+  {
+   "plant": "p1",
+   "scenario": "S6",
+   "seed": 1542942406
+  },
+  {
+   "plant": "p1",
+   "scenario": "S3",
+   "seed": 1786421415
+  },
+  {
+   "plant": "p1",
+   "scenario": "S1",
+   "seed": 260352266
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 593156928
+  },
+  {
+   "plant": "p1",
+   "scenario": "S2",
+   "seed": 711071669
+  },
+  {
+   "plant": "p1",
+   "scenario": "S6",
+   "seed": 1951689661
+  },
+  {
+   "plant": "p1",
+   "scenario": "S12",
+   "seed": 390897673
+  },
+  {
+   "plant": "p1",
+   "scenario": "S4-small",
+   "seed": 1980819688
+  },
+  {
+   "plant": "p1",
+   "scenario": "S5",
+   "seed": 41053274
+  },
+  {
+   "plant": "p1",
+   "scenario": "S1",
+   "seed": 854799997
+  },
+  {
+   "plant": "p1",
+   "scenario": "S5",
+   "seed": 920273643
+  },
+  {
+   "plant": "p1",
+   "scenario": "S4-small",
+   "seed": 1801671124
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 630899265
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 448148710
+  },
+  {
+   "plant": "p1",
+   "scenario": "S4-small",
+   "seed": 616058317
+  },
+  {
+   "plant": "p1",
+   "scenario": "S1",
+   "seed": 35296001
+  },
+  {
+   "plant": "p1",
+   "scenario": "S4-small",
+   "seed": 1318434843
+  },
+  {
+   "plant": "p1",
+   "scenario": "S12",
+   "seed": 1336066542
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 947938994
+  },
+  {
+   "plant": "p1",
+   "scenario": "S4-large",
+   "seed": 597913716
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 1205025384
+  },
+  {
+   "plant": "p1",
+   "scenario": "S5",
+   "seed": 592148571
+  },
+  {
+   "plant": "p1",
+   "scenario": "S1b",
+   "seed": 1414843446
+  },
+  {
+   "plant": "p1",
+   "scenario": "S5",
+   "seed": 511392178
+  },
+  {
+   "plant": "p1",
+   "scenario": "S8",
+   "seed": 2129893491
+  },
+  {
+   "plant": "p1",
+   "scenario": "S3",
+   "seed": 1141608782
+  },
+  {
+   "plant": "p1",
+   "scenario": "S3",
+   "seed": 115855428
+  },
+  {
+   "plant": "p1",
+   "scenario": "S6",
+   "seed": 635190873
+  },
+  {
+   "plant": "p1",
+   "scenario": "S2",
+   "seed": 33000613
+  },
+  {
+   "plant": "p1",
+   "scenario": "S1b",
+   "seed": 167775837
+  },
+  {
+   "plant": "p1",
+   "scenario": "S8",
+   "seed": 889696826
+  },
+  {
+   "plant": "p1",
+   "scenario": "S8",
+   "seed": 1459166663
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 2009026901
+  },
+  {
+   "plant": "p1",
+   "scenario": "S2",
+   "seed": 710433961
+  },
+  {
+   "plant": "p1",
+   "scenario": "S2",
+   "seed": 1330154063
+  },
+  {
+   "plant": "p1",
+   "scenario": "S6",
+   "seed": 748684256
+  },
+  {
+   "plant": "p1",
+   "scenario": "S8",
+   "seed": 1664350071
+  },
+  {
+   "plant": "p1",
+   "scenario": "S3",
+   "seed": 83042120
+  },
+  {
+   "plant": "p1",
+   "scenario": "S5",
+   "seed": 324956630
+  },
+  {
+   "plant": "p1",
+   "scenario": "S4-small",
+   "seed": 1956097425
+  },
+  {
+   "plant": "p1",
+   "scenario": "S1",
+   "seed": 1018302062
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 1288313240
+  },
+  {
+   "plant": "p1",
+   "scenario": "S1b",
+   "seed": 233000811
+  },
+  {
+   "plant": "p1",
+   "scenario": "S1b",
+   "seed": 701399275
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 1591802094
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 941169427
+  },
+  {
+   "plant": "p1",
+   "scenario": "S6",
+   "seed": 439054172
+  },
+  {
+   "plant": "p1",
+   "scenario": "S1",
+   "seed": 1412086170
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 2029860766
+  },
+  {
+   "plant": "p1",
+   "scenario": "S4-large",
+   "seed": 1200348533
+  },
+  {
+   "plant": "p1",
+   "scenario": "S4-large",
+   "seed": 1786316271
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 658491427
+  },
+  {
+   "plant": "p1",
+   "scenario": "S8",
+   "seed": 1357410036
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 1464721829
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 1372473534
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 29244592
+  },
+  {
+   "plant": "p1",
+   "scenario": "S4-large",
+   "seed": 737514828
+  },
+  {
+   "plant": "p1",
+   "scenario": "S1b",
+   "seed": 1949500353
+  },
+  {
+   "plant": "p1",
+   "scenario": "S12",
+   "seed": 1242230338
+  },
+  {
+   "plant": "p1",
+   "scenario": "S4-large",
+   "seed": 353938347
+  },
+  {
+   "plant": "p1",
+   "scenario": "S3",
+   "seed": 1640511770
+  },
+  {
+   "plant": "p1",
+   "scenario": "S2",
+   "seed": 771362091
+  },
+  {
+   "plant": "p1",
+   "scenario": "S12",
+   "seed": 1654930480
+  },
+  {
+   "plant": "p1",
+   "scenario": "S0",
+   "seed": 1184053442
+  },
+  {
+   "plant": "p1",
+   "scenario": "S12",
+   "seed": 1715809334
+  }
+ ]
+}

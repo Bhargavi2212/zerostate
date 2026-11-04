@@ -62,5 +62,6 @@ plan_defaults:
     final_vent: [LIVE-QUALITY, LIVE-ALIVE, LIVE-HOLD, LIVE-VALVE]
   relations:
     - {type: redundant_pair, signals: [PT-211, PT-212], params: {tol_pct: 2}}
-    # valve_flow_gas Cv is set in P2-6 from model.py (vent 2000 -> 102 kPa in ~5 process-min)
+    # VV-213 Cv from model.py (SPEC.md: vent 2000 -> 102 kPa in ~5 process-min); p_floor = atmosphere
+    - {type: valve_flow_gas, signals: [FT-213, VV-213.FB, PT-211, PT-212], params: {cv: 0.035, p_floor: 101}}
   assumptions: []

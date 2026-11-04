@@ -2,10 +2,14 @@
 signature closes a session (session.py). No model judge: no model output can produce a pass or remove a block."""
 
 from zerostate.checks.live import RULES
+from zerostate.checks.plan import PLAN_RULES
+from zerostate.checks.process import PROC_RULES
 from zerostate.models.envelope import IsolationPlan, Step
 from zerostate.models.evidence import Finding, Window
 from zerostate.models.verdict import FindingStatus, Verdict
 from zerostate.version import __version__
+
+REGISTRY = {**RULES, **PLAN_RULES, **PROC_RULES}  # every rule, live, plan and process: the versions a verdict stamp lists
 
 # Severity order; None = no verdict yet (steps pending).
 RANK = {None: 0, Verdict.NO_DISCREPANCY_FOUND_AWAITING_SIGNOFF: 1, Verdict.ESCALATED: 2, Verdict.BLOCKED: 3}
@@ -56,14 +60,18 @@ def completes_plan(plan: IsolationPlan, step_passed: dict[int, bool], k: int) ->
             and all(step_passed.get(s.k) for s in plan.steps if s.kind != "final"))
 
 
-def stamp(verdict: Verdict, plan: IsolationPlan, thresholds_version: str, findings: list[Finding]) -> dict:
-    """Everything a reader needs to reproduce and trust this verdict."""
-    return {
+def stamp(verdict: Verdict, plan: IsolationPlan, thresholds_version: str, findings: list[Finding],
+          override: str | None = None) -> dict:
+    """Everything a reader needs to reproduce and trust this verdict, including a plan-check override."""
+    out = {
         "verdict": verdict.value,
         "package_version": __version__,
-        "rules": {rid: m.RULE_VERSION for rid, m in RULES.items()},
+        "rules": {rid: m.RULE_VERSION for rid, m in REGISTRY.items()},
         "thresholds_version": thresholds_version,
         "plan_hash": plan.content_hash(),
         "assumptions": [a.text for a in plan.assumptions],
         "reasons": [f"{f.rule_id}: {f.message}" for f in findings if f.status != FindingStatus.PASS],
     }
+    if override is not None:
+        out["plan_check_override"] = override
+    return out

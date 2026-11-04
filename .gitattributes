@@ -2,3 +2,5 @@
 *.rules text eol=lf
 *.patch text eol=lf
 deploy/proxy/* text eol=lf
+# published seals: the hash is over these exact bytes, so git must never touch their line endings
+eval/results/bench/*/seal/* -text

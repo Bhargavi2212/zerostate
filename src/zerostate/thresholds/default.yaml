@@ -1,6 +1,6 @@
 # Generic live-check thresholds. Plant files (plants/<p>/thresholds.yaml) may override existing keys only.
 # Every name ends in its unit: _process_s, _wall_s, _kpa, _pct, _per_process_s or _samples.
-version: "3"
+version: "6"  # v6: min_settle_wall_s added (settle floor in wall time); v5: camera_* keys added (LIVE-CAMERA, with-camera track only); v4: final_mean_process_s added (LIVE-HOLD v3)
 # LIVE-QUALITY (QARTOD gross range / rate of change / spike, own code; rate + spike only on pressure and level)
 pressure_min_kpa: 50
 pressure_max_kpa: 3200
@@ -13,8 +13,12 @@ spike_level_pct: 5
 valve_tol_pct: 1
 flow_cutoff_pct: 1
 valve_check_process_s: 10
+# A step's checks start no earlier than this many wall seconds after its mark, whatever the plan's settle time:
+# the mark -> operator write -> PLC scan -> Modbus poll delay is wall time and does not shrink at x10 (DECISIONS Nov 3).
+min_settle_wall_s: 3
 # LIVE-HOLD (the stricter of this and the plan's hold_test.max_rise_kpa applies)
 hold_max_rise_kpa: 5
+final_mean_process_s: 30  # v4: residual-pressure plans: depressurised = mean of the final vent's last 30 process-s
 # LIVE-ALIVE
 vent_check_process_s: 120
 alive_purge_open_pct: 50
@@ -26,6 +30,10 @@ relation_tol_pct: 10
 relation_n_consec_samples: 4
 cusum_k_pct: 2
 cusum_h_pct: 30
+# LIVE-CAMERA (with-camera track only; never read by the data-only rules)
+camera_lag_max_wall_s: 5  # start value: the 3D page polls every 3 s; to be measured against truth sidecars
+camera_agree_pct: 5  # a reading agrees with the feedback within +-5 % of valve travel
+camera_freeze_same_pct: 5  # crop average-hash bits that may differ and still count as an unchanged display
 # session / monitor
 monitor_period_wall_s: 2
 monitor_unknown_grace_wall_s: 10

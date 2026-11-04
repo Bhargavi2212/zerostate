@@ -42,6 +42,7 @@ assumptions:
 vent_target_kpa_abs: 102
 p_depressurised_kpa_abs: 105
 hold_test: {hold_process_s: 600, window_process_s: 60, max_rise_kpa: 1.0}  # from clean-hold data (DECISIONS Nov 1)
+camera: optional  # batch 2: the idealised camera runs as its own track; a camera UNKNOWN is ignored
 steps:
   - {k: 1, kind: mode, target: manual_mode, required_state: 1, checks: [LIVE-QUALITY, LIVE-VALVE], settle_process_s: 10}
   # block in: close the main inlet, then the outlet that is also the vent, as one step; nothing

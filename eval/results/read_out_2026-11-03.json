@@ -1,0 +1,1802 @@
+{
+ "frame_000": {
+  "f1": {
+   "value": 13.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 85.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 76.0,
+   "readable": true
+  },
+  "product": {
+   "value": 25.0,
+   "readable": true
+  }
+ },
+ "frame_001": {
+  "f1": {
+   "value": 50.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 45.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 65.0,
+   "readable": true
+  },
+  "product": {
+   "value": 79.0,
+   "readable": true
+  }
+ },
+ "frame_002": {
+  "f1": {
+   "value": 9.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 3.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 84.0,
+   "readable": true
+  },
+  "product": {
+   "value": 43.0,
+   "readable": true
+  }
+ },
+ "frame_003": {
+  "f1": {
+   "value": 76.0,
+   "readable": true
+  },
+  "f2": {
+   "value": null,
+   "readable": false
+  },
+  "purge": {
+   "value": 44.0,
+   "readable": true
+  },
+  "product": {
+   "value": 72.0,
+   "readable": true
+  }
+ },
+ "frame_004": {
+  "f1": {
+   "value": 23.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 95.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 90.0,
+   "readable": true
+  },
+  "product": {
+   "value": null,
+   "readable": false
+  }
+ },
+ "frame_005": {
+  "f1": {
+   "value": 2.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 54.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 94.0,
+   "readable": true
+  },
+  "product": {
+   "value": 38.0,
+   "readable": true
+  }
+ },
+ "frame_006": {
+  "f1": {
+   "value": 22.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 42.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 3.0,
+   "readable": true
+  },
+  "product": {
+   "value": 22.0,
+   "readable": true
+  }
+ },
+ "frame_007": {
+  "f1": {
+   "value": 44.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 50.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 23.0,
+   "readable": true
+  },
+  "product": {
+   "value": 23.0,
+   "readable": true
+  }
+ },
+ "frame_008": {
+  "f1": {
+   "value": 22.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 46.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 29.0,
+   "readable": true
+  },
+  "product": {
+   "value": 2.0,
+   "readable": true
+  }
+ },
+ "frame_009": {
+  "f1": {
+   "value": 84.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 56.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 64.0,
+   "readable": true
+  },
+  "product": {
+   "value": 19.0,
+   "readable": true
+  }
+ },
+ "frame_010": {
+  "f1": {
+   "value": 99.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 86.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 12.0,
+   "readable": true
+  },
+  "product": {
+   "value": 33.0,
+   "readable": true
+  }
+ },
+ "frame_011": {
+  "f1": {
+   "value": 72.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 71.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 94.0,
+   "readable": true
+  },
+  "product": {
+   "value": 42.0,
+   "readable": true
+  }
+ },
+ "frame_012": {
+  "f1": {
+   "value": 83.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 67.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 30.0,
+   "readable": true
+  },
+  "product": {
+   "value": 59.0,
+   "readable": true
+  }
+ },
+ "frame_013": {
+  "f1": {
+   "value": 88.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 85.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 50.0,
+   "readable": true
+  },
+  "product": {
+   "value": 59.0,
+   "readable": true
+  }
+ },
+ "frame_014": {
+  "f1": {
+   "value": 4.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 24.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 80.0,
+   "readable": true
+  },
+  "product": {
+   "value": 41.0,
+   "readable": true
+  }
+ },
+ "frame_015": {
+  "f1": {
+   "value": 17.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 55.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 70.0,
+   "readable": true
+  },
+  "product": {
+   "value": 67.0,
+   "readable": true
+  }
+ },
+ "frame_016": {
+  "f1": {
+   "value": 38.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 44.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 51.0,
+   "readable": true
+  },
+  "product": {
+   "value": 78.0,
+   "readable": true
+  }
+ },
+ "frame_017": {
+  "f1": {
+   "value": 52.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 39.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 49.0,
+   "readable": true
+  },
+  "product": {
+   "value": 3.0,
+   "readable": true
+  }
+ },
+ "frame_018": {
+  "f1": {
+   "value": 4.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 70.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 98.0,
+   "readable": true
+  },
+  "product": {
+   "value": 59.0,
+   "readable": true
+  }
+ },
+ "frame_019": {
+  "f1": {
+   "value": 39.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 17.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 50.0,
+   "readable": true
+  },
+  "product": {
+   "value": 98.0,
+   "readable": true
+  }
+ },
+ "frame_020": {
+  "f1": {
+   "value": 77.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 54.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 86.0,
+   "readable": true
+  },
+  "product": {
+   "value": 23.0,
+   "readable": true
+  }
+ },
+ "frame_021": {
+  "f1": {
+   "value": 51.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 95.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 58.0,
+   "readable": true
+  },
+  "product": {
+   "value": 46.0,
+   "readable": true
+  }
+ },
+ "frame_022": {
+  "f1": {
+   "value": 27.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 55.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 96.0,
+   "readable": true
+  },
+  "product": {
+   "value": 1.0,
+   "readable": true
+  }
+ },
+ "frame_023": {
+  "f1": {
+   "value": 78.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 82.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 89.0,
+   "readable": true
+  },
+  "product": {
+   "value": 74.0,
+   "readable": true
+  }
+ },
+ "frame_024": {
+  "f1": {
+   "value": 81.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 52.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 56.0,
+   "readable": true
+  },
+  "product": {
+   "value": 43.0,
+   "readable": true
+  }
+ },
+ "frame_025": {
+  "f1": {
+   "value": 6.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 87.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 57.0,
+   "readable": true
+  },
+  "product": {
+   "value": 20.0,
+   "readable": true
+  }
+ },
+ "frame_026": {
+  "f1": {
+   "value": 50.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 48.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 36.0,
+   "readable": true
+  },
+  "product": {
+   "value": 35.0,
+   "readable": true
+  }
+ },
+ "frame_027": {
+  "f1": {
+   "value": 54.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 62.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 61.0,
+   "readable": true
+  },
+  "product": {
+   "value": 46.0,
+   "readable": true
+  }
+ },
+ "frame_028": {
+  "f1": {
+   "value": 3.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 23.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 18.0,
+   "readable": true
+  },
+  "product": {
+   "value": 58.0,
+   "readable": true
+  }
+ },
+ "frame_029": {
+  "f1": {
+   "value": 86.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 80.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 80.0,
+   "readable": true
+  },
+  "product": {
+   "value": 82.0,
+   "readable": true
+  }
+ },
+ "frame_030": {
+  "f1": {
+   "value": 25.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 84.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 67.0,
+   "readable": true
+  },
+  "product": {
+   "value": 8.0,
+   "readable": true
+  }
+ },
+ "frame_031": {
+  "f1": {
+   "value": 2.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 1.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 76.0,
+   "readable": true
+  },
+  "product": {
+   "value": 25.0,
+   "readable": true
+  }
+ },
+ "frame_032": {
+  "f1": {
+   "value": 11.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 62.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 34.0,
+   "readable": true
+  },
+  "product": {
+   "value": 7.0,
+   "readable": true
+  }
+ },
+ "frame_033": {
+  "f1": {
+   "value": 16.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 53.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 17.0,
+   "readable": true
+  },
+  "product": {
+   "value": 27.0,
+   "readable": true
+  }
+ },
+ "frame_034": {
+  "f1": {
+   "value": 71.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 45.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 32.0,
+   "readable": true
+  },
+  "product": {
+   "value": 47.0,
+   "readable": true
+  }
+ },
+ "frame_035": {
+  "f1": {
+   "value": 2.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 39.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 42.0,
+   "readable": true
+  },
+  "product": {
+   "value": 19.0,
+   "readable": true
+  }
+ },
+ "frame_036": {
+  "f1": {
+   "value": 11.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 90.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 51.0,
+   "readable": true
+  },
+  "product": {
+   "value": 21.0,
+   "readable": true
+  }
+ },
+ "frame_037": {
+  "f1": {
+   "value": 61.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 82.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 2.0,
+   "readable": true
+  },
+  "product": {
+   "value": 2.0,
+   "readable": true
+  }
+ },
+ "frame_038": {
+  "f1": {
+   "value": 15.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 72.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 16.0,
+   "readable": true
+  },
+  "product": {
+   "value": 70.0,
+   "readable": true
+  }
+ },
+ "frame_039": {
+  "f1": {
+   "value": 68.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 55.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 22.0,
+   "readable": true
+  },
+  "product": {
+   "value": 98.0,
+   "readable": true
+  }
+ },
+ "frame_040": {
+  "f1": {
+   "value": 80.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 52.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 22.0,
+   "readable": true
+  },
+  "product": {
+   "value": 65.0,
+   "readable": true
+  }
+ },
+ "frame_041": {
+  "f1": {
+   "value": 39.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 58.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 32.0,
+   "readable": true
+  },
+  "product": {
+   "value": 63.0,
+   "readable": true
+  }
+ },
+ "frame_042": {
+  "f1": {
+   "value": 6.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 30.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 97.0,
+   "readable": true
+  },
+  "product": {
+   "value": 88.0,
+   "readable": true
+  }
+ },
+ "frame_043": {
+  "f1": {
+   "value": 31.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 86.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 31.0,
+   "readable": true
+  },
+  "product": {
+   "value": 94.0,
+   "readable": true
+  }
+ },
+ "frame_044": {
+  "f1": {
+   "value": 74.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 42.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 25.0,
+   "readable": true
+  },
+  "product": {
+   "value": 1.0,
+   "readable": true
+  }
+ },
+ "frame_045": {
+  "f1": {
+   "value": 88.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 4.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 82.0,
+   "readable": true
+  },
+  "product": {
+   "value": 96.0,
+   "readable": true
+  }
+ },
+ "frame_046": {
+  "f1": {
+   "value": 57.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 17.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 87.0,
+   "readable": true
+  },
+  "product": {
+   "value": 97.0,
+   "readable": true
+  }
+ },
+ "frame_047": {
+  "f1": {
+   "value": 70.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 51.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 38.0,
+   "readable": true
+  },
+  "product": {
+   "value": 35.0,
+   "readable": true
+  }
+ },
+ "frame_048": {
+  "f1": {
+   "value": 21.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 67.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 43.0,
+   "readable": true
+  },
+  "product": {
+   "value": 19.0,
+   "readable": true
+  }
+ },
+ "frame_049": {
+  "f1": {
+   "value": 10.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 67.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 30.0,
+   "readable": true
+  },
+  "product": {
+   "value": 50.0,
+   "readable": true
+  }
+ },
+ "frame_050": {
+  "f1": {
+   "value": 33.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 87.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 90.0,
+   "readable": true
+  },
+  "product": {
+   "value": 2.0,
+   "readable": true
+  }
+ },
+ "frame_051": {
+  "f1": {
+   "value": 20.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 33.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 99.0,
+   "readable": true
+  },
+  "product": {
+   "value": 78.0,
+   "readable": true
+  }
+ },
+ "frame_052": {
+  "f1": {
+   "value": 34.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 21.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 67.0,
+   "readable": true
+  },
+  "product": {
+   "value": 84.0,
+   "readable": true
+  }
+ },
+ "frame_053": {
+  "f1": {
+   "value": 93.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 34.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 88.0,
+   "readable": true
+  },
+  "product": {
+   "value": 69.0,
+   "readable": true
+  }
+ },
+ "frame_054": {
+  "f1": {
+   "value": 48.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 99.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 24.0,
+   "readable": true
+  },
+  "product": {
+   "value": 73.0,
+   "readable": true
+  }
+ },
+ "frame_055": {
+  "f1": {
+   "value": 8.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 17.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 91.0,
+   "readable": true
+  },
+  "product": {
+   "value": 21.0,
+   "readable": true
+  }
+ },
+ "frame_056": {
+  "f1": {
+   "value": 76.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 60.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 84.0,
+   "readable": true
+  },
+  "product": {
+   "value": 37.0,
+   "readable": true
+  }
+ },
+ "frame_057": {
+  "f1": {
+   "value": 34.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 29.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 87.0,
+   "readable": true
+  },
+  "product": {
+   "value": 60.0,
+   "readable": true
+  }
+ },
+ "frame_058": {
+  "f1": {
+   "value": 95.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 89.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 13.0,
+   "readable": true
+  },
+  "product": {
+   "value": 55.0,
+   "readable": true
+  }
+ },
+ "frame_059": {
+  "f1": {
+   "value": 10.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 4.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 7.0,
+   "readable": true
+  },
+  "product": {
+   "value": 87.0,
+   "readable": true
+  }
+ },
+ "frame_060": {
+  "f1": {
+   "value": 79.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 83.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 34.0,
+   "readable": true
+  },
+  "product": {
+   "value": 61.0,
+   "readable": true
+  }
+ },
+ "frame_061": {
+  "f1": {
+   "value": 78.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 38.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 57.0,
+   "readable": true
+  },
+  "product": {
+   "value": 22.0,
+   "readable": true
+  }
+ },
+ "frame_062": {
+  "f1": {
+   "value": 8.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 27.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 89.0,
+   "readable": true
+  },
+  "product": {
+   "value": 56.0,
+   "readable": true
+  }
+ },
+ "frame_063": {
+  "f1": {
+   "value": 93.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 46.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 28.0,
+   "readable": true
+  },
+  "product": {
+   "value": 79.0,
+   "readable": true
+  }
+ },
+ "frame_064": {
+  "f1": {
+   "value": 83.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 1.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 67.0,
+   "readable": true
+  },
+  "product": {
+   "value": 9.0,
+   "readable": true
+  }
+ },
+ "frame_065": {
+  "f1": {
+   "value": 12.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 88.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 4.0,
+   "readable": true
+  },
+  "product": {
+   "value": 24.0,
+   "readable": true
+  }
+ },
+ "frame_066": {
+  "f1": {
+   "value": 99.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 42.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 12.0,
+   "readable": true
+  },
+  "product": {
+   "value": 17.0,
+   "readable": true
+  }
+ },
+ "frame_067": {
+  "f1": {
+   "value": 24.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 74.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 10.0,
+   "readable": true
+  },
+  "product": {
+   "value": 91.0,
+   "readable": true
+  }
+ },
+ "frame_068": {
+  "f1": {
+   "value": 38.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 97.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 91.0,
+   "readable": true
+  },
+  "product": {
+   "value": 29.0,
+   "readable": true
+  }
+ },
+ "frame_069": {
+  "f1": {
+   "value": 25.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 48.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 10.0,
+   "readable": true
+  },
+  "product": {
+   "value": 65.0,
+   "readable": true
+  }
+ },
+ "frame_070": {
+  "f1": {
+   "value": 4.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 1.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 98.0,
+   "readable": true
+  },
+  "product": {
+   "value": 30.0,
+   "readable": true
+  }
+ },
+ "frame_071": {
+  "f1": {
+   "value": 60.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 45.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 31.0,
+   "readable": true
+  },
+  "product": {
+   "value": 6.0,
+   "readable": true
+  }
+ },
+ "frame_072": {
+  "f1": {
+   "value": 91.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 97.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 97.0,
+   "readable": true
+  },
+  "product": {
+   "value": 11.0,
+   "readable": true
+  }
+ },
+ "frame_073": {
+  "f1": {
+   "value": 21.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 62.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 98.0,
+   "readable": true
+  },
+  "product": {
+   "value": 54.0,
+   "readable": true
+  }
+ },
+ "frame_074": {
+  "f1": {
+   "value": 69.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 66.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 26.0,
+   "readable": true
+  },
+  "product": {
+   "value": 54.0,
+   "readable": true
+  }
+ },
+ "frame_075": {
+  "f1": {
+   "value": 31.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 25.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 8.0,
+   "readable": true
+  },
+  "product": {
+   "value": 28.0,
+   "readable": true
+  }
+ },
+ "frame_076": {
+  "f1": {
+   "value": 98.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 45.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 65.0,
+   "readable": true
+  },
+  "product": {
+   "value": 64.0,
+   "readable": true
+  }
+ },
+ "frame_077": {
+  "f1": {
+   "value": 94.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 39.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 31.0,
+   "readable": true
+  },
+  "product": {
+   "value": 33.0,
+   "readable": true
+  }
+ },
+ "frame_078": {
+  "f1": {
+   "value": 32.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 85.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 89.0,
+   "readable": true
+  },
+  "product": {
+   "value": 30.0,
+   "readable": true
+  }
+ },
+ "frame_079": {
+  "f1": {
+   "value": 33.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 54.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 58.0,
+   "readable": true
+  },
+  "product": {
+   "value": 60.0,
+   "readable": true
+  }
+ },
+ "frame_080": {
+  "f1": {
+   "value": 24.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 2.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 24.0,
+   "readable": true
+  },
+  "product": {
+   "value": 7.0,
+   "readable": true
+  }
+ },
+ "frame_081": {
+  "f1": {
+   "value": 55.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 7.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 7.0,
+   "readable": true
+  },
+  "product": {
+   "value": 64.0,
+   "readable": true
+  }
+ },
+ "frame_082": {
+  "f1": {
+   "value": 29.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 79.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 49.0,
+   "readable": true
+  },
+  "product": {
+   "value": 86.0,
+   "readable": true
+  }
+ },
+ "frame_083": {
+  "f1": {
+   "value": 15.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 50.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 79.0,
+   "readable": true
+  },
+  "product": {
+   "value": 8.0,
+   "readable": true
+  }
+ },
+ "frame_084": {
+  "f1": {
+   "value": 95.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 17.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 78.0,
+   "readable": true
+  },
+  "product": {
+   "value": 99.0,
+   "readable": true
+  }
+ },
+ "frame_085": {
+  "f1": {
+   "value": 82.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 32.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 11.0,
+   "readable": true
+  },
+  "product": {
+   "value": 51.0,
+   "readable": true
+  }
+ },
+ "frame_086": {
+  "f1": {
+   "value": 92.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 29.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 89.0,
+   "readable": true
+  },
+  "product": {
+   "value": 14.0,
+   "readable": true
+  }
+ },
+ "frame_087": {
+  "f1": {
+   "value": 91.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 3.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 32.0,
+   "readable": true
+  },
+  "product": {
+   "value": 90.0,
+   "readable": true
+  }
+ },
+ "frame_088": {
+  "f1": {
+   "value": 80.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 91.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 84.0,
+   "readable": true
+  },
+  "product": {
+   "value": 75.0,
+   "readable": true
+  }
+ },
+ "frame_089": {
+  "f1": {
+   "value": 69.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 18.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 43.0,
+   "readable": true
+  },
+  "product": {
+   "value": 16.0,
+   "readable": true
+  }
+ },
+ "frame_090": {
+  "f1": {
+   "value": 72.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 67.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 25.0,
+   "readable": true
+  },
+  "product": {
+   "value": 6.0,
+   "readable": true
+  }
+ },
+ "frame_091": {
+  "f1": {
+   "value": 96.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 81.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 55.0,
+   "readable": true
+  },
+  "product": {
+   "value": 54.0,
+   "readable": true
+  }
+ },
+ "frame_092": {
+  "f1": {
+   "value": 85.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 45.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 40.0,
+   "readable": true
+  },
+  "product": {
+   "value": 34.0,
+   "readable": true
+  }
+ },
+ "frame_093": {
+  "f1": {
+   "value": 26.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 2.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 65.0,
+   "readable": true
+  },
+  "product": {
+   "value": 42.0,
+   "readable": true
+  }
+ },
+ "frame_094": {
+  "f1": {
+   "value": 57.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 6.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 36.0,
+   "readable": true
+  },
+  "product": {
+   "value": 14.0,
+   "readable": true
+  }
+ },
+ "frame_095": {
+  "f1": {
+   "value": 13.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 26.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 83.0,
+   "readable": true
+  },
+  "product": {
+   "value": 40.0,
+   "readable": true
+  }
+ },
+ "frame_096": {
+  "f1": {
+   "value": 40.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 61.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 23.0,
+   "readable": true
+  },
+  "product": {
+   "value": 1.0,
+   "readable": true
+  }
+ },
+ "frame_097": {
+  "f1": {
+   "value": 53.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 50.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 65.0,
+   "readable": true
+  },
+  "product": {
+   "value": 44.0,
+   "readable": true
+  }
+ },
+ "frame_098": {
+  "f1": {
+   "value": 69.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 73.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 24.0,
+   "readable": true
+  },
+  "product": {
+   "value": 50.0,
+   "readable": true
+  }
+ },
+ "frame_099": {
+  "f1": {
+   "value": 48.0,
+   "readable": true
+  },
+  "f2": {
+   "value": 22.0,
+   "readable": true
+  },
+  "purge": {
+   "value": 41.0,
+   "readable": true
+  },
+  "product": {
+   "value": 56.0,
+   "readable": true
+  }
+ }
+}

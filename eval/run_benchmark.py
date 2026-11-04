@@ -6,7 +6,9 @@ worktree checked out at the batch tag (the runner refuses scoring seeds anywhere
 Resumable: an entry with a valid result, or with two INVALID attempts, is not run again. An INVALID
 episode is retried once with the same seed; the INVALID rate is reported. Three INVALIDs in a row stop
 the batch (a lab fault, e.g. router rules wiped by a Docker restart): fix it, then run the same command.
-Watchdog: from 05:00, if the batch would finish after 09:00, S0 entries beyond 10 valid are skipped.
+Watchdog: from 05:00, if the batch would finish after 09:00, S0 entries beyond 10 valid are skipped;
+--no-watchdog turns that off (batch 2: S0 x15 stays whole). --first N runs only the first N entries in
+sealed order (batch p2: N fixed before launch, logged, and the same N required on resume).
 """
 
 import argparse
@@ -19,12 +21,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
 MAX_ATTEMPTS = 2
+RUNNER_PLANTS = ("p1", "p2")  # "plan" entries (the plan-check set) are run by eval/plan_benchmark.py
 STOP_AFTER_INVALID_IN_A_ROW = 3
 WATCHDOG_FROM_HOUR, WATCHDOG_FINISH_BY_HOUR, WATCHDOG_KEEP_S0 = 5, 9, 10
 
 
 def key(e: dict) -> tuple:
-    return e["plant"], e["scenario"], e["seed"]
+    return e.get("plant"), e.get("scenario"), e.get("seed")  # .get: progress also holds a first_n record
 
 
 def read_progress(path: Path) -> list[dict]:
@@ -54,7 +57,8 @@ def run_episode(entry: dict, a) -> dict:
     before = set((ROOT / "runs").glob(f"{entry['scenario']}_seed{entry['seed']}_*"))
     subprocess.run([sys.executable, "-P", str(ROOT / "eval" / "runner.py"), "--plant", entry["plant"],
                     "--scenario", entry["scenario"], "--seed", str(entry["seed"]), "--batch", a.batch,
-                    "--manifest", a.manifest, "--salt", a.salt], check=False, cwd=ROOT)
+                    "--manifest", a.manifest, "--salt", a.salt, *(["--camera"] if getattr(a, "camera", False) else [])],
+                   check=False, cwd=ROOT)
     new = sorted(set((ROOT / "runs").glob(f"{entry['scenario']}_seed{entry['seed']}_*")) - before)
     if not new or not (new[-1] / "verdict.json").exists():
         return None
@@ -69,6 +73,18 @@ def run_batch(manifest: dict, progress_p: Path, a, run=run_episode, clock=dateti
             fh.write(json.dumps({"t": clock().isoformat(), **rec}) + "\n")
 
     entries, in_a_row = manifest["entries"], 0
+    first_n = getattr(a, "first", None)
+    logged = [p["n"] for p in read_progress(progress_p) if p.get("kind") == "first_n"]
+    if logged and logged[0] != first_n:  # N is fixed before launch: a resume can't change it or drop it
+        print(f"--first {first_n} refused: this batch was launched with --first {logged[0]}")
+        return 2
+    if first_n is not None:
+        if not logged:
+            if any(p.get("kind") == "attempt" for p in read_progress(progress_p)):
+                print("--first refused: this batch already ran without it")
+                return 2
+            log({"kind": "first_n", "n": first_n})
+        entries = entries[:first_n]
     for i, e in enumerate(entries):
         progress = read_progress(progress_p)
         if done(e, progress):
@@ -78,7 +94,7 @@ def run_batch(manifest: dict, progress_p: Path, a, run=run_episode, clock=dateti
         mean = sum(durations) / len(durations) if durations else None
         s0_valid = sum(1 for p in attempts if p["scenario"] == "S0" and p["valid"])
         remaining = sum(1 for x in entries[i:] if not done(x, progress))
-        if watchdog_skip(e, clock(), remaining, mean, s0_valid):
+        if not getattr(a, "no_watchdog", False) and watchdog_skip(e, clock(), remaining, mean, s0_valid):
             log({"kind": "skipped", **e, "reason": f"watchdog: {s0_valid} valid S0, projected finish after 0{WATCHDOG_FINISH_BY_HOUR}:00"})
             continue
         while not done(e, read_progress(progress_p)):
@@ -95,7 +111,7 @@ def run_batch(manifest: dict, progress_p: Path, a, run=run_episode, clock=dateti
             if in_a_row >= STOP_AFTER_INVALID_IN_A_ROW:
                 print(f"{in_a_row} INVALID episodes in a row: stopping. Last problems: {r.get('problems')}")
                 return 3
-    summary(manifest, read_progress(progress_p))
+    summary({**manifest, "entries": entries}, read_progress(progress_p))
     return 0
 
 
@@ -116,8 +132,14 @@ def main() -> int:
     ap.add_argument("--batch", required=True)
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--salt", required=True)
+    ap.add_argument("--camera", action="store_true", help="every episode with the frame service on (batch 2)")
+    ap.add_argument("--no-watchdog", action="store_true", help="never skip S0 entries (batch 2)")
+    ap.add_argument("--first", type=int, help="run only the first N entries in sealed order (batch p2)")
     a = ap.parse_args()
+    if a.first is not None and a.first < 1:
+        ap.error("--first must be >= 1")
     manifest = json.loads(Path(a.manifest).read_bytes())  # the runner checks it against the sealed hash
+    manifest = {**manifest, "entries": [e for e in manifest["entries"] if e["plant"] in RUNNER_PLANTS]}
     return run_batch(manifest, ROOT / "eval" / "results" / "bench" / a.batch / "progress.jsonl", a)
 
 

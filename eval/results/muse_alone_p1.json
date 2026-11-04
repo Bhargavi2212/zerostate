@@ -1,0 +1,331 @@
+{
+ "prompt_id": "muse_alone_v1",
+ "model": "muse-spark-1.3",
+ "episodes": {
+  "S0_seed1184053442_20261103T071508": {
+   "answer": "pass",
+   "t": 1793690395.25,
+   "reason": "All isolation valves remain closed with zero flow, pressure stays near atmospheric without a sustained rise, and steps are marked in order."
+  },
+  "S0_seed1205025384_20261103T042121": {
+   "answer": "pass",
+   "t": 1793679994.2,
+   "reason": "All isolation valves show closed with zero flow, pressure stays near atmospheric with no rising trend, and all required steps are marked in order."
+  },
+  "S0_seed1288313240_20261103T054040": {
+   "answer": "pass",
+   "t": 1793684701.04,
+   "reason": "All isolation valves read closed with zero flow, pressure vented to near 100 kPa and showed no overall rise during the hold, and all due steps were marked in order."
+  },
+  "S0_seed1372473534_20261103T063726": {
+   "answer": "block",
+   "t": 1793688144.02,
+   "reason": "Pressure rises by about 5 kPa during the hold exceeding the 1 kPa limit while level keeps increasing despite zero flow readings indicating a passing valve."
+  },
+  "S0_seed1464721829_20261103T063302": {
+   "answer": "block",
+   "t": 1793687842.31,
+   "reason": "The final plan step is never marked and the recorded hold covers only ~60 s of the required 600 s."
+  },
+  "S0_seed1591802094_20261103T055240": {
+   "answer": "block",
+   "t": 1793685441.47,
+   "reason": "Pressure jumps several kPa within seconds during the hold with all isolation valves indicating closed, which is implausible and indicates rising/leaking or faulty readings."
+  },
+  "S0_seed2009026901_20261103T050451": {
+   "answer": "pass",
+   "t": 1793682554.79,
+   "reason": "All isolation valves show closed commands and near-zero positions with zero flow, pressure fell to near 100 kPa abs and stayed stable without rising during the hold, with steps marked in order."
+  },
+  "S0_seed2029860766_20261103T061531": {
+   "answer": "pass",
+   "t": 1793686791.53,
+   "reason": "All isolation valves are closed with zero flow, pressure vented to near 100 kPa abs with no sustained rise during the hold, and all steps are marked in order with no frozen, missing or implausible readings."
+  },
+  "S0_seed29244592_20261103T064227": {
+   "answer": "pass",
+   "t": 1793688442.97,
+   "reason": "All isolation valves show closed commands with zero flow, pressure stays near atmospheric without sustained rise during the hold, and steps are marked in order."
+  },
+  "S0_seed448148710_20261103T034143": {
+   "answer": "block",
+   "t": 1793677688.39,
+   "reason": "Pressure after vent close does not stay near 100 kPa abs and rises by more than 1 kPa within hold windows while dropping to about 92 kPa."
+  },
+  "S0_seed593156928_20261103T030337": {
+   "answer": "pass",
+   "t": 1793675313.72,
+   "reason": "All isolation valves stayed closed with zero flow, pressure stayed near 100 kPa abs without sustained rise, and steps 1-7 were marked in order."
+  },
+  "S0_seed630899265_20261103T033644": {
+   "answer": "pass",
+   "t": 1793677299.74,
+   "reason": "All isolation valves stayed closed with pressure vented near 100 kPa abs showing no sustained rise during the hold and steps marked in order."
+  },
+  "S0_seed658491427_20261103T062513": {
+   "answer": "block",
+   "t": 1793687376.17,
+   "reason": "Pressure rose by several kPa during the hold, exceeding the 1.0 kPa limit and indicating a passing valve or unstable isolation."
+  },
+  "S0_seed941169427_20261103T055723": {
+   "answer": "pass",
+   "t": 1793685803.77,
+   "reason": "All isolation valves show closed with zero flow, pressure is depressurised near 100 kPa with no rise during the hold, and all steps are marked in order."
+  },
+  "S0_seed947938994_20261103T041208": {
+   "answer": "block",
+   "t": 1793679469.93,
+   "reason": "Pressure fluctuates several kPa during the hold with rises well over the 1.0 kPa limit, indicating the isolation is not holding stable."
+  },
+  "S12_seed1242230338_20261103T065509": {
+   "answer": "block",
+   "t": 1793689136.05,
+   "reason": "All channels repeat identically from t=83 s onward through the hold, indicating frozen readings."
+  },
+  "S12_seed1336066542_20261103T040454": {
+   "answer": "block",
+   "t": 1793679124.34,
+   "reason": "All channels repeat identically from t=87s onward, indicating frozen readings during the hold."
+  },
+  "S12_seed1654930480_20261103T071021": {
+   "answer": "block",
+   "t": 1793690103.17,
+   "reason": "All channels are identically frozen from 76s to 90s and pressure varies by several kPa during the hold"
+  },
+  "S12_seed1715809334_20261103T071957": {
+   "answer": "block",
+   "t": 1793690779.11,
+   "reason": "All channels repeat identically from 81 s onward showing frozen readings during the hold."
+  },
+  "S12_seed390897673_20261103T031343": {
+   "answer": "block",
+   "t": 1793675861.01,
+   "reason": "All channels repeat identical values from t=92 onward, showing frozen readings during the hold."
+  },
+  "S1_seed1018302062_20261103T053647": {
+   "answer": "block",
+   "t": 1793684436.94,
+   "reason": "Pressure is frozen at 2124 kPa far above the ~105 kPa depressurised target and vent-close/hold/final steps are unmarked."
+  },
+  "S1_seed1412086170_20261103T061204": {
+   "answer": "block",
+   "t": 1793686528.3,
+   "reason": "Pressure is frozen at 1779 kPa far above the 105 kPa depressurised target with t26 missing and vent-close hold and final steps never marked."
+  },
+  "S1_seed260352266_20261103T030055": {
+   "answer": "block",
+   "t": 1793675012.39,
+   "reason": "Isolation valves f1 and product remain open with flow, pressure stays near 2600 kPa instead of ~105 kPa, and steps 2-8 were never marked."
+  },
+  "S1_seed35296001_20261103T035431": {
+   "answer": "block",
+   "t": 1793678281.14,
+   "reason": "Pressure is frozen at 1922 kPa far above the 105 kPa depressurised target and vent-close/hold/final steps were never marked."
+  },
+  "S1_seed854799997_20261103T032531": {
+   "answer": "block",
+   "t": 1793676545.31,
+   "reason": "Pressure froze at 1873 kPa abs far above atmospheric and vent-close, hold and final steps were never marked."
+  },
+  "S1b_seed1414843446_20261103T042943": {
+   "answer": "block",
+   "t": 1793680527.58,
+   "reason": "Hold and final steps were never marked and post-closure recording is only seconds long versus the required 600 s hold with pressure frozen at 99.76 kPa."
+  },
+  "S1b_seed167775837_20261103T045547": {
+   "answer": "block",
+   "t": 1793681984.09,
+   "reason": "Hold and final steps were never marked and pressure remains frozen at 98 kPa with missing time samples."
+  },
+  "S1b_seed1949500353_20261103T065130": {
+   "answer": "block",
+   "t": 1793688906.67,
+   "reason": "Pressure reads exactly 100 kPa for eight consecutive samples after vent close indicating a frozen sensor."
+  },
+  "S1b_seed233000811_20261103T054504": {
+   "answer": "block",
+   "t": 1793684912.45,
+   "reason": "Hold and final steps are unmarked with only seconds of hold data, pressure frozen at 99.22 kPa, gaps at t=14,45-46, and purge valve open with flow when commanded closed."
+  },
+  "S1b_seed701399275_20261103T054835": {
+   "answer": "block",
+   "t": 1793685157.64,
+   "reason": "Pressure rises from 95.51 kPa to 97.85 kPa after vent closure and then remains frozen at 97.85 kPa for the remainder of the recording."
+  },
+  "S2_seed1330154063_20261103T051215": {
+   "answer": "block",
+   "t": 1793683176.52,
+   "reason": "Pressure rose by more than 1 kPa during the hold, indicating a possible passing valve and failed hold test."
+  },
+  "S2_seed33000613_20261103T045155": {
+   "answer": "block",
+   "t": 1793681744.33,
+   "reason": "Pressure drops to 0 kPa abs during the hold which is implausible and the hold and final steps are never marked"
+  },
+  "S2_seed710433961_20261103T050917": {
+   "answer": "block",
+   "t": 1793682731.54,
+   "reason": "Pressure falls to 0 kPa abs instead of venting to and holding near 100 kPa and vent-close hold and final steps are never marked"
+  },
+  "S2_seed711071669_20261103T030838": {
+   "answer": "block",
+   "t": 1793675481.38,
+   "reason": "Pressure reads 0 kPa abs at the end which is implausible and far from the required ~105 kPa with remaining hold steps unmarked."
+  },
+  "S2_seed771362091_20261103T070528": {
+   "answer": "block",
+   "t": 1793689817.92,
+   "reason": "Pressure shows an implausible 0 kPa abs dropout at t_s 69 during the hold."
+  },
+  "S3_seed1141608782_20261103T044033": {
+   "answer": "pass",
+   "t": 1793681044.77,
+   "reason": "All required isolation valves are commanded closed with zero flow and valve positions near zero, pressure is steadily falling through the open vent toward atmospheric with steps 1-5 marked in order and no rise, frozen or missing signal seen."
+  },
+  "S3_seed115855428_20261103T044408": {
+   "answer": "block",
+   "t": 1793681318.16,
+   "reason": "Pressure remains near 873 kPa abs instead of about 100 kPa abs and vent-close, hold and final steps are unmarked."
+  },
+  "S3_seed1640511770_20261103T070236": {
+   "answer": "block",
+   "t": 1793689524.6,
+   "reason": "Pressure ended near 986 kPa far above about 100 kPa and vent-close hold and final steps were never marked."
+  },
+  "S3_seed1786421415_20261103T025732": {
+   "answer": "block",
+   "t": 1793674849.12,
+   "reason": "Pressure is still about 900 kPa instead of about 105 kPa and the vent-close hold and final steps are unmarked so depressurization and hold are not shown"
+  },
+  "S3_seed83042120_20261103T052553": {
+   "answer": "block",
+   "t": 1793683742.63,
+   "reason": "Pressure ends at ~906 kPa and still falling, never reaching ~105 kPa with vent-close/hold/final steps unmarked, so venting and hold are not demonstrated."
+  },
+  "S4-large_seed1200348533_20261103T061955": {
+   "answer": "block",
+   "t": 1793686944.72,
+   "reason": "F1 shows continued flow around 15 after its valve position reaches 0, pressure remains above 2000 kPa instead of near 100 kPa, and required isolate vent and hold steps are never marked."
+  },
+  "S4-large_seed1786316271_20261103T062227": {
+   "answer": "block",
+   "t": 1793687110.05,
+   "reason": "Pressure remains near 2700 kPa instead of about 100 kPa with product valve open and flowing and f1 flowing after closure and remaining isolation vent and hold steps unmarked"
+  },
+  "S4-large_seed353938347_20261103T065859": {
+   "answer": "block",
+   "t": 1793689353.76,
+   "reason": "Product valve remains open at ~72% with flow while f1 still flows after closing, pressure stays near 2700 kPa instead of ~105 kPa, and required isolate vent hold steps are never marked."
+  },
+  "S4-large_seed597913716_20261103T041754": {
+   "answer": "block",
+   "t": 1793679678.57,
+   "reason": "Isolation fails because f1 still passes flow after closure, pressure remains near 2200 kPa instead of about 105 kPa, and steps 3 through 8 were never marked."
+  },
+  "S4-large_seed737514828_20261103T064726": {
+   "answer": "block",
+   "t": 1793688687.63,
+   "reason": "Equipment pressure remains near 2700 kPa rather than about 100 kPa, product valve remains open with flow, and required isolate/vent/hold steps are never marked."
+  },
+  "S4-small_seed1318434843_20261103T035803": {
+   "answer": "block",
+   "t": 1793678691.34,
+   "reason": "Pressure rose from about 99 kPa after vent closure to about 140 kPa during the hold, exceeding the 1 kPa limit and indicating a passing valve."
+  },
+  "S4-small_seed1801671124_20261103T033220": {
+   "answer": "block",
+   "t": 1793676999.63,
+   "reason": "Pressure rose from about 100 kPa to about 128 kPa during the hold, exceeding the 1 kPa limit and indicating a passing isolation."
+  },
+  "S4-small_seed1956097425_20261103T053128": {
+   "answer": "block",
+   "t": 1793684204.66,
+   "reason": "Pressure rose from ~104 kPa at hold start to ~123 kPa during the hold, exceeding the 1.0 kPa rise limit and indicating flow through an isolated line."
+  },
+  "S4-small_seed1980819688_20261103T031746": {
+   "answer": "block",
+   "t": 1793676123.08,
+   "reason": "Pressure rose from ~99 kPa to ~107 kPa during the hold, exceeding the 1 kPa limit and indicating a passing isolation valve."
+  },
+  "S4-small_seed616058317_20261103T034811": {
+   "answer": "block",
+   "t": 1793678067.94,
+   "reason": "Pressure rose from about 100 kPa to about 130 kPa during the hold, exceeding the 1 kPa limit and indicating a passing isolation."
+  },
+  "S5_seed324956630_20261103T052906": {
+   "answer": "block",
+   "t": 1793683886.38,
+   "reason": "f1 and product remain open with pressure near 2700 kPa and rising while later isolation vent and hold steps are never marked."
+  },
+  "S5_seed41053274_20261103T032205": {
+   "answer": "block",
+   "t": 1793676328.2,
+   "reason": "Isolation valve f1 remains commanded open at 100 percent with about 640 flow instead of closed, pressure stays above 2200 kPa instead of about 105 kPa and rises from 2222 to 2337 kPa after vent closure, and steps 3 through 8 are never marked."
+  },
+  "S5_seed511392178_20261103T043530": {
+   "answer": "block",
+   "t": 1793680687.84,
+   "reason": "Isolation valves f1 and product remain open with flow, pressure stays near 2300 kPa far above 105 kPa abs and rises, and steps 3-8 are never marked."
+  },
+  "S5_seed592148571_20261103T042637": {
+   "answer": "block",
+   "t": 1793680180.34,
+   "reason": "f1 and product remain open with high flow and pressure near 2900 kPa and rising while later isolation vent and hold steps are unmarked"
+  },
+  "S5_seed920273643_20261103T032908": {
+   "answer": "block",
+   "t": 1793676737.14,
+   "reason": "f1 and product valves remain open with flow, pressure stays near 2200 kPa and rises after purge closes, and later isolation and hold steps are unmarked."
+  },
+  "S6_seed1542942406_20261103T025506": {
+   "answer": "block",
+   "t": 1793674648.16,
+   "reason": "f1 remains open near 100% with ~640 flow, pressure stays near 2700 kPa instead of ~105 kPa, manual_mode never reaches 1, and isolation vent hold steps are unmarked with only 6 s recorded."
+  },
+  "S6_seed1951689661_20261103T031124": {
+   "answer": "block",
+   "t": 1793675620.37,
+   "reason": "Isolation valves f1 and product remain open with flow, pressure stays near 2700 kPa instead of about 100 kPa, and isolation hold and final steps are unmarked."
+  },
+  "S6_seed439054172_20261103T060327": {
+   "answer": "block",
+   "t": 1793686320.5,
+   "reason": "f1 and product remain open with flow, pressure stays near 2700 kPa instead of about 100 kPa, and isolation vent and hold steps are never marked."
+  },
+  "S6_seed635190873_20261103T044840": {
+   "answer": "block",
+   "t": 1793681513.03,
+   "reason": "f1 and product isolation valves remain open with flow, pressure stays near 2700 kPa instead of ~105 kPa, manual_mode never reaches 1, and steps 2-8 are never marked with only 5 s recorded for a 600 s hold."
+  },
+  "S6_seed748684256_20261103T051939": {
+   "answer": "block",
+   "t": 1793683376.26,
+   "reason": "Isolation valves f1 and product remain open with flow, pressure stays near 2694 kPa instead of ~100 kPa, and required steps lack markings with recording ending at 4 s."
+  },
+  "S8_seed1357410036_20261103T062938": {
+   "answer": "block",
+   "t": 1793687578.69,
+   "reason": "f1 valve position is 0 but flow remains about 640, product remains open near 92 percent, pressure remains near 2300 kPa and rises at the end, and steps 3 through 8 are unmarked."
+  },
+  "S8_seed1459166663_20261103T050228": {
+   "answer": "block",
+   "t": 1793682287.22,
+   "reason": "Product valve remains open with flow and f1 shows high flow despite closed position while pressure stays near 2600 kPa instead of about 105 kPa and remaining isolation vent and hold steps are unmarked"
+  },
+  "S8_seed1664350071_20261103T052258": {
+   "answer": "block",
+   "t": 1793683549.88,
+   "reason": "Product valve remains open with flow, f1 shows ~640 flow despite closed position, pressure stays near 2800 kPa and rises instead of holding near 105 kPa, and remaining isolation vent and hold steps are unmarked."
+  },
+  "S8_seed2129893491_20261103T043810": {
+   "answer": "block",
+   "t": 1793680829.91,
+   "reason": "Product valve remains open at ~7.6 with measurable flow and f1 still flows ~640 after its position reads closed while pressure stays ~2700-2940 kPa and rises instead of venting to ~105 kPa with remaining steps unmarked."
+  },
+  "S8_seed889696826_20261103T045946": {
+   "answer": "block",
+   "t": 1793682146.09,
+   "reason": "Product valve remains ~79% open with rising flow and f1 flows ~640 despite closed position while pressure stays ~2700-2970 kPa and rises instead of holding near 105 kPa with steps 3-8 unmarked."
+  }
+ }
+}

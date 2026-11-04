@@ -12,25 +12,33 @@ dependencies = [
     "pydantic>=2",
     "pyyaml",
     "pymodbus>=3.6,<3.10",
+    "networkx==3.5",
+    "pypdfium2==4.30.0",
+    "Pillow==11.3.0",
+    "asyncua==1.1.6",
+    "fastapi==0.162.0",
+    "uvicorn==0.54.0",
+    "python-multipart==0.0.33",
 ]
 
 [project.scripts]
 zs = "zerostate.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "pre-commit", "detect-secrets"]
+dev = ["pytest", "ruff", "pre-commit", "detect-secrets", "httpx", "playwright"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-zerostate = ["thresholds/*.yaml"]
+zerostate = ["thresholds/*.yaml", "llm/prompts/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
     "net: runs inside the zerostate container against the live lab",
     "live: runs on the host against the running lab (docker exec, localhost:80)",
+    "ui: Playwright tests of the console (ui/) in headless Chromium against tests/ui/fake_api.py",
 ]
 addopts = "-m 'not net and not live'"
 

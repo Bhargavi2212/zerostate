@@ -1,0 +1,25 @@
+# Voice test (P3-5): the 20 clips Bhargavi recorded (D:\grfics\voice recordings, outside git) and the intent each
+# must give against the P1 plan (plants/p1_grfics/envelope.yaml). Committed before any clip was transcribed.
+# Bar: >= 18/20 correct and 0 wrong-step mappings ("unknown" is acceptable; a wrong step is not).
+plan: plants/p1_grfics/envelope.yaml
+clips:
+  - {file: "step 1 done.m4a", said: "step one done", intent: step_done, k: 1}
+  - {file: "step2.m4a", said: "step two done", intent: step_done, k: 2}
+  - {file: "step 3.m4a", said: "step three is done", intent: step_done, k: 3}
+  - {file: "step 4.m4a", said: "mark step four done", intent: step_done, k: 4}
+  - {file: "step 5.m4a", said: "step five done", intent: step_done, k: 5}
+  - {file: "step 6.m4a", said: "step six complete", intent: step_done, k: 6}
+  - {file: "step 7.m4a", said: "step seven done", intent: step_done, k: 7}
+  - {file: "8.m4a", said: "feed one and purge closed", intent: step_done, k: 2}  # step 2 closes f1 and purge
+  - {file: "9.m4a", said: "purge open", intent: step_done, k: 5}  # step 5 opens purge (the vent)
+  - {file: "10.m4a", said: "confirm", intent: confirm}
+  - {file: "11.m4a", said: "yes, confirm", intent: confirm}
+  - {file: "12.m4a", said: "cancel", intent: cancel}
+  - {file: "13.m4a", said: "no, cancel that", intent: cancel}
+  - {file: "14.m4a", said: "status", intent: status}
+  - {file: "15.m4a", said: "step nine done", intent: unknown}  # the P1 plan has no step 9
+  - {file: "16.m4a", said: "why", intent: why}
+  - {file: "17.m4a", said: "why is it blocked", intent: why}
+  - {file: "18.m4a", said: "repeat", intent: repeat}
+  - {file: "19.m4a", said: "sign off the job", intent: unknown}  # never by voice
+  - {file: "20.m4a", said: "open the coffee machine", intent: unknown}

@@ -1,7 +1,9 @@
 import asyncio
+import importlib.util
 import socket
 import threading
 import time
+from pathlib import Path
 
 import pytest
 from pymodbus.datastore import ModbusSequentialDataBlock, ModbusServerContext, ModbusSlaveContext
@@ -49,5 +51,47 @@ def modbus_server():
         return port, stop
 
     yield start
+    for stop in running:
+        stop()
+
+
+P2_USERS = {"zerostate": "zs-test-only", "operator": "op-test-only"}  # throwaway, in-process test server only
+
+
+@pytest.fixture(scope="module")
+def p2_server(tmp_path_factory):
+    """P2's OPC UA server in-process on a free localhost port at x30: (url, plant, write log path).
+    `plant` is the server's Plant (model + control). Module scope: a server takes seconds to build."""
+    tmp_path = tmp_path_factory.mktemp("p2")
+    spec = importlib.util.spec_from_file_location("p2_server", Path(__file__).parents[1] / "plants" / "p2_gasline" / "server.py")
+    srv = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(srv)
+    running = []
+
+    def start(scale: float = 30.0):
+        with socket.socket() as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+        url = f"opc.tcp://127.0.0.1:{port}/"
+        loop = asyncio.new_event_loop()
+        ready, box = threading.Event(), {}
+
+        async def main():
+            box["stop"] = asyncio.Event()
+            await srv.serve(url, P2_USERS, tmp_path / "p2_writes.jsonl", scale, seed=0, ready=ready, stop=box["stop"], box=box)
+
+        t = threading.Thread(target=lambda: loop.run_until_complete(main()), daemon=True)
+        t.start()
+        assert ready.wait(30), "P2 server did not start"
+
+        def stop():
+            if t.is_alive():
+                loop.call_soon_threadsafe(box["stop"].set)
+                t.join(10)
+
+        running.append(stop)
+        return url, box["plant"], tmp_path / "p2_writes.jsonl"
+
+    yield start()
     for stop in running:
         stop()

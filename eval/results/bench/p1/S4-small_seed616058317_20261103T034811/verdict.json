@@ -1,0 +1,40 @@
+{
+ "scenario": "S4-small",
+ "seed": 616058317,
+ "expected": [
+  "BLOCKED"
+ ],
+ "verdict": "BLOCKED",
+ "match": true,
+ "valid": true,
+ "problems": [],
+ "stamp": {
+  "assumptions": [
+   "positive isolation upstream assumed"
+  ],
+  "package_version": "0.1.0",
+  "plan_hash": "89adfcf4fbb0a8e2b058c02ceed5d879d0a72312da92024bf967c8aec14f2a92",
+  "reasons": [
+   "LIVE-HOLD: pressure rose 22.6 kPa over the 600 process-s hold (limit 1): energy is getting back in"
+  ],
+  "rules": {
+   "LIVE-ALIVE": "1",
+   "LIVE-HOLD": "2",
+   "LIVE-QUALITY": "2",
+   "LIVE-RELATION": "1",
+   "LIVE-VALVE": "1"
+  },
+  "source": "step",
+  "thresholds_version": "3+p1-2",
+  "verdict": "BLOCKED"
+ },
+ "steps": {
+  "1": "PASS",
+  "2": "PASS",
+  "3": "PASS",
+  "4": "PASS",
+  "5": "PASS",
+  "6": "PASS",
+  "7": "FAIL"
+ }
+}

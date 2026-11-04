@@ -27,6 +27,9 @@ BLOCKED = [
     ("192.168.90.107", 8080),  # HMI, same DMZ subnet (never reaches the router)
     ("192.168.90.200", 80),  # the router itself
     ("1.1.1.1", 443),  # internet
+    ("192.168.95.2", 4840),  # OPC UA anywhere but P2
+    ("192.168.95.45", 4840),
+    ("192.168.95.51", 4840),
 ]
 
 
@@ -50,6 +53,40 @@ def test_plc_modbus_reachable_and_readable():
     adapter.close()
     assert first.quality == Quality.UNKNOWN
     assert s.quality == Quality.GOOD and 0 < s.value < 3200
+
+
+P2 = ("192.168.95.50", 4840)
+P2_UP = pytest.mark.skipif(not os.environ.get("ZS_NET_P2"), reason="P2 checks run only with P2 live: docker exec -e ZS_NET_P2=1 ...")
+
+
+@P2_UP
+def test_p2_opcua_reachable():
+    assert connects(*P2)
+
+
+@P2_UP
+def test_zerostate_account_cannot_write_p2():
+    """ZeroState's own OPC UA account (`zerostate`) tries one *.CMD write: the server must refuse it and
+    the value must not change. Password from P2_PASSWORD_ZEROSTATE, never printed."""
+    from asyncua import ua
+    from asyncua.sync import Client
+
+    if not connects(*P2):
+        pytest.skip("P2 OPC UA endpoint unreachable (P2 not up)")
+    c = Client(f"opc.tcp://{P2[0]}:{P2[1]}/", timeout=5)
+    c.set_user("zerostate")
+    c.set_password(os.environ.get("P2_PASSWORD_ZEROSTATE", ""))
+    c.connect()
+    try:
+        node = c.get_node("ns=2;s=XV-231.CMD")
+        before = node.read_value()
+        with pytest.raises(ua.UaStatusCodeError) as e:
+            node.write_value(ua.DataValue(ua.Variant(float(before) + 7.0, ua.VariantType.Double)))
+        assert not ua.StatusCode(e.value.code).is_good()  # BadUserAccessDenied from the server's own check
+        time.sleep(1)
+        assert node.read_value() == before
+    finally:
+        c.disconnect()
 
 
 @pytest.mark.parametrize(("host", "port"), BLOCKED)

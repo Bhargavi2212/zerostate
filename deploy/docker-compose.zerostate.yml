@@ -23,7 +23,7 @@ services:
       zs-internal:
         ipv4_address: 172.30.0.10
     healthcheck:
-      test: ["CMD-SHELL", "iptables -S OUTPUT | grep -qx -- '-P OUTPUT DROP' && iptables -C OUTPUT -p tcp -d 192.168.95.2 --dport 502 -j ACCEPT && iptables -C OUTPUT -p tcp -d 172.30.0.2 --dport 8888 -j ACCEPT"]
+      test: ["CMD-SHELL", "iptables -S OUTPUT | grep -qx -- '-P OUTPUT DROP' && iptables -C OUTPUT -p tcp -d 192.168.95.2 --dport 502 -j ACCEPT && iptables -C OUTPUT -p tcp -d 192.168.95.50 --dport 4840 -j ACCEPT && iptables -C OUTPUT -p tcp -d 172.30.0.2 --dport 8888 -j ACCEPT"]
       interval: 5s
       retries: 3
       start_period: 5s
@@ -42,9 +42,53 @@ services:
       - path: ./zerostate/.env
         required: false
     environment:
-      ZS_BUDGET_USD: ${ZS_BUDGET_USD:-75}
+      ZS_BUDGET_USD: ${ZS_BUDGET_USD:-140}  # runaway-loop backstop only (Nov 3: no cost limit on model work)
+      ZS_AUDIT: /audit/audit.sqlite
     volumes:
       - zs-data:/data
+      # The audit log's own volume: rw here, ro in zs-api. Migration (after batch p1, not before):
+      # copy the existing /data/audit.sqlite into zs-audit once, so the chain continues.
+      - zs-audit:/audit
+
+  # Network helper for zs-api: OUTPUT allowlist = the model proxy only (deploy/api_net.sh); never a plant.
+  # It owns the namespace, so it publishes the API port, on Windows localhost only (the console can sign).
+  zs-api-net:
+    image: zerostate-net:local
+    container_name: zs-api-net
+    command: ["/api_net.sh"]
+    cap_add: [NET_ADMIN]
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 1
+    ports:
+      - "127.0.0.1:8090:8090"
+    networks:
+      zs-api-pub: {}
+      zs-internal:
+        ipv4_address: 172.30.0.11
+    healthcheck:
+      test: ["CMD-SHELL", "iptables -S OUTPUT | grep -qx -- '-P OUTPUT DROP' && iptables -C OUTPUT -p tcp -d 172.30.0.2 --dport 8888 -j ACCEPT && [ $$(iptables -S OUTPUT | grep -c -- '-j ACCEPT') -eq 3 ]"]
+      interval: 5s
+      retries: 3
+      start_period: 5s
+
+  # HTTP API for the operator console (docs/API.md): same image, audit read-only, inbox and drafts rw.
+  zs-api:
+    image: zerostate:local
+    container_name: zs-api
+    command: ["zs", "api", "--host", "0.0.0.0", "--port", "8090"]
+    network_mode: "service:zs-api-net"
+    cap_drop: [ALL]
+    depends_on:
+      zs-api-net: {condition: service_healthy}
+    env_file:
+      - path: ./zerostate/.env
+        required: false
+    environment:
+      ZS_BUDGET_USD: ${ZS_BUDGET_USD:-140}  # runaway-loop backstop only (Nov 3: no cost limit on model work)
+      ZS_AUDIT: /audit/audit.sqlite
+    volumes:
+      - zs-data:/data
+      - zs-audit:/audit:ro
 
   # The only route to the Meta API: CONNECT api.meta.ai:443, nothing else. Its own uplink has internet;
   # zs-internal has none.
@@ -57,7 +101,43 @@ services:
         ipv4_address: 172.30.0.2
       zs-uplink: {}
 
-  # Eval tooling, not the product: performs isolation steps through the PLC's manual mode.
+  # The camera (P1: idealised, it renders the simulator's true state). Reaches the simulator over
+  # a-grfics-admin, never the Windows port forward; serves GET /frame only on zs-internal. Truth sidecars
+  # (eval only) go to zs-frames-truth, which no other service mounts.
+  zs-frames:
+    build: {context: ./zerostate, dockerfile: plants/frame_service/Dockerfile}
+    image: zs-frames:local
+    container_name: zs-frames
+    shm_size: 1gb  # Chromium
+    networks:
+      a-grfics-admin: {}
+      zs-internal:
+        ipv4_address: 172.30.0.3
+    volumes:
+      - zs-frames-truth:/truth
+
+  # P2 gas line OPC UA server (an eval plant, not the product), on the ICS net beside the PLC.
+  # Profile p2: `docker compose up` without `--profile p2` never starts it, so batch 2 runs with P2
+  # stopped (DECISIONS Nov 3: nothing else runs during batch 2); the runner's p2 path starts it with
+  # `--profile p2`. Passwords pass through from the environment of the compose command (the runner
+  # takes them from zerostate/.env), never written here. The route sends replies to .60/.70 back via the router.
+  p2:
+    build: {context: ./zerostate, dockerfile: plants/p2_gasline/Dockerfile}
+    image: zerostate/p2-gasline:p2-1
+    container_name: zs-p2
+    profiles: ["p2"]
+    cap_add: [NET_ADMIN]
+    command: ["sh", "-c", "ip route replace 192.168.90.0/24 via 192.168.95.200 && exec python server.py"]
+    environment:
+      - ZS_TIME_SCALE=${ZS_P2_TIME_SCALE:-30}
+      - P2_PASSWORD_ZEROSTATE
+      - P2_PASSWORD_OPERATOR
+    networks:
+      b-ics-net:
+        ipv4_address: 192.168.95.50
+
+  # Eval tooling, not the product: performs isolation steps through the PLC's manual mode (P1) and
+  # over OPC UA as `operator` (P2, operator_p2.py; the runner passes P2_PASSWORD_OPERATOR per exec).
   zs-operator:
     build: {context: ./zerostate, dockerfile: plants/p1_grfics/Dockerfile.operator}
     image: zs-operator:local
@@ -74,6 +154,9 @@ networks:
       config:
         - subnet: 172.30.0.0/24
   zs-uplink: {}  # the proxy's way out
+  zs-api-pub: {}  # bridge only so zs-api-net can publish 127.0.0.1:8090; OUTPUT allowlist blocks new traffic out
 
 volumes:
   zs-data:
+  zs-audit:
+  zs-frames-truth:  # eval only; mounted by zs-frames alone

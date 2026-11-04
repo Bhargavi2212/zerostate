@@ -1,0 +1,10 @@
+# P2 gas line (plants/p2_gasline/SPEC.md). Steps: 1 close XV-201, 2 close XV-203, 3 open BV-202, 4 close XV-204,
+# 5 vent to 200 kPa, 6 close VV-213, 7 hold 600 process-s, 8 final vent (VV-213 stays open), 9 final.
+# Fault keys are model.GasLine.set keys, sent by plants/p2_gasline/faults.py; ranges are drawn per seed.
+id: S3
+plant: p2_gasline
+title: PT-211 drifting low during the vent
+expected: [BLOCKED]
+faults:
+  # drift severity in kPa per process-hour; negative = reads low
+  - {at_step: 5, after_process_s: [0, 30], set: {PT-211.fault_mode: 2, PT-211.fault_severity: [-6000, -2000]}}

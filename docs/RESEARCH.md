@@ -10,7 +10,7 @@
   - (d)(6): verify isolation and de-energization before work. (f)(4): shift-change transfer. (c)(6): annual inspection by someone other than the user.
   - Appendix A step 7 (try-out) — written for machines; for process lines the equivalent is bleed-down + watch for build-up.
   - OSHA LOTO update (RIN 1218-AD00) may address computer-based controls; no text yet. https://www.ishn.com/articles/115708-osha-plans-a-lockout-tagout-update-what-computer-based-controls-could-change
-- **HSE HSG253 Safe isolation of plant and equipment** — https://books.hse.gov.uk/gempdf/hsg253.pdf
+- **HSE HSG253** (isolation of plant and equipment) — https://books.hse.gov.uk/gempdf/hsg253.pdf
   - ¶172 gauges indicate presence of pressure, not complete depressurisation; check an open vent before breaking in.
   - ¶165/173/175 prove every isolation point; no leakage or build-up within the envelope.
   - ¶168 don't rely on an unproved isolation. ¶174 re-prove after a shift.
@@ -36,7 +36,7 @@
 ## 3. Products (vendor pages, marketing)
 Isolation/PTW software — none verify isolation against live data or camera (j5 historian interface and Sphera "monitor integrity of critical valves" unclear):
 Brady LINK360, Sphera, Yokogawa OpreX CoW, IntelliPERMIT, Hexagon j5, SALUS (LLM writes procedures; manual verification), AWS P&ID agent blog.
-Camera vendors — lock/tag presence only, no zero-energy proof: iFactory, Roboflow ("not a safety-rated device"), viAct, Intenseye, Perley Brook, Rockwell patent US11625024B2.
+Camera vendors — lock/tag presence only, no zero-energy proof: iFactory, Roboflow (states its device carries no safety rating), viAct, Intenseye, Perley Brook, Rockwell patent US11625024B2.
 Electrical only: Panduit VeriSafe automated absence-of-voltage tester.
 Links in agent notes; e.g. https://roboflow.com/ai/lockout-tagout-verification , https://ifactoryapp.com/ai-vision-camera/ai-vision-lockout-tagout-verification
 **Gap (our judgment, broad but not exhaustive search):** no product or paper checks a declared process isolation by cross-checking camera evidence and live plant data with built-in instrument distrust.

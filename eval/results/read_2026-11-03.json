@@ -1,0 +1,50 @@
+{
+  "set": "P1 frames set, idealised camera, n = 100 frames",
+  "per_valve": {
+    "f1": {
+      "n": 100,
+      "exact_1pct": 100,
+      "within_5pct": 100,
+      "unreadable": 0,
+      "exact_1pct_rate": 1.0,
+      "within_5pct_rate": 1.0,
+      "unreadable_rate": 0.0
+    },
+    "f2": {
+      "n": 100,
+      "exact_1pct": 99,
+      "within_5pct": 99,
+      "unreadable": 1,
+      "exact_1pct_rate": 0.99,
+      "within_5pct_rate": 0.99,
+      "unreadable_rate": 0.01
+    },
+    "purge": {
+      "n": 100,
+      "exact_1pct": 100,
+      "within_5pct": 100,
+      "unreadable": 0,
+      "exact_1pct_rate": 1.0,
+      "within_5pct_rate": 1.0,
+      "unreadable_rate": 0.0
+    },
+    "product": {
+      "n": 100,
+      "exact_1pct": 99,
+      "within_5pct": 99,
+      "unreadable": 1,
+      "exact_1pct_rate": 0.99,
+      "within_5pct_rate": 0.99,
+      "unreadable_rate": 0.01
+    }
+  },
+  "all": {
+    "n": 400,
+    "exact_1pct": 398,
+    "within_5pct": 398,
+    "unreadable": 2,
+    "exact_1pct_rate": 0.995,
+    "within_5pct_rate": 0.995,
+    "unreadable_rate": 0.005
+  }
+}

@@ -1,0 +1,279 @@
+{
+ "asr": "muse-voice-transcribe-1.0",
+ "route": "transcribe -> zerostate.api.server.parse_intent (rules, no model)",
+ "n": 20,
+ "correct": 16,
+ "wrong_step": 0,
+ "bar_met": false,
+ "clips": [
+  {
+   "file": "step 1 done.m4a",
+   "said": "step one done",
+   "intent": "step_done",
+   "k": 1,
+   "transcript": "Step one one done.",
+   "got": {
+    "intent": "step_done",
+    "k": 1
+   },
+   "read_back": "Step 1: manual_mode closed. Say confirm to mark it done, or cancel.",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "step2.m4a",
+   "said": "step two done",
+   "intent": "step_done",
+   "k": 2,
+   "transcript": "Step two, done.",
+   "got": {
+    "intent": "step_done",
+    "k": 2
+   },
+   "read_back": "Step 2: f1 and purge closed. Say confirm to mark it done, or cancel.",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "step 3.m4a",
+   "said": "step three is done",
+   "intent": "step_done",
+   "k": 3,
+   "transcript": "Step three done.",
+   "got": {
+    "intent": "step_done",
+    "k": 3
+   },
+   "read_back": "Step 3: f2 closed. Say confirm to mark it done, or cancel.",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "step 4.m4a",
+   "said": "mark step four done",
+   "intent": "step_done",
+   "k": 4,
+   "transcript": "Mark step four done.",
+   "got": {
+    "intent": "step_done",
+    "k": 4
+   },
+   "read_back": "Step 4: product closed. Say confirm to mark it done, or cancel.",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "step 5.m4a",
+   "said": "step five done",
+   "intent": "step_done",
+   "k": 5,
+   "transcript": "Step five done.",
+   "got": {
+    "intent": "step_done",
+    "k": 5
+   },
+   "read_back": "Step 5: purge open. Say confirm to mark it done, or cancel.",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "step 6.m4a",
+   "said": "step six complete",
+   "intent": "step_done",
+   "k": 6,
+   "transcript": "Step six, complete.",
+   "got": {
+    "intent": "step_done",
+    "k": 6
+   },
+   "read_back": "Step 6: purge closed. Say confirm to mark it done, or cancel.",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "step 7.m4a",
+   "said": "step seven done",
+   "intent": "step_done",
+   "k": 7,
+   "transcript": "Step seven done.",
+   "got": {
+    "intent": "step_done",
+    "k": 7
+   },
+   "read_back": "Step 7: hold. Say confirm to mark it done, or cancel.",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "8.m4a",
+   "said": "feed one and purge closed",
+   "intent": "step_done",
+   "k": 2,
+   "transcript": "feed one and purge closed.",
+   "got": {
+    "intent": "step_done",
+    "k": 2
+   },
+   "read_back": "Step 2: f1 and purge closed. Say confirm to mark it done, or cancel.",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "9.m4a",
+   "said": "purge open",
+   "intent": "step_done",
+   "k": 5,
+   "transcript": "Verge open.",
+   "got": {
+    "intent": "unknown",
+    "k": null
+   },
+   "read_back": "I did not catch which step. Say the step number, or every valve of the step and its state.",
+   "correct": false,
+   "wrong_step": false
+  },
+  {
+   "file": "10.m4a",
+   "said": "confirm",
+   "intent": "confirm",
+   "transcript": "conform",
+   "got": {
+    "intent": "unknown",
+    "k": null
+   },
+   "read_back": "I did not catch which step. Say the step number, or every valve of the step and its state.",
+   "correct": false,
+   "wrong_step": false
+  },
+  {
+   "file": "11.m4a",
+   "said": "yes, confirm",
+   "intent": "confirm",
+   "transcript": "As conform",
+   "got": {
+    "intent": "unknown",
+    "k": null
+   },
+   "read_back": "I did not catch which step. Say the step number, or every valve of the step and its state.",
+   "correct": false,
+   "wrong_step": false
+  },
+  {
+   "file": "12.m4a",
+   "said": "cancel",
+   "intent": "cancel",
+   "transcript": "cancel.",
+   "got": {
+    "intent": "cancel",
+    "k": null
+   },
+   "read_back": "Cancelled. Nothing was marked.",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "13.m4a",
+   "said": "no, cancel that",
+   "intent": "cancel",
+   "transcript": "No, cancel that.",
+   "got": {
+    "intent": "cancel",
+    "k": null
+   },
+   "read_back": "Cancelled. Nothing was marked.",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "14.m4a",
+   "said": "status",
+   "intent": "status",
+   "transcript": "straightus",
+   "got": {
+    "intent": "unknown",
+    "k": null
+   },
+   "read_back": "I did not catch which step. Say the step number, or every valve of the step and its state.",
+   "correct": false,
+   "wrong_step": false
+  },
+  {
+   "file": "15.m4a",
+   "said": "step nine done",
+   "intent": "unknown",
+   "transcript": "Step nine, done.",
+   "got": {
+    "intent": "unknown",
+    "k": null
+   },
+   "read_back": "There is no step 9 to mark. Which step is done?",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "16.m4a",
+   "said": "why",
+   "intent": "why",
+   "transcript": "Why?",
+   "got": {
+    "intent": "why",
+    "k": null
+   },
+   "read_back": "",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "17.m4a",
+   "said": "why is it blocked",
+   "intent": "why",
+   "transcript": "Why is it blocked?",
+   "got": {
+    "intent": "why",
+    "k": null
+   },
+   "read_back": "",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "18.m4a",
+   "said": "repeat",
+   "intent": "repeat",
+   "transcript": " Repeat.",
+   "got": {
+    "intent": "repeat",
+    "k": null
+   },
+   "read_back": "",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "19.m4a",
+   "said": "sign off the job",
+   "intent": "unknown",
+   "transcript": "Sign of the job",
+   "got": {
+    "intent": "unknown",
+    "k": null
+   },
+   "read_back": "Signing, verifying and reopening are done on screen, not by voice.",
+   "correct": true,
+   "wrong_step": false
+  },
+  {
+   "file": "20.m4a",
+   "said": "open the coffee machine",
+   "intent": "unknown",
+   "transcript": "Open the coffee machine.",
+   "got": {
+    "intent": "unknown",
+    "k": null
+   },
+   "read_back": "I did not catch which step. Say the step number, or every valve of the step and its state.",
+   "correct": true,
+   "wrong_step": false
+  }
+ ]
+}

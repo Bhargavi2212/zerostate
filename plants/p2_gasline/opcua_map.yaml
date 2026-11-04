@@ -1,0 +1,27 @@
+# P2 gas line: OPC UA server p2 (192.168.95.50, plants/p2_gasline/server.py). ZeroState only reads these, as `zerostate`.
+# Analog values carry noise (+-0.1 % span): they go STALE after 5 s without change. Limit-switch feedback
+# (0 / 100, 50 in travel) and commands sit still by design. Any value whose SourceTimestamp is older
+# than max_age_wall_s is STALE (a stopped update loop, S12).
+protocol: opcua
+endpoint: opc.tcp://192.168.95.50:4840/
+user: zerostate
+process_time_scale: 30  # SPEC.md: no PLC loops to destabilise
+max_age_wall_s: 2
+tags:
+  - {tag: PT-200,     node: "ns=2;s=PT-200.PV",     scale_min: 0, scale_max: 2500, unit: kPa,    source_group: header, max_static_wall_s: 5}
+  - {tag: PT-202,     node: "ns=2;s=PT-202.PV",     scale_min: 0, scale_max: 2500, unit: kPa,    source_group: cavity, max_static_wall_s: 5}
+  - {tag: PT-211,     node: "ns=2;s=PT-211.PV",     scale_min: 0, scale_max: 2500, unit: kPa,    source_group: pt211,  max_static_wall_s: 5}
+  - {tag: PT-212,     node: "ns=2;s=PT-212.PV",     scale_min: 0, scale_max: 2500, unit: kPa,    source_group: pt212,  max_static_wall_s: 5}
+  - {tag: FT-213,     node: "ns=2;s=FT-213.PV",     scale_min: 0, scale_max: 100,  unit: kmol/h, source_group: vent,   max_static_wall_s: 5, constant_ok_raw: [0]}
+  - {tag: XV-201.FB,  node: "ns=2;s=XV-201.FB",     scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 5, constant_ok_raw: [0, 65535]}
+  - {tag: XV-201.CMD, node: "ns=2;s=XV-201.CMD",    scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: BV-202.FB,  node: "ns=2;s=BV-202.FB",     scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 5, constant_ok_raw: [0, 65535]}
+  - {tag: BV-202.CMD, node: "ns=2;s=BV-202.CMD",    scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: XV-203.FB,  node: "ns=2;s=XV-203.FB",     scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 5, constant_ok_raw: [0, 65535]}
+  - {tag: XV-203.CMD, node: "ns=2;s=XV-203.CMD",    scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: VV-213.FB,  node: "ns=2;s=VV-213.FB",     scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 5, constant_ok_raw: [0, 65535]}
+  - {tag: VV-213.CMD, node: "ns=2;s=VV-213.CMD",    scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: XV-204.FB,  node: "ns=2;s=XV-204.FB",     scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 5, constant_ok_raw: [0, 65535]}
+  - {tag: XV-204.CMD, node: "ns=2;s=XV-204.CMD",    scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 10, constant_ok_raw: any}
+  - {tag: XV-231.FB,  node: "ns=2;s=XV-231.FB",     scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 5, constant_ok_raw: [0, 65535]}
+  - {tag: XV-231.CMD, node: "ns=2;s=XV-231.CMD",    scale_min: 0, scale_max: 100,  unit: "%",    source_group: valves, max_static_wall_s: 10, constant_ok_raw: any}
