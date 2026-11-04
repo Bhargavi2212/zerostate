@@ -499,10 +499,26 @@ P2_CONFIG = "/app/config/p2_gasline"
 P2_ENV = ["-e", f"ZS_MAP={P2_CONFIG}/opcua_map.yaml", "-e", f"ZS_THRESHOLDS={P2_CONFIG}/thresholds.yaml"]
 
 
+P2_SECRETS = ("P2_PASSWORD_ZEROSTATE", "P2_PASSWORD_OPERATOR")
+
+
+def p2_env(env_file: Path = ROOT / ".env") -> dict:
+    """os.environ plus the P2 passwords from zerostate/.env when the shell lacks them (one source for
+    the server, ZeroState and the operator). Values are passed on, never printed or logged."""
+    env = dict(os.environ)
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            k, sep, v = line.strip().partition("=")
+            if sep and k in P2_SECRETS and not env.get(k):
+                env[k] = v.strip().strip('"').strip("'")
+    return env
+
+
 def operator_p2(*args) -> int:
-    """The P2 operator (plants/p2_gasline/operator.py, in zs-operator as operator_p2.py): OPC UA as `operator`."""
-    return subprocess.run(["docker", "exec", "zs-operator", "python", "operator_p2.py", *args],
-                          check=False, capture_output=True, text=True, timeout=1800).returncode
+    """The P2 operator (plants/p2_gasline/operator.py, in zs-operator as operator_p2.py): OPC UA as `operator`.
+    `-e NAME` without a value hands the password over from this process's environment, off the command line."""
+    return subprocess.run(["docker", "exec", "-e", "P2_PASSWORD_OPERATOR", "zs-operator", "python", "operator_p2.py", *args],
+                          check=False, capture_output=True, text=True, timeout=1800, env=p2_env()).returncode
 
 
 def act_p2(*args) -> None:
@@ -619,7 +635,7 @@ class P2Episode(Episode):
             raise EpisodeInvalid(problem)
         self.preflight()
         r = subprocess.run([*COMPOSE, "--profile", "p2", "up", "-d", "--force-recreate", "--no-deps", "p2"], cwd=GRFICS,
-                           env={**os.environ, "ZS_P2_TIME_SCALE": s}, check=False, capture_output=True, text=True)
+                           env={**p2_env(), "ZS_P2_TIME_SCALE": s}, check=False, capture_output=True, text=True)
         if r.returncode != 0:
             raise EpisodeInvalid(f"could not start zs-p2: {r.stderr.strip()[:300]}")
         self.warm_up()

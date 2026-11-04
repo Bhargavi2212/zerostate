@@ -23,7 +23,7 @@ services:
       zs-internal:
         ipv4_address: 172.30.0.10
     healthcheck:
-      test: ["CMD-SHELL", "iptables -S OUTPUT | grep -qx -- '-P OUTPUT DROP' && iptables -C OUTPUT -p tcp -d 192.168.95.2 --dport 502 -j ACCEPT && iptables -C OUTPUT -p tcp -d 172.30.0.2 --dport 8888 -j ACCEPT"]
+      test: ["CMD-SHELL", "iptables -S OUTPUT | grep -qx -- '-P OUTPUT DROP' && iptables -C OUTPUT -p tcp -d 192.168.95.2 --dport 502 -j ACCEPT && iptables -C OUTPUT -p tcp -d 192.168.95.50 --dport 4840 -j ACCEPT && iptables -C OUTPUT -p tcp -d 172.30.0.2 --dport 8888 -j ACCEPT"]
       interval: 5s
       retries: 3
       start_period: 5s
@@ -116,7 +116,28 @@ services:
     volumes:
       - zs-frames-truth:/truth
 
-  # Eval tooling, not the product: performs isolation steps through the PLC's manual mode.
+  # P2 gas line OPC UA server (an eval plant, not the product), on the ICS net beside the PLC.
+  # Profile p2: `docker compose up` without `--profile p2` never starts it, so batch 2 runs with P2
+  # stopped (DECISIONS Nov 3: nothing else runs during batch 2); the runner's p2 path starts it with
+  # `--profile p2`. Passwords pass through from the environment of the compose command (the runner
+  # takes them from zerostate/.env), never written here. The route sends replies to .60/.70 back via the router.
+  p2:
+    build: {context: ./zerostate, dockerfile: plants/p2_gasline/Dockerfile}
+    image: zerostate/p2-gasline:p2-1
+    container_name: zs-p2
+    profiles: ["p2"]
+    cap_add: [NET_ADMIN]
+    command: ["sh", "-c", "ip route replace 192.168.90.0/24 via 192.168.95.200 && exec python server.py"]
+    environment:
+      - ZS_TIME_SCALE=${ZS_P2_TIME_SCALE:-30}
+      - P2_PASSWORD_ZEROSTATE
+      - P2_PASSWORD_OPERATOR
+    networks:
+      b-ics-net:
+        ipv4_address: 192.168.95.50
+
+  # Eval tooling, not the product: performs isolation steps through the PLC's manual mode (P1) and
+  # over OPC UA as `operator` (P2, operator_p2.py; the runner passes P2_PASSWORD_OPERATOR per exec).
   zs-operator:
     build: {context: ./zerostate, dockerfile: plants/p1_grfics/Dockerfile.operator}
     image: zs-operator:local

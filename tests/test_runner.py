@@ -232,3 +232,14 @@ def test_p2_fault_actions(tmp_path, monkeypatch):
     import pytest
     with pytest.raises(runner.EpisodeInvalid):
         ep.fire_due()
+
+
+def test_p2_env_takes_only_p2_passwords_from_the_env_file(tmp_path, monkeypatch):
+    f = tmp_path / ".env"
+    f.write_text('MODEL_API_KEY=k\nP2_PASSWORD_OPERATOR="op"\nP2_PASSWORD_ZEROSTATE=zs\n')
+    monkeypatch.delenv("MODEL_API_KEY", raising=False)
+    monkeypatch.delenv("P2_PASSWORD_OPERATOR", raising=False)
+    monkeypatch.setenv("P2_PASSWORD_ZEROSTATE", "from-shell")
+    env = runner.p2_env(f)
+    assert env["P2_PASSWORD_OPERATOR"] == "op" and env["P2_PASSWORD_ZEROSTATE"] == "from-shell"
+    assert "MODEL_API_KEY" not in env  # the model key never goes to a plant or the operator
