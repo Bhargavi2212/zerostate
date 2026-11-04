@@ -175,7 +175,7 @@ def build(run: Path, plant_map: dict | None = None, runs_dir: Path | None = None
              for s in plan["steps"]]
     truth_rows = _jsonl(run / "truth.jsonl.gz", gzip.open)
     truth = None
-    if truth_rows:
+    if truth_rows and "outputs" in truth_rows[0]:  # P1 shape; P2 truth is per unit, not exported
         keys = [k for k in TRUTH_KEYS if k in truth_rows[0].get("outputs", {})]
         truth = {"eval_only": True, **_downsample([(r["t"], r["outputs"]) for r in truth_rows], keys)}
     sc = meta.get("scenario") or {}
