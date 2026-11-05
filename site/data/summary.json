@@ -1,0 +1,1 @@
+{"batches": [{"batch": "p1", "n": 65, "blocked": 41, "escalated": 9, "ndf": 15}, {"batch": "2", "n": 35, "blocked": 20, "escalated": 0, "ndf": 15}, {"batch": "p2", "n": 80, "blocked": 50, "escalated": 15, "ndf": 15}], "episodes": 180, "dangerous_misses": 0, "false_blocks": 1, "clean": 46, "camera_blocked": 20, "camera_n": 35}

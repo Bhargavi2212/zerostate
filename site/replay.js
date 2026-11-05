@@ -14,6 +14,7 @@
     let m;
     if (path === "/api/sessions") return "data/sessions.json";
     if (path === "/api/checks/plans") return "data/checks/plans.json";
+    if (path === "/api/summary") return "data/summary.json";
     if ((m = path.match(/^\/api\/plants\/([\w-]+)\/map$/))) return `data/plants/${m[1]}/map.json`;
     if ((m = path.match(/^\/api\/sessions\/([\w-]+)\/camera\/(\d+)$/))) return `data/sessions/${m[1]}/camera/${m[2]}.json`;
     if ((m = path.match(/^\/api\/sessions\/([\w-]+)\/stream(\?.*)?$/))) return `data/sessions/${m[1]}/stream.json`;

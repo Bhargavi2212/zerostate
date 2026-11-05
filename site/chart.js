@@ -37,7 +37,7 @@ export function lineChart({ title, unit, series, bands = [] }) {
   series.forEach((ser, i) => {
     if (!ser.points.length) return;
     const d = ser.points.map((p, j) => `${j ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
-    svg.append(s("path", { d, class: "series", "stroke-dasharray": DASHES[i % DASHES.length] }));
+    svg.append(s("path", { d, class: `series s${i % 4}`, "stroke-dasharray": DASHES[i % DASHES.length] }));
     ends.push({ name: ser.name, y: y(ser.points[ser.points.length - 1][1]) + 4 });
   });
   // end labels, pushed apart so they never print over each other (bottom up, then clamped to the top)

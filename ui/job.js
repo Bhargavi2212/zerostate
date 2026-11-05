@@ -20,8 +20,8 @@ export async function jobScreen(root, sid, params) {
   const techSummary = el("summary", {}, "Technical details");
   const techIds = el("p", { class: "small", id: "tech-ids" });
   root.append(el("h1", {}, episodeTitle(sid)), el("p", { class: "small muted", id: "job-id" }, `${sid} · ${plantName(st.detail.plant)}`),
-    parts.strip, parts.hero, parts.witnesses, parts.banner, parts.actions, parts.plant, parts.steps, parts.explain,
-    el("details", { id: "tech", class: "panel" }, techSummary, techIds, parts.findings, parts.charts, parts.camera));
+    parts.strip, parts.hero, parts.witnesses, parts.banner, parts.actions, el("div", { class: "job-grid" }, parts.plant, parts.charts), parts.steps, parts.explain,
+    el("details", { id: "tech", class: "panel" }, techSummary, techIds, parts.findings, parts.camera));
   const stepKind = (k) => (st.detail.steps.find((x) => x.k === k) || {}).kind;
 
   // ---------- data from the stream
