@@ -111,7 +111,7 @@ export async function checkScreen(root, params) {
   const finalLine = el("div", { id: "check-final" });
   const stepPanel = el("div", { id: "check-steps" });
   const explain = el("div", { id: "check-explain" });
-  const all = el("details", { id: "check-findings" });
+  const all = el("details", { id: "check-findings", hidden: true }); // shown once a session is open
   const voiceNote = el("p", { class: "small muted", id: "voice-note" }, voice.note());
   const spokenLine = el("p", { id: "spoken-line", class: "spoken" });
   const mute = el("button", { type: "button", id: "mute", onclick: () => {
@@ -284,6 +284,7 @@ export async function checkScreen(root, params) {
       })));
     list.replaceChildren(el("h2", {}, "Checklist (plan order)"), tbl);
     const fs = st.detail ? st.detail.findings : [];
+    all.hidden = !st.detail;
     all.replaceChildren(el("summary", {}, `All logged findings (${fs.length}), in log order`),
       el("ol", { class: "small" }, fs.map((f) => el("li", { id: `finding-${f.id}` }, `${f.id} · ${f.status} · ${f.source} step ${f.step ?? "—"} · ${f.message}`))));
   }

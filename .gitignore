@@ -9,3 +9,6 @@ eval/sealed/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
+# the two demo runs keep their camera frames in git: the site shows them (P3-6)
+!eval/results/demo/*/frames/
+!site/data/sessions/*/frames/
