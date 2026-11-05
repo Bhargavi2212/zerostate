@@ -100,6 +100,7 @@ SHIM = r"""// Site only: maps the console's GET /api/... calls onto the recorded
     let m;
     if (path === "/api/sessions") return "data/sessions.json";
     if (path === "/api/checks/plans") return "data/checks/plans.json";
+    if (path === "/api/summary") return "data/summary.json";
     if ((m = path.match(/^\/api\/plants\/([\w-]+)\/map$/))) return `data/plants/${m[1]}/map.json`;
     if ((m = path.match(/^\/api\/sessions\/([\w-]+)\/camera\/(\d+)$/))) return `data/sessions/${m[1]}/camera/${m[2]}.json`;
     if ((m = path.match(/^\/api\/sessions\/([\w-]+)\/stream(\?.*)?$/))) return `data/sessions/${m[1]}/stream.json`;
@@ -187,9 +188,8 @@ SHIM = r"""// Site only: maps the console's GET /api/... calls onto the recorded
 """
 
 CSS = """
-.replay-banner { background: #333; color: #fff; padding: 6px 12px; font-weight: bold; }
-.results { max-width: 1100px; margin: 0 auto; padding: 0 12px; }
-.results code, .results pre { background: #eee; padding: 2px 4px; white-space: pre-wrap; word-break: break-all; }
+.results { margin: 0 auto; }
+.results code, .results pre { padding: 2px 4px; white-space: pre-wrap; word-break: break-all; }
 """
 
 
@@ -290,6 +290,7 @@ def _rate(score: dict, key: str) -> str:
 
 def batch_section(batch: str, tag: str, score: dict, sealed_hash: str) -> str:
     e = html.escape
+    chart = scenario_chart(score)
     rows = "".join(
         f"<tr><td>{e(sc)}</td>" + "".join(f"<td>{_n(score, f'per_scenario.{sc}.{k}')}</td>"
                                          for k in ("n", "blocked", "escalated", "no_discrepancy", "match")) + "</tr>"
@@ -299,6 +300,7 @@ def batch_section(batch: str, tag: str, score: dict, sealed_hash: str) -> str:
            f"<p>Freeze tag <code>{e(tag)}</code> · scored episodes {_n(score, 'n_scored')}</p>",
            "<table class=\"grid\"><thead><tr><th>Scenario</th><th>n</th><th>BLOCKED</th><th>ESCALATED</th>"
            "<th>NO DISCREPANCY FOUND</th><th>verdict matches expected</th></tr></thead><tbody>" + rows + "</tbody></table>",
+           chart,
            "<ul>",
            f"<li>Dangerous misses, primary definition: {_rate(score, 'dangerous_miss.primary')}</li>",
            f"<li>Dangerous misses, secondary definition: {_rate(score, 'dangerous_miss.secondary')}</li>",
@@ -318,6 +320,47 @@ def batch_section(batch: str, tag: str, score: dict, sealed_hash: str) -> str:
     out.append(seal_block(batch, sealed_hash, score))
     out.append("</section>")
     return "\n".join(out)
+
+
+def scenario_chart(score: dict) -> str:
+    """Stacked bars per scenario (STOP / a person needs to look / no discrepancy); every count is a data-k span."""
+    sc = list(score["per_scenario"])
+    W, row, L = 900, 30, 120
+    out = [f'<figure class="vbar"><svg viewBox="0 0 {W} {len(sc) * row + 8}" role="img" aria-label="verdicts per scenario">']
+    for i, name in enumerate(sc):
+        p, y, x = score["per_scenario"][name], 4 + i * row, L
+        out.append(f'<text x="0" y="{y + 16}" class="lab">{html.escape(name)} ({p["n"]})</text>')
+        for k, cls in (("blocked", "c-stop"), ("escalated", "c-esc"), ("no_discrepancy", "c-ndf")):
+            w = (W - L - 10) * p[k] / (p["n"] or 1)
+            if w:
+                out.append(f'<rect x="{x:.1f}" y="{y}" width="{w:.1f}" height="22" rx="4" class="{cls}"></rect>')
+                if w > 24:
+                    out.append(f'<text x="{x + w / 2:.1f}" y="{y + 15}" text-anchor="middle" class="in" '
+                               f'data-k="per_scenario.{html.escape(name)}.{k}">{p[k]}</text>')
+            x += w
+    out.append('</svg><div class="legend"><span><i class="c-stop"></i>STOP</span><span><i class="c-esc"></i>A person needs to look</span>'
+               '<span><i class="c-ndf"></i>No discrepancy found, awaiting signature</span></div></figure>')
+    return "".join(out)
+
+
+def summary(scores_dir: Path = RESULTS) -> dict:
+    """The landing page's numbers, copied from the score files (data/summary.json)."""
+    out = {"batches": [], "episodes": 0, "dangerous_misses": 0, "false_blocks": 0, "clean": 0}
+    for batch, _ in BATCHES:
+        p = scores_dir / f"score_{batch}.json"
+        if not p.exists():
+            continue
+        sc = json.loads(p.read_text(encoding="utf-8"))
+        ps = sc["per_scenario"].values()
+        out["batches"].append({"batch": batch, "n": sc["n_scored"], "blocked": sum(x["blocked"] for x in ps),
+                               "escalated": sum(x["escalated"] for x in ps), "ndf": sum(x["no_discrepancy"] for x in ps)})
+        out["episodes"] += sc["n_scored"]
+        out["dangerous_misses"] += sc["dangerous_miss"]["primary"]["k"]
+        out["false_blocks"] += sc["false_blocks"]["k"]
+        out["clean"] += sc["false_blocks"]["n"]
+        if batch == "2":
+            out["camera_blocked"], out["camera_n"] = sc["camera"]["with_camera_blocked"], sc["camera"]["n"]
+    return out
 
 
 def seal_block(batch: str, sealed_hash: str, score: dict | None = None) -> str:
@@ -388,6 +431,7 @@ def build(out: Path = ROOT / "site", episodes=EPISODES, scores_dir: Path = RESUL
     texts = {k: json.dumps(v, ensure_ascii=False) for k, v in api_files([p for p, _ in episodes], frames).items()}
     texts.update(patched_ui())
     texts["results.html"] = results_page(loaded, scores_dir)
+    texts["data/summary.json"] = json.dumps(summary(scores_dir))
     for name, text in texts.items():
         if not name.startswith("api/_zs/"):  # copies of src/ (the never-say list itself, the key header line)
             check_text(name, text)

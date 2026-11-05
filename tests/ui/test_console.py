@@ -47,6 +47,7 @@ def assert_never_green(page):
 def test_session_list(page, ui_server):
     base, _ = ui_server
     page.goto(f"{base}/ui/#/")
+    page.wait_for_selector("#sessions .card")
     rows = page.locator("#sessions .card")
     assert rows.count() == 4  # the three sample bundles (replay mode) + the faked in-progress session
     assert "STOP" in page.locator(f"[data-session='{BLOCKED_EP}']").inner_text()
