@@ -12,7 +12,7 @@ from fake_api import BLOCKED_EP, TEST_NAME, TRANSCRIPT
 
 pytestmark = pytest.mark.ui
 
-NDF_TEXT = "NO DISCREPANCY FOUND — awaiting sign-off"
+NDF_TEXT = "No discrepancy found, awaiting signature"
 HEADER = "work_order,equipment,tag,required_state,apply_seq,isolation_type,lock_id,vent_tag,proving_tag,proves\n"
 ROWS_NO_XV204 = ["WO-1,F-210,XV-201,closed,1,proved,A-01,VV-213,BV-202,XV-201;XV-203",
                  "WO-1,F-210,XV-203,closed,2,proved,A-02,VV-213,,",
@@ -34,7 +34,7 @@ def inbox(data: Path) -> list[dict]:
 
 def assert_never_green(page):
     """Every verdict element's computed colours: green may never dominate (ISA-101 + the spec)."""
-    colours = page.eval_on_selector_all(".track, .badge, .banner", """els => els.flatMap(e => {
+    colours = page.eval_on_selector_all(".track, .badge, .banner, .card, .hero", """els => els.flatMap(e => {
         const s = getComputedStyle(e);
         return [s.backgroundColor, s.color, s.borderTopColor];
     })""")
@@ -47,28 +47,28 @@ def assert_never_green(page):
 def test_session_list(page, ui_server):
     base, _ = ui_server
     page.goto(f"{base}/ui/#/")
-    rows = page.locator("#sessions tbody tr")
+    rows = page.locator("#sessions .card")
     assert rows.count() == 4  # the three sample bundles (replay mode) + the faked in-progress session
-    assert "BLOCKED" in page.locator(f"tr[data-session='{BLOCKED_EP}']").inner_text()
+    assert "STOP" in page.locator(f"[data-session='{BLOCKED_EP}']").inner_text()
     assert_never_green(page)
 
 
 def test_blocked_job_renders_recorded_session(page, ui_server):
     open_job(page, ui_server, BLOCKED_EP)
-    data_track = page.locator("[data-track='Data-only track']").inner_text()
-    assert "BLOCKED: LIVE-HOLD: pressure rose 29.9 kPa" in data_track
-    assert "BLOCKED" in page.locator("[data-track='With-camera track']").inner_text()
+    data_track = page.locator("[data-track='Plant data']").inner_text()
+    assert "STOP: Pressure hold: pressure rose 29.9 kPa" in data_track
+    assert "STOP" in page.locator("[data-track='Plant data + camera']").inner_text()
     strip = page.locator("#assumptions").inner_text()
-    assert "positive isolation upstream assumed" in strip  # the batch p1 runs logged no plan-check override
+    assert "Assumed: the upstream isolation, outside this simulator, is in place." in strip  # the batch p1 runs logged no plan-check override
     body = page.locator("body").inner_text()
-    assert "test harness" in page.locator("#steps-table").inner_text()
+    assert "automated test run" in page.locator("#steps-table").inner_text()
     assert "eval-operator" not in body and "eval-runner" not in body
-    assert page.locator("tr[data-step='7'] td").nth(6).inner_text().endswith("FAIL")
-    page.locator("rect.band-hold").first.wait_for()  # charts redraw just after the stream's evaluations
+    assert page.locator("tr[data-step='7'] td").nth(5).inner_text().endswith("failed")
+    page.locator("rect.band-hold").first.wait_for(state="attached")  # charts redraw just after the stream's evaluations
     assert page.locator(".chart").count() == 3
     assert page.locator("rect.band-hold").count() >= 1 and page.locator("rect.band-vent").count() >= 1
     assert page.locator("svg.plant g[data-node='f1']").count() == 1
-    assert "idealised camera (renders the simulator's true state)" in page.locator("#camera").inner_text()
+    assert "idealised camera (renders the simulator's true state)" in page.locator("#camera").text_content()
     assert page.locator("#findings-table tr.f-FAIL").count() >= 1
     assert_never_green(page)
 
@@ -92,10 +92,10 @@ def test_close_not_accepted_records_not_accepted(page, ui_server):
 def test_accept_and_sign_only_on_no_discrepancy(page, ui_server):
     base, data = ui_server
     page.goto(f"{base}/ui/#/")
-    sid = page.locator("#sessions tbody tr").filter(has_text="NO DISCREPANCY").first.get_attribute("data-session")
+    sid = page.locator("#sessions .card").filter(has_text="No discrepancy found").first.get_attribute("data-session")
     open_job(page, ui_server, sid)
-    assert NDF_TEXT in page.locator("[data-track='Data-only track']").inner_text()
-    assert NDF_TEXT in page.locator("[data-track='With-camera track']").inner_text()
+    assert NDF_TEXT in page.locator("[data-track='Plant data']").inner_text()
+    assert NDF_TEXT in page.locator("[data-track='Plant data + camera']").inner_text()
     assert_never_green(page)
     page.click("#sign-open")
     page.fill("#dlg-name", TEST_NAME)
@@ -110,7 +110,7 @@ def test_live_job_mark_verify_and_camera(page, ui_server):
     open_job(page, ui_server, "ui-live")
     assert "Evaluating…" in page.locator("#verdict-banner").inner_text()
     assert page.locator("#sign-open").inner_text() == "Close — not accepted…"
-    assert "test harness" in page.locator("tr[data-step='1'] .verified-by").inner_text()
+    assert "automated test run" in page.locator("tr[data-step='1'] .verified-by").inner_text()
     assert "plan check overridden" in page.locator("#assumptions").inner_text()
     page.click("tr[data-step='3'] [data-action='done']")
     page.fill("#dlg-name", TEST_NAME)
@@ -127,15 +127,16 @@ def test_live_job_mark_verify_and_camera(page, ui_server):
     page.wait_for_function("document.querySelector('#action-msg').textContent.includes('Queued')")
     assert {"session": "ui-live", "kind": "step_verify", "k": 2, "by": TEST_NAME} in inbox(data)
     cam = page.locator("#camera")
-    cam.locator("img.frame-img").wait_for()
+    cam.locator("img.frame-img").wait_for(state="attached")
     assert cam.locator("svg.sam-box rect").count() == 1
-    text = cam.inner_text()
+    text = cam.text_content()
     assert "idealised camera (renders the simulator's true state)" in text
     assert "reading: 0.0 % open" in text and "feedback at read: 0.0 % open" in text
 
 
 def test_explain_cites_findings_as_links(page, ui_server):
     open_job(page, ui_server, BLOCKED_EP)
+    page.click("#tech > summary")
     page.locator(".explain-btn").first.click()
     cite = page.locator("#explain-answer a.cite").first
     cite.wait_for()
@@ -203,7 +204,7 @@ def test_never_say_over_rendered_text(page, ui_server):
     from zerostate.wording import hits
     base, _ = ui_server
     page.goto(f"{base}/ui/#/")
-    page.wait_for_selector("#sessions tbody tr")
+    page.wait_for_selector("#sessions .card")
     texts = {"list": page.locator("body").inner_text()}
     sids = page.eval_on_selector_all("#sessions tbody tr", "rs => rs.map(r => r.dataset.session)")
     for sid in [*sids, "ui-live"]:
@@ -218,7 +219,7 @@ def test_sign_off_waits_while_the_camera_is_still_checking(page, ui_server):
     """Both tracks read NO DISCREPANCY but camera reads are pending: a late reading can still block, so
     Accept and sign is not offered until they are in."""
     open_job(page, ui_server, "ui-camera-pending")
-    assert NDF_TEXT in page.locator("[data-track='Data-only track']").inner_text()
+    assert NDF_TEXT in page.locator("[data-track='Plant data']").inner_text()
     wait = page.locator("#sign-wait")
     assert wait.is_disabled() and "Camera still checking (2 reads pending)" in wait.inner_text()
     assert page.locator("#sign-open").count() == 0

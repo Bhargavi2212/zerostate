@@ -128,14 +128,14 @@ def test_s8_walks_rows_in_order_zooms_and_ends_with_stop(page, check_server):
     assert page.text_content("#camera-caption") == "camera: GRFICSv3 simulator, pre-existing"
     page.wait_for_selector("#final-line", timeout=60000)
     labels = page.eval_on_selector_all("#checklist tbody tr td:nth-child(2)", "els => els.map(e => e.textContent)")
-    assert labels[:3] == ["PLC mode: manual_mode = 1", "valve f1: closed", "valve purge: closed"] and "Hold test" in labels
+    assert labels[:3] == ["Switch the plant to manual", "Feed 1 valve: closed", "Vent valve: closed"] and "Hold test" in labels
     marks = dict(zip(labels, page.eval_on_selector_all("#checklist td.mark", "els => els.map(e => e.dataset.mark)")))
-    assert marks["valve f1: closed"] == "FAIL" and marks["Hold test"] == "none"  # never reached: not checked
+    assert marks["Feed 1 valve: closed"] == "FAIL" and marks["Hold test"] == "none"  # never reached: not checked
     final = page.text_content("#final-line")
-    assert final.startswith("STOP. Do not open the reactor. f1:") and "LIVE-VALVE" in final and "2 of 3 witnesses disagree" in final
+    assert final.startswith("STOP. Do not open the reactor. Feed 1 valve:") and "LIVE-VALVE" in final and "2 of 3 witnesses disagree" in final
     said = page.text_content("#spoken-line")  # one short sentence; the full text with the finding id stays on screen
-    assert "STOP. Do not open the reactor. f1:" in said and "2 of 3 witnesses disagree." in said and "LIVE-VALVE" not in said
-    page.wait_for_function("document.querySelector('#check-camera h2').textContent.includes('f1')")  # back on the deciding check
+    assert "STOP. Do not open the reactor. Feed 1 valve:" in said and "2 of 3 witnesses disagree." in said and "LIVE-VALVE" not in said
+    page.wait_for_function("document.querySelector('#check-camera h2').textContent.includes('Feed 1 valve')")  # back on the deciding check
     page.click("button.why")
     page.wait_for_selector("#why-answer")
     assert page.text_content("#why-answer") == "f1 reads closed while its flow meter reads flow."
@@ -215,7 +215,7 @@ def test_live_step_mode_marks_only_after_the_read_back_and_stops_on_a_fail(page,
     log.append("live", "verdict", {"verdict": "BLOCKED", "reasons": [f"LIVE-VALVE: {fail['message']}"]})
     log.close()
     page.wait_for_selector("#final-line", timeout=30000)
-    assert page.text_content("#final-line").startswith("STOP. Do not open the reactor. f1:")
+    assert page.text_content("#final-line").startswith("STOP. Do not open the reactor. Feed 1 valve:")
     assert page.text_content("#step-prompt") == "No further steps are prompted." and page.locator("#step-form").count() == 0
     assert page.locator("button:has-text('Verify'), button:has-text('sign'), #sign-open").count() == 0
     assert len(sqlite3.connect(db).execute("SELECT * FROM inbox").fetchall()) == 1  # still only the one mark
