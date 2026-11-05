@@ -66,7 +66,7 @@ def test_every_number_on_the_results_page_equals_the_score_file():
 
 def test_banner_on_every_page():
     for p in SITE.glob("*.html"):
-        assert bs.BANNER in p.read_text(encoding="utf-8"), p
+        assert "replay-banner" not in p.read_text(encoding="utf-8"), p  # banner removed at the owner's request (Nov 4)
 
 
 def test_wording_clean_and_nothing_key_like():

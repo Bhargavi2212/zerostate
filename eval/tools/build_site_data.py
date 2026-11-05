@@ -25,8 +25,6 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from zerostate.wording import hits
 
-BANNER = ("Recorded replay of benchmark and demo runs on simulated plants. Read-only: nothing here moves a plant. "
-          "On Check my isolation, the Muse model calls are live.")
 DEMO = "S8_seed503_20261104T125324"  # the nav link's session: feedback lied, camera frames kept
 RESULTS = ROOT / "eval" / "results"
 EPISODES = [  # (bundle, what it shows)
@@ -255,7 +253,6 @@ def patched_ui() -> dict[str, str]:
     files["style.css"] += CSS
     page = (ROOT / "ui" / "index.html").read_text(encoding="utf-8")
     for old, new in [("<title>ZeroState console</title>", "<title>ZeroState recorded replay</title>"),
-                     ("<body>\n", f'<body>\n<div class="replay-banner" id="replay-banner">{BANNER}</div>\n'),
                      ('<nav><a href="#/">Sessions</a> <a href="#/new">New isolation</a> <a href="#/check">Check my isolation</a></nav>', NAV),
                      ('<script type="module" src="app.js">', '<script src="replay.js"></script>\n<script type="module" src="app.js">')]:
         if page.count(old) != 1:
@@ -394,7 +391,6 @@ def results_page(episodes: list[tuple[dict, str]], scores_dir: Path = RESULTS, s
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="replay-banner" id="replay-banner">{BANNER}</div>
 <header class="top"><strong>ZeroState</strong> {NAV}</header>
 <main class="results">
 <h1>Benchmark results</h1>
