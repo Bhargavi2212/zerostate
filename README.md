@@ -2,7 +2,7 @@
 
 **A second check before anyone opens a pipe.** ZeroState compares a plant's isolation plan with the plant's own live data and a camera, and says STOP when they disagree. It is read-only. It never gives the go-ahead. A person decides and signs.
 
-- Demo video (3 min): VIDEO_LINK
+- Demo video (3 min): https://youtu.be/jARv_GhjjRE
 - Try it, no key needed: https://zerostate-bay.vercel.app
 - Every result, with the seal check: https://zerostate-bay.vercel.app/results.html
 
