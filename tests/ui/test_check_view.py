@@ -134,7 +134,8 @@ def test_s8_walks_rows_in_order_zooms_and_ends_with_stop(page, check_server):
     final = page.text_content("#final-line")
     assert final.startswith("STOP. Do not open the reactor. Feed 1 valve:") and "LIVE-VALVE" in final and "2 of 3 witnesses disagree" in final
     said = page.text_content("#spoken-line")  # one short sentence; the full text with the finding id stays on screen
-    assert "STOP. Do not open the reactor. Feed 1 valve:" in said and "2 of 3 witnesses disagree." in said and "LIVE-VALVE" not in said
+    assert said.startswith("🔈 STOP. Do not open the reactor. The Feed 1 valve is not really closed.") and "LIVE-VALVE" not in said
+    assert "flow is still going through it" in said and "Two of the three checks disagree with the control system." in said
     page.wait_for_function("document.querySelector('#check-camera h2').textContent.includes('Feed 1 valve')")  # back on the deciding check
     page.click("button.why")
     page.wait_for_selector("#why-answer")
