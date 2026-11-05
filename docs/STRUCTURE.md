@@ -33,6 +33,7 @@ zerostate/
 â”‚   â”œâ”€â”€ BUNDLE.md                  # Phase 2: episode bundle schema the public replay viewer reads
 â”‚   â”œâ”€â”€ DECISIONS.md               # dated log: decision, options, why, who approved
 â”‚   â”œâ”€â”€ specs/                     # PHASE_<n>.md specs + PHASE_<n>_GATE.md outputs
+â”‚   â”œâ”€â”€ img/hero_stop.png           # README picture: the S8 demo run's STOP (site job page, tuning seed 503)
 â”‚   â””â”€â”€ MODEL_NOTES.md             # measured behaviour of Meta models (feeds README section)
 â”œâ”€â”€ deploy/
 â”‚   â”œâ”€â”€ docker-compose.zerostate.yml   # zerostate-net + zerostate (+ operator, frame service, egress proxy, zs-api + zs-api-net, p2 in later phases); volumes zs-data, zs-audit
