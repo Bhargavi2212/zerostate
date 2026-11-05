@@ -27,8 +27,14 @@ function speaker(startMuted) {
     const u = new SpeechSynthesisUtterance(text);
     u.voice = st.voice;
     u.rate = 1.0;
-    const t = setTimeout(done, 15000); // a stuck voice never stalls the walk-through
-    u.onend = u.onerror = () => { clearTimeout(t); setTimeout(done, 400); };
+    let over = false;
+    const finish = () => { if (over) return; over = true; clearInterval(poll); clearTimeout(cap); setTimeout(done, 500); };
+    // a stuck voice never stalls the walk-through: the cap grows with the line (about 7 words a second, doubled)
+    const cap = setTimeout(finish, Math.max(15000, text.length * 130));
+    // some browsers drop onend on long lines: also finish once the voice has gone quiet
+    const t0 = Date.now();
+    const poll = setInterval(() => { if (Date.now() - t0 > 1500 && !synth.speaking && !synth.pending) finish(); }, 250);
+    u.onend = u.onerror = finish;
     synth.speak(u);
   });
   st.stop = () => synth && synth.cancel();
@@ -250,21 +256,71 @@ export async function checkScreen(root, params) {
       out.flow = fl ? `${fmt(fl.v, 1)}${fl.span ? ` (${fmt((100 * (fl.v - fl.span[0])) / (fl.span[1] - fl.span[0]), 0)} % of full scale)` : ""}` : r.tags.flow ? "no reading logged" : "no flow meter on this valve";
       const vals = cam ? cam.readings.map((x) => (x.readable ? `${fmt(x.value, 0)} %` : "unreadable")) : [];
       out.cam = cam ? `${vals.join(", ")} open` : r.camera.length ? "camera evidence not available" : "no camera reading";
+      out.fbV = fb ? fb.v : null;
+      out.flowPct = fl && fl.span ? (100 * (fl.v - fl.span[0])) / (fl.span[1] - fl.span[0]) : null;
+      out.camV = cam ? cam.readings.filter((x) => x.readable).map((x) => x.value) : [];
     } else if (r.kind === "mode") {
       const m = lastSample(r.tag, evalIds);
       out.plc = m ? `${fmt(m.v, 0)}` : "no reading logged";
+      out.modeV = m ? m.v : null;
     }
     return out;
   }
   const rowStatus = (r) => worst([...r.findings, ...r.camera]);
 
+  const opening = (v) => (v === null || v === undefined ? null : v <= 5 ? "closed" : v >= 95 ? "fully open" : `${fmt(v, 0)} percent open`);
+  // which witnesses disagree with the control system on this valve (the logged findings say so)
+  const disagree = (r) => ({
+    flow: r.findings.some((x) => x.status === "FAIL" && r.tags.flow && (x.refs || []).includes(r.tags.flow)),
+    cam: r.camera.some((x) => x.status === "FAIL") });
+  function valveWords(r, rd) {
+    const camV = rd.camV && rd.camV.length ? rd.camV[Math.floor(rd.camV.length / 2)] : null;
+    const want = opening(r.required) || "as planned", shut = want === "closed";
+    const has = (v) => v !== null && v !== undefined;
+    const flowing = has(rd.flowPct) && rd.flowPct >= 1;
+    return {
+      name: r.label.split(":")[0].replace(" (vent)", ""), want,
+      control: has(rd.fbV) ? `the control system says it is ${opening(rd.fbV)}` : null,
+      flow: !has(rd.flowPct) ? null : !flowing ? "no flow is going through it"
+        : shut ? `flow is still going through it, about ${fmt(rd.flowPct, 0)} percent of full flow` : "flow is going through it, as it should",
+      cam: camV === null ? null : `the camera sees it ${opening(camV)}`,
+      // every witness that read something reads what the plan wants
+      agree: (!has(rd.fbV) || opening(rd.fbV) === want) && (!has(rd.flowPct) || flowing !== shut) && (camV === null || opening(camV) === want),
+    };
+  }
   function spoken(r, rd) {
     const s = rowStatus(r);
-    const end = s ? WORD[s] : "Not checked.";
-    if (r.kind === "valve") return `Check ${r.n}: ${r.label.split(":")[0]}. PLC feedback reads ${rd.plc}. Flow meter reads ${rd.flow}. Camera reads ${rd.cam}. ${end}`;
-    if (r.kind === "hold") { const h = r.findings.find((f) => f.rule_id === "LIVE-HOLD"); return `Check ${r.n}: hold test. ${h ? h.message : "no hold result logged"}. ${end}`; }
-    if (r.kind === "mode") return `Check ${r.n}: PLC manual mode reads ${rd.plc}. ${end}`;
-    return `Check ${r.n}: procedure. ${end}`;
+    const fail = [...r.findings, ...r.camera].find((f) => f.status === "FAIL");
+    const unknown = [...r.findings, ...r.camera].find((f) => f.status === "UNKNOWN");
+    const head = `Check ${r.n}`;
+    if (!s) return `${head}: not checked.`;
+    if (s === "UNKNOWN") return `${head}: ZeroState could not tell. ${headline(unknown)}`;
+    if (r.kind === "valve") {
+      const w = valveWords(r, rd);
+      if (s === "PASS") {
+        const seen = [w.control, w.flow, w.cam].filter(Boolean);
+        const end = w.agree ? "Everything agrees, so this check passed." : "The logged checks for this step found no discrepancy, so it passed.";
+        return `${head}, the ${w.name}. It should be ${w.want}. ${seen.length ? `${seen.join(", ")}. ` : ""}${end}`.replace(/\. t/g, ". T");
+      }
+      const d = disagree(r);
+      const against = [d.flow ? w.flow : null, d.cam ? w.cam : null].filter(Boolean);
+      if (w.control && against.length) {
+        return `${head}, the ${w.name}. This one failed. It should be ${w.want}, and ${w.control}, but ${against.join(", and ")}. So either the valve is leaking, or its sensor is wrong.`;
+      }
+      return `${head}, the ${w.name}. This one failed. ${headline(fail)}`;
+    }
+    if (r.kind === "hold") {
+      const h = r.findings.find((f) => f.rule_id === "LIVE-HOLD") || fail;
+      const rose = h && h.message.match(/rose ([-\d.]+) kPa/);
+      return s === "PASS" ? `${head}, the pressure hold test. The pressure stayed steady, so no energy is getting back in. This check passed.`
+        : `${head}, the pressure hold test. This one failed. The pressure ${rose ? `rose by ${fmt(Number(rose[1]), 0)} kilopascals` : "rose"} while everything was meant to be shut, so energy is getting back in.`;
+    }
+    if (r.kind === "mode") {
+      return s === "PASS" ? `${head}: the plant is switched to manual, as the plan asks. This check passed.`
+        : `${head}: the plant should be in manual, but the control system says it is not. This one failed.`;
+    }
+    return s === "PASS" ? `${head}, the procedure. The steps were done in order and checked by a second person. This check passed.`
+      : `${head}, the procedure. This one failed. ${headline(fail)}`;
   }
 
   // ---------- render
@@ -344,8 +400,8 @@ export async function checkScreen(root, params) {
         const camSays = r.camera.some((x) => x.status === "FAIL");
         const n = (flowSays ? 1 : 0) + (camSays ? 1 : 0);
         plain = `${valveName(r.point)}: the PLC reads ${r.rd.plc}, the flow meter reads ${r.rd.flow}, the camera reads ${r.rd.cam}.${n ? ` ${n} of 3 witnesses disagree with the PLC.` : ""} Logged finding ${f.id}: ${f.message}.`;
-        const what = [flowSays ? "the flow meter reads flow" : null, camSays ? "the camera reads it open" : null].filter(Boolean);
-        if (what.length && !r.rd.plc.startsWith("no ")) say = `${head} ${valveName(r.point)}: ${what.join(" and ")} while the PLC reads ${r.rd.plc}. ${n} of 3 witnesses disagree.`;
+        const w = valveWords(r, r.rd), against = [flowSays ? w.flow : null, camSays ? w.cam : null].filter(Boolean);
+        if (w.control && against.length) say = `${head} The ${w.name} is not really ${w.want}. ${w.control[0].toUpperCase()}${w.control.slice(1)}, but ${against.join(", and ")}. ${n === 2 ? "Two" : "One"} of the three checks disagree${n === 2 ? "" : "s"} with the control system.`;
       } else if (f) plain = `Logged finding ${f.id}: ${f.message}.`;
       return { stop: true, text: `${head} ${plain}`, say, f, row: r };
     }
@@ -359,10 +415,20 @@ export async function checkScreen(root, params) {
   async function walk(run, recorded) {
     assign();
     const shown = new Set();
+    let skipped = [];
     for (const r of st.rows) {
       if (run !== st.run || st.closed) return;
       const has = r.findings.length || r.camera.length;
-      if (!has) { shown.add(r.n); continue; } // shown as "not checked" without being spoken
+      if (!has) { shown.add(r.n); skipped.push(r.n); continue; } // no logged reading: said once for the whole run of rows
+      if (skipped.length) {
+        const which = skipped.length > 1 ? `Checks ${skipped[0]} to ${skipped[skipped.length - 1]}` : `Check ${skipped[0]}`;
+        const why = `${which}: not checked. No readings were logged for ${skipped.length > 1 ? "these steps" : "this step"}; the work stopped before ${skipped.length > 1 ? "they were" : "it was"} done.`;
+        drawList(shown);
+        spokenLine.textContent = `🔈 ${why}`;
+        await voice.say(why);
+        skipped = [];
+        if (run !== st.run || st.closed) return;
+      }
       const cam = await cameraOf(r);
       r.rd = readings(r, cam);
       shown.add(r.n);
