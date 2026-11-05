@@ -1,0 +1,8 @@
+{
+ "functions": {
+  "api/model.py": {
+   "maxDuration": 60,
+   "includeFiles": "{api/_zs/**,data/checks/**,data/sessions/*/detail.json}"
+  }
+ }
+}

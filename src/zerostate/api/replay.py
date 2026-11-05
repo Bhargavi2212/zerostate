@@ -41,12 +41,13 @@ def bundle_events(b: dict) -> list[dict]:
 
 
 def load_bundles(root: str | Path) -> dict[str, dict]:
-    """{session id: {bundle, events}} for every bundle.json.gz under root."""
+    """{session id: {bundle, events, dir}} for every bundle.json.gz under root (dir: the bundle's folder; its
+    frames/<sha256>.jpg, when present, are the camera frames the recording kept)."""
     out = {}
     for p in sorted(Path(root).rglob("bundle.json.gz")):
         with gzip.open(p, "rt", encoding="utf-8") as fh:
             b = json.load(fh)
         if b.get("bundle_version") not in ("1", "2"):
             raise ValueError(f"{p}: bundle_version {b.get('bundle_version')!r} is not 1 or 2")
-        out[b["episode"]] = {"bundle": b, "events": bundle_events(b)}
+        out[b["episode"]] = {"bundle": b, "events": bundle_events(b), "dir": p.parent}
     return out
