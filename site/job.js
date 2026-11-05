@@ -2,21 +2,25 @@
 // live plant view, steps with who marked / verified, evidence charts with vent and hold windows shaded,
 // findings with raw numbers + Explain, the idealised-camera evidence panel. Site copy: recorded replay, no write controls.
 // Live updates come from the SSE stream; state changes re-read GET /api/sessions/{id}.
-import { api, el, s, errorText, fmt, NDF, statusMark, time, verdictClass, verdictText, who } from "./lib.js";
+import { api, el, s, errorText, fmt, NDF, time, verdictClass, verdictText, who, episodeTitle, plantName, stepName, ruleName, headline, verdictWord, valveName, ASSUMPTION } from "./lib.js";
 import { plantView } from "./plant.js";
 import { lineChart } from "./chart.js";
 
 // live camera evaluations log models as {locate, read}; recorded ones as a list
 export const modelNames = (m) => (Array.isArray(m) ? m : Object.values(m || {})).join(", ") || "—";
+const MARK = { PASS: "✓ no discrepancy", FAIL: "✗ failed", UNKNOWN: "? could not tell" };
 const CAMERA_LABEL = "idealised camera (renders the simulator's true state)";
 const STREAM_REFRESH = ["session_start", "step", "step_verify", "step_reopen", "verdict", "finding", "camera_reading", "signature", "session_stopped"];
 
 export async function jobScreen(root, sid, params) {
   const st = { detail: await api(`/api/sessions/${encodeURIComponent(sid)}`), map: null, series: new Map(), spans: {}, live: {}, windows: [], camera: {}, msg: "" };
   st.map = await api(`/api/plants/${st.detail.plant}/map`).catch(() => null);
-  const parts = Object.fromEntries(["strip", "banner", "actions", "plant", "steps", "charts", "findings", "camera", "explain"].map((k) => [k, el("section", { id: k, class: k === "strip" || k === "banner" ? null : "panel" })]));
-  root.append(el("h1", {}, `Job ${sid}`), parts.strip, parts.banner, parts.actions,
-    el("div", { class: "cols" }, el("div", {}, parts.plant, parts.steps, parts.findings), el("div", {}, parts.charts, parts.camera, parts.explain)));
+  const parts = Object.fromEntries(["strip", "hero", "witnesses", "banner", "actions", "plant", "steps", "charts", "findings", "camera", "explain"].map((k) => [k, el("section", { id: k, class: ["strip", "banner", "hero"].includes(k) ? null : "panel" })]));
+  const techSummary = el("summary", {}, "Technical details");
+  const techIds = el("p", { class: "small", id: "tech-ids" });
+  root.append(el("h1", {}, episodeTitle(sid)), el("p", { class: "small muted", id: "job-id" }, `${sid} · ${plantName(st.detail.plant)}`),
+    parts.strip, parts.hero, parts.witnesses, parts.banner, parts.actions, parts.plant, parts.steps, parts.explain,
+    el("details", { id: "tech", class: "panel" }, techSummary, techIds, parts.findings, parts.charts, parts.camera));
   const stepKind = (k) => (st.detail.steps.find((x) => x.k === k) || {}).kind;
 
   // ---------- data from the stream
@@ -40,12 +44,16 @@ export async function jobScreen(root, sid, params) {
   // ---------- rendering
   function drawStrip() {
     const d = st.detail;
-    const a = d.assumptions === null || d.assumptions === undefined ? "not recorded" : d.assumptions.length ? d.assumptions.join(" · ") : "none stated";
-    parts.strip.replaceChildren(el("div", { class: "strip", id: "assumptions" }, el("strong", {}, "Assumptions: "), a,
+    const a = d.assumptions === null || d.assumptions === undefined ? "Assumptions: not recorded" : d.assumptions.length
+      ? d.assumptions.map((x) => ASSUMPTION[x] || `Assumed: ${x}`).join(" · ") : "Assumptions: none stated";
+    parts.strip.replaceChildren(el("div", { class: "strip", id: "assumptions" }, a,
       d.plan_check_override ? [" · ", el("strong", {}, "plan check overridden: "), d.plan_check_override] : null));
   }
 
-  function track(label, v, reasons, note) {
+  // a logged reason "RULE-ID: message" read as the finding's plain headline
+  const plain = (r) => { const m = String(r).match(/^([A-Z]+(?:-[A-Z]+)+): (.*)$/s); return m ? headline({ rule_id: m[1], message: m[2], status: "FAIL" }) : r; };
+  function track(label, v, rawReasons, note) {
+    const reasons = (rawReasons || []).map(plain);
     return el("div", { class: `track ${verdictClass(v)}`, "data-track": label },
       el("div", { class: "track-label small" }, label), el("div", { class: "track-verdict" }, verdictText(v, reasons)),
       reasons && reasons.length > 1 ? el("ul", { class: "small" }, reasons.slice(1).map((r) => el("li", {}, r))) : null,
@@ -60,15 +68,63 @@ export async function jobScreen(root, sid, params) {
   function drawBanner() {
     const tr = tracks();
     parts.banner.replaceChildren(el("div", { class: "banner", id: "verdict-banner" },
-      track("Data-only track", tr.data, tr.dataReasons),
-      track("With-camera track", tr.cam, tr.camReasons.length ? tr.camReasons : tr.dataReasons,
-        cameraEvals().length ? null : "No camera readings in this session: this track equals the data-only track.")));
+      track("Plant data", tr.data, tr.dataReasons),
+      track("Plant data + camera", tr.cam, tr.camReasons.length ? tr.camReasons : tr.dataReasons,
+        cameraEvals().length ? null : "No camera readings in this session: same as plant data alone.")));
+  }
+
+  // ---------- the one-line answer, then the three witnesses for the valve that decided it
+  function deciding() {
+    const tr = tracks(), d = st.detail;
+    const v = [tr.data, tr.cam].includes("BLOCKED") ? "BLOCKED" : [tr.data, tr.cam].includes("ESCALATED") ? "ESCALATED" : tr.data;
+    const want = v === "BLOCKED" ? "FAIL" : v === "ESCALATED" ? "UNKNOWN" : null;
+    const reasons = [...tr.dataReasons, ...tr.camReasons];
+    const f = want ? d.findings.find((x) => x.status === want && reasons.includes(`${x.rule_id}: ${x.message}`)) || d.findings.find((x) => x.status === want) : null;
+    return { v, f };
+  }
+  function drawHero() {
+    const { v, f } = deciding(), d = st.detail;
+    const line = f ? headline(f) : v === NDF ? `No discrepancy found in ${d.findings.length} logged checks. This is not a safety call; a person signs.` : "No verdict is logged yet.";
+    parts.hero.replaceChildren(el("div", { class: `hero ${verdictClass(v)}`, id: "verdict-hero" },
+      el("div", { class: "hero-word" }, verdictWord(v)), el("div", { class: "hero-line" }, line)));
+  }
+  const pointOf = (f) => {
+    if (!f) return null;
+    if (f.source === "camera") return (st.camera[f.eval_id] || {}).point || null;
+    const ref = (f.refs || []).find((r) => /_(valve_pos|flow)$/.test(r));
+    return ref ? ref.replace(/_(valve_pos|flow)$/, "") : null;
+  };
+  async function drawWitnesses() {
+    const { f } = deciding(), d = st.detail;
+    if (f && f.source === "camera" && !st.camera[f.eval_id]) st.camera[f.eval_id] = await api(`/api/sessions/${encodeURIComponent(sid)}/camera/${f.eval_id}`).catch(() => ({}));
+    const point = pointOf(f);
+    if (!point) { parts.witnesses.replaceChildren(); parts.witnesses.hidden = true; return; }
+    parts.witnesses.hidden = false;
+    const valveF = d.findings.filter((x) => x.rule_id === "LIVE-VALVE" && (x.refs || []).includes(`${point}_valve_pos`) && x.status === "FAIL").pop();
+    const m = valveF && valveF.message.match(/_flow = ([-\d.]+) while \S+?_valve_pos = ([-\d.]+) %/);
+    for (const id of cameraEvals()) if (!st.camera[id]) st.camera[id] = await api(`/api/sessions/${encodeURIComponent(sid)}/camera/${id}`).catch(() => ({}));
+    const cam = cameraEvals().map((id) => st.camera[id]).filter((c) => c && c.point === point && c.finding && c.finding.status === "FAIL").pop()
+      || cameraEvals().map((id) => st.camera[id]).filter((c) => c && c.point === point).pop();
+    const reads = cam ? cam.readings.filter((r) => r.readable).map((r) => `${fmt(r.value, 0)}%`) : [];
+    const shot = cam && cam.readings.find((r) => r.frame_url && r.box);
+    const crop = el("canvas", { class: "witness-crop", width: 240, height: 120 });
+    if (shot) {
+      const img = new Image();
+      img.onload = () => { const [x1, y1, x2, y2] = shot.box, w = x2 - x1, h = y2 - y1, padX = w * 1.2, padY = h * 1.6;
+        crop.getContext("2d").drawImage(img, x1 - padX, y1 - padY, w + 2 * padX, h + 2 * padY, 0, 0, crop.width, crop.height); };
+      img.src = shot.frame_url;
+    }
+    const card = (label, value, extra) => el("div", { class: "witness" }, el("div", { class: "small muted" }, label), el("div", { class: "witness-value" }, value), extra || null);
+    parts.witnesses.replaceChildren(el("h2", {}, `${valveName(point)}: three witnesses`), el("div", { class: "witnesses" },
+      card("Control system says", m ? `${fmt(Number(m[2]), 0)}% open` : "no reading in the finding"),
+      card("Flow meter says", m ? `${fmt(Number(m[1]), 1)} flowing` : "no flow reading in the finding"),
+      card("Camera says", reads.length ? `${reads.join(", ")} open` : "no camera reading", shot ? [crop, el("div", { class: "small muted" }, "camera: GRFICSv3 simulator, pre-existing")] : null)));
   }
 
   function drawActions() {
     const d = st.detail;
     const sig = d.signature;
-    const out = [el("span", { class: "small" }, `State: ${d.state} · plant ${d.plant} · started ${time(d.started)} · plan hash ${(d.plan_hash || "").slice(0, 12)}…`)];
+    const out = [el("span", { class: "small" }, `State: ${d.state} · started ${time(d.started)}`)];
     if (sig) {
       out.push(el("p", { id: "signature", class: "signed" }, sig.outcome === "accepted"
         ? `Accepted and signed by ${who(sig.by)} (${sig.role}) at ${time(sig.t)}.`
@@ -81,13 +137,15 @@ export async function jobScreen(root, sid, params) {
   function drawPlant() {
     const d = st.detail;
     const paths = d.findings.filter((f) => f.status !== "PASS" && f.path && f.path.length).map((f) => f.path);
-    parts.plant.replaceChildren(el("h2", {}, "Plant view (command / feedback / flow)"),
+    parts.plant.replaceChildren(el("h2", {}, "Plant diagram (command / feedback / flow)"),
       st.map ? plantView(st.map, { work: d.plan && d.plan.work ? d.plan.work.equipment : null, paths, live: st.live, spans: st.spans }) : el("p", { class: "muted" }, "No plant map."));
   }
 
+  const rowOf = new Map(); // finding id -> the merged row that holds it
   const findingLink = (id) => el("a", { href: `#finding-${id}`, class: "cite", onclick: (ev) => {
     ev.preventDefault();
-    const target = document.getElementById(`finding-${id}`);
+    document.getElementById("tech").open = true;
+    const target = document.getElementById(`finding-${rowOf.get(id) || id}`);
     if (target) { target.scrollIntoView({ block: "center" }); target.classList.add("flash"); setTimeout(() => target.classList.remove("flash"), 1500); }
   } }, id);
 
@@ -95,13 +153,13 @@ export async function jobScreen(root, sid, params) {
     const d = st.detail, live = !d.signature && d.state !== "stopped" && d.state !== "refused";
     const req = (x) => x.required_state === null || x.required_state === undefined ? "—" : x.kind === "mode" ? (x.required_state ? "on" : "off") : `${fmt(x.required_state, 0)} %`;
     parts.steps.replaceChildren(el("h2", {}, "Steps"), el("table", { class: "grid", id: "steps-table" },
-      el("thead", {}, el("tr", {}, ["k", "Step", "Targets", "Required", "Marked by", "Verified by", "Result", "Findings"].map((h) => el("th", {}, h)))),
+      el("thead", {}, el("tr", {}, ["#", "Step", "Required", "Marked by", "Verified by", "Result", "Findings"].map((h) => el("th", {}, h)))),
       el("tbody", {}, d.steps.map((x) => el("tr", { "data-step": x.k },
-        el("td", {}, x.k), el("td", {}, x.kind), el("td", {}, (x.targets || []).join(", ") || "—"), el("td", {}, req(x)),
+        el("td", {}, x.k), el("td", {}, stepName(x)), el("td", {}, req(x)),
         el("td", { class: "marked-by" }, x.marked_by ? `${who(x.marked_by)} ${time(x.marked_t)}` : "—"),
         el("td", { class: "verified-by" }, x.verified_by ? `${who(x.verified_by)} ${time(x.verified_t)}` : "—"),
-        el("td", { class: x.result ? `f-${x.result}` : null }, statusMark(x.result)),
-        el("td", {}, (x.finding_ids || []).flatMap((id, i) => [i ? " " : null, findingLink(id)])))))));
+        el("td", { class: x.result ? `f-${x.result}` : null }, MARK[x.result] || "– not reached"),
+        el("td", { class: "small" }, stepFindings(x)))))));
   }
 
   function drawCharts() {
@@ -115,15 +173,39 @@ export async function jobScreen(root, sid, params) {
       lineChart({ title: "Valve feedback", unit: "% open", series: tags("feedback").map((t) => ({ name: t, points: pts(t) })), bands: st.windows }));
   }
 
+  function stepFindings(x) {
+    const fs = st.detail.findings.filter((f) => f.step === x.k);
+    const bad = fs.filter((f) => f.status !== "PASS");
+    if (!fs.length) return "—";
+    return bad.length ? [headline(bad[0]), " ", findingLink(bad[0].id)] : `${fs.length} checks, no discrepancy`;
+  }
+  // repeated findings (same check, result, step and source) are one row: "x 30, 07:56:19-07:57:20"
+  function merged() {
+    const groups = new Map();
+    for (const f of st.detail.findings) {
+      const k = `${f.rule_id}|${f.status}|${f.step}|${f.source}`;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(f);
+    }
+    return [...groups.values()].sort((a, b) => (a[0].status === "PASS") - (b[0].status === "PASS"));
+  }
   function drawFindings() {
-    const d = st.detail;
-    const rows = [...d.findings].sort((a, b) => (a.status === "PASS") - (b.status === "PASS"));
-    parts.findings.replaceChildren(el("h2", {}, `Findings (${d.findings.length})`), el("table", { class: "grid", id: "findings-table" },
-      el("thead", {}, el("tr", {}, ["Id", "Status", "Rule", "Evidence", "Step", "Source", "Time"].map((h) => el("th", {}, h)))),
-      el("tbody", {}, rows.map((f) => el("tr", { id: `finding-${f.id}`, class: `f-${f.status}` },
-        el("td", { class: "small" }, f.id), el("td", {}, statusMark(f.status)), el("td", {}, `${f.rule_id} v${f.rule_version}`),
-        el("td", {}, f.message, f.refs && f.refs.length ? el("span", { class: "small muted" }, ` [${f.refs.join(", ")}]`) : null),
-        el("td", {}, f.step ?? "—"), el("td", {}, f.source), el("td", { class: "small" }, time(f.t)))))));
+    const d = st.detail, groups = merged();
+    rowOf.clear();
+    for (const g of groups) for (const f of g) rowOf.set(f.id, g[0].id);
+    techSummary.textContent = `Technical details (${d.findings.length} checks logged)`;
+    techIds.textContent = `Session ${sid} · plant id ${d.plant} · plan hash ${d.plan_hash || "—"}`;
+    const when = (g) => { const ts = g.map((f) => f.t).filter(Boolean); return ts.length > 1 ? `${time(Math.min(...ts))}–${time(Math.max(...ts))}` : time(ts[0]); };
+    const raw = (g) => el("details", { class: "raw small" }, el("summary", {}, "logged text"),
+      el("ul", {}, [...new Set(g.map((f) => f.message))].slice(0, 5).map((m) => el("li", {}, m))),
+      el("p", { class: "muted" }, `${g[0].rule_id} v${g[0].rule_version}${g[0].refs && g[0].refs.length ? ` · [${g[0].refs.join(", ")}]` : ""} · ids ${g.map((f) => f.id).slice(0, 6).join(", ")}${g.length > 6 ? " …" : ""}`));
+    parts.findings.replaceChildren(el("h2", {}, `Findings (${d.findings.length} logged, ${groups.length} rows)`), el("table", { class: "grid", id: "findings-table" },
+      el("thead", {}, el("tr", {}, ["Check", "Result", "What it found", "Step", "Source", "Count", "Time"].map((h) => el("th", {}, h)))),
+      el("tbody", {}, groups.map((g) => { const f = g[g.length - 1]; return el("tr", { id: `finding-${g[0].id}`, class: `f-${f.status}` },
+        el("td", {}, ruleName(f.rule_id)), el("td", {}, MARK[f.status] || f.status),
+        el("td", {}, headline(f), raw(g)),
+        el("td", {}, f.step ?? "—"), el("td", {}, f.source), el("td", {}, g.length > 1 ? `× ${g.length}` : "1"), el("td", { class: "small" }, when(g)));
+      }))));
   }
 
   async function drawCamera() {
@@ -136,7 +218,7 @@ export async function jobScreen(root, sid, params) {
     if (c.error) { parts.camera.replaceChildren(...box, el("p", { class: "error" }, c.error)); return; }
     const fb = c.feedback && c.feedback.length ? c.feedback[c.feedback.length - 1][1] : null;
     box.push(el("p", {}, `Evaluation ${c.eval_id} · step ${c.step} · point ${c.point} (${c.tag}) · ${c.mode} · models: ${modelNames(c.models)}`),
-      el("p", {}, statusMark(c.finding.status), " ", `${c.finding.rule_id}: ${c.finding.message}`),
+      el("p", {}, MARK[c.finding.status] || c.finding.status, " ", headline(c.finding)),
       el("p", {}, `Valve feedback value: ${fmt(fb)} % open`));
     for (const [i, r] of c.readings.entries()) {
       const fig = el("div", { class: "camera-reading", "data-reading": i });
@@ -161,7 +243,7 @@ export async function jobScreen(root, sid, params) {
 
   // ---------- refresh + stream
   let closed = false;
-  function drawAll() { drawStrip(); drawBanner(); drawActions(); drawPlant(); drawSteps(); drawFindings(); drawCharts(); drawCamera(); }
+  function drawAll() { drawStrip(); drawHero(); drawBanner(); drawActions(); drawPlant(); drawSteps(); drawFindings(); drawCharts(); drawCamera().then(drawWitnesses); }
   async function refresh() {
     try { st.detail = await api(`/api/sessions/${encodeURIComponent(sid)}`); } catch (e) { st.msg = errorText(e); }
     drawAll();

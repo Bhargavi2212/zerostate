@@ -53,6 +53,8 @@ PATCHES = [
     ("app.js", r'import \{ intakeScreen \} from "\./intake\.js";\n', ""),
     ("app.js", r'    else if \(path === "/new"\) await intakeScreen\(app\);\n', ""),
     ("app.js", r'"Sessions"\)\);', '"Recorded episodes"));'),
+    ("app.js", r"const HIDE = new Set\(\[\]\);", f'const HIDE = new Set(["{DEMO}", "S0_seed502_20261104T124516"]);'),
+    ("app.js", r"const RESULTS = null;", 'const RESULTS = "results.html";'),
     ("app.js", r"No sessions yet\. Start with a new isolation\.", "No recorded episodes in this build."),
     ("job.js", r", and the Sign dialog\.", ". Site copy: recorded replay, no write controls."),
     ("job.js", r"const SIGN_ROLES = .*?\n", ""),

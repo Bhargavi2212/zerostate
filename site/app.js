@@ -1,27 +1,32 @@
 // Router and the session list. Screens: #/ (sessions), #/new (intake), #/job/<id>[?speed=N] (job),
 // #/check[?session=<id>] (check my isolation).
-import { api, el, errorText, verdictClass, verdictText, time } from "./lib.js";
+import { api, el, errorText, verdictClass, time, episodeTitle, plantName, verdictWord } from "./lib.js";
 import { jobScreen } from "./job.js";
 import { checkScreen } from "./check.js";
 
 const app = document.getElementById("app");
 let cleanup = null;
 
+const HIDE = new Set(["S8_seed503_20261104T125324", "S0_seed502_20261104T124516"]); // sessions left off the landing cards (the site lists its demo runs under Check my isolation)
+const RESULTS = "results.html"; // the site's results page
+
 async function sessionsScreen(root) {
-  root.append(el("h1", {}, "Recorded episodes"));
-  const list = await api("/api/sessions");
+  root.append(el("h1", {}, "ZeroState: a second check before anyone opens a pipe"),
+    el("p", { class: "lede" }, "It compares the isolation plan with the plant's live data and a camera, and says STOP when they disagree. It never gives the go-ahead; a person signs."),
+    el("h2", {}, "Recorded episodes"));
+  const list = (await api("/api/sessions")).filter((x) => !HIDE.has(x.id));
   if (!list.length) {
     root.append(el("p", {}, "No recorded episodes in this build."));
     return;
   }
-  const verdictCell = (v) => el("td", {}, el("span", { class: `badge ${verdictClass(v)}` }, verdictText(v)));
-  root.append(el("table", { class: "grid", id: "sessions" },
-    el("thead", {}, el("tr", {}, ["Session", "Plant", "Started", "State", "Data-only track", "With-camera track", "Signed"].map((h) => el("th", {}, h)))),
-    el("tbody", {}, list.map((x) => el("tr", { "data-session": x.id },
-      el("td", {}, el("a", { href: `#/job/${encodeURIComponent(x.id)}` }, x.id)),
-      el("td", {}, x.plant), el("td", {}, time(x.started)), el("td", {}, x.state),
-      verdictCell(x.verdict), verdictCell(x.verdict_with_camera),
-      el("td", {}, x.signed ? "signed" : "not signed"))))));
+  const worst = (x) => ([x.verdict, x.verdict_with_camera].includes("BLOCKED") ? "BLOCKED" : [x.verdict, x.verdict_with_camera].includes("ESCALATED") ? "ESCALATED" : x.verdict);
+  root.append(el("div", { class: "cards", id: "sessions" }, list.map((x) => el("a", { class: `card ${verdictClass(worst(x))}`, "data-session": x.id, href: `#/job/${encodeURIComponent(x.id)}` },
+    el("div", { class: "card-verdict" }, verdictWord(worst(x))),
+    el("div", { class: "card-title" }, episodeTitle(x.id)),
+    el("div", { class: "small" }, plantName(x.plant)),
+    el("div", { class: "small" }, `Plant data: ${verdictWord(x.verdict)} · Plant data + camera: ${verdictWord(x.verdict_with_camera)} · ${x.signed ? "signed" : "not signed"}`),
+    el("div", { class: "small muted card-id" }, `${x.id} · ${x.state} · started ${time(x.started)}`)))));
+  if (RESULTS) root.append(el("p", { class: "lede" }, el("a", { href: RESULTS, id: "results-link" }, "Benchmark results: every episode, scored →")));
 }
 
 async function route() {

@@ -7,7 +7,7 @@
 // Transcribe on the server. Speech output: window.speechSynthesis with an on-device voice only.
 // Recorded session: the rows are stepped through at a readable pace. Running session (live step mode): the
 // worker marks each step here after confirming the voice route's read-back; never verify, reopen or sign.
-import { api, el, errorText, fmt, NDF, time } from "./lib.js";
+import { api, el, errorText, fmt, NDF, time, valveName, plantName, headline } from "./lib.js";
 
 export const CAMERA_CAPTION = "camera: GRFICSv3 simulator, pre-existing";
 export const EXAMPLE = "I'm about to open the reactor for repair. I've locked out. Check my isolation.";
@@ -73,14 +73,14 @@ function buildRows(plan) {
     const targets = s.targets && s.targets.length ? s.targets : s.target ? [s.target] : [];
     if (s.kind === "final") continue;
     if (s.kind === "hold") { rows.push({ step: s.k, kind: "hold", label: "Hold test", points: [] }); continue; }
-    if (s.kind === "mode") { rows.push({ step: s.k, kind: "mode", label: `PLC mode: ${targets.join(", ")} = ${s.required_state}`, tag: targets[0], points: [] }); continue; }
+    if (s.kind === "mode") { rows.push({ step: s.k, kind: "mode", label: "Switch the plant to manual", tag: targets[0], points: [] }); continue; }
     for (const t of targets) {
       const tags = { fb: witness(t, "feedback"), flow: witness(t, "flow"), cmd: witness(t, "command") };
       const what = s.kind === "vent_open" ? "vent" : s.kind === "vent_close" ? "vent" : "valve";
-      rows.push({ step: s.k, kind: "valve", point: t, tags, multi: targets.length > 1, label: `${what} ${t}: ${pct(s.required_state)}`, required: s.required_state, points: [t] });
+      rows.push({ step: s.k, kind: "valve", point: t, tags, multi: targets.length > 1, label: `${valveName(t)}${what === "vent" ? " (vent)" : ""}: ${pct(s.required_state)}`, required: s.required_state, points: [t] });
     }
   }
-  rows.push({ kind: "process", label: "Procedure: steps in order, independence, reset", points: [] });
+  rows.push({ kind: "process", label: "Procedure: steps in order, checked by a second person, reopened steps re-checked", points: [] });
   rows.forEach((r, i) => { r.n = i + 1; r.findings = []; r.camera = []; });
   return rows;
 }
@@ -155,7 +155,7 @@ export async function checkScreen(root, params) {
           `I can't tell which equipment you mean${r.reason ? `: ${r.reason}` : "."} Pick one of the confirmed plans:`), planPicker(r.plans));
         return;
       }
-      status.replaceChildren(el("p", { id: "check-picked" }, `Plan: ${r.plan.equipment} (${r.plan.task || "no task text"}) on ${r.plan.plant}, confirmed by ${r.plan.confirmed_by}. ${r.reason || ""}`));
+      status.replaceChildren(el("p", { id: "check-picked" }, `Plan: ${r.plan.equipment} (${r.plan.task || "no task text"}) on ${plantName(r.plan.plant)}, confirmed by ${r.plan.confirmed_by}. ${r.reason || ""}`));
       await attach(r.plan);
     } catch (e) {
       status.replaceChildren(el("p", { class: "error" }, e.status === 503 ? "The model is not available here, so I can't match your request. Pick a confirmed plan:" : errorText(e)));
@@ -164,8 +164,8 @@ export async function checkScreen(root, params) {
   }
   function planPicker(plans) {
     return el("ul", { id: "plan-picker" }, plans.map((p) => el("li", {},
-      el("button", { type: "button", "data-plan": p.id, onclick: () => { status.replaceChildren(el("p", {}, `Plan: ${p.equipment} on ${p.plant} (picked by you).`)); attach(p); } },
-        `${p.equipment} — ${p.task || "no task text"} (${p.plant}, plan ${p.plan_hash.slice(0, 8)}…, confirmed by ${p.confirmed_by})`))));
+      el("button", { type: "button", "data-plan": p.id, onclick: () => { status.replaceChildren(el("p", {}, `Plan: ${p.equipment} on ${plantName(p.plant)} (picked by you).`)); attach(p); } },
+        `${p.equipment} — ${p.task || "no task text"} (${plantName(p.plant)}, plan ${p.plan_hash.slice(0, 8)}…, confirmed by ${p.confirmed_by})`))));
   }
 
   // ---------- plan -> the current or most recent session of that plan
@@ -279,7 +279,7 @@ export async function checkScreen(root, params) {
           el("td", {}, r.n), el("td", {}, r.label),
           el("td", {}, rd.plc || "—"), el("td", {}, rd.flow || "—"), el("td", {}, rd.cam || "—"),
           el("td", { class: "mark", "data-mark": on ? s || "none" : "pending" }, on ? (s ? `${MARK[s]} ${s}` : "– not checked") : "…"),
-          el("td", { class: "small" }, on ? (fails.length ? `${fails[0].id}: ${fails[0].message}` : r.findings.length || r.camera.length ? `${r.findings.length + r.camera.length} logged, all PASS` : "no logged finding") : ""),
+          el("td", { class: "small" }, on ? (fails.length ? headline(fails[0]) : r.findings.length || r.camera.length ? `${r.findings.length + r.camera.length} logged, all PASS` : "no logged finding") : ""),
           el("td", {}, on && s === "FAIL" ? el("button", { type: "button", class: "why", "data-why": r.n, onclick: () => why(r, fails[0]) }, "Why?") : null));
       })));
     list.replaceChildren(el("h2", {}, "Checklist (plan order)"), tbl);
@@ -342,9 +342,9 @@ export async function checkScreen(root, params) {
         const flowSays = r.findings.some((x) => x.status === "FAIL" && r.tags.flow && (x.refs || []).includes(r.tags.flow));
         const camSays = r.camera.some((x) => x.status === "FAIL");
         const n = (flowSays ? 1 : 0) + (camSays ? 1 : 0);
-        plain = `${r.point}: the PLC reads ${r.rd.plc}, the flow meter reads ${r.rd.flow}, the camera reads ${r.rd.cam}.${n ? ` ${n} of 3 witnesses disagree with the PLC.` : ""} Logged finding ${f.id}: ${f.message}.`;
+        plain = `${valveName(r.point)}: the PLC reads ${r.rd.plc}, the flow meter reads ${r.rd.flow}, the camera reads ${r.rd.cam}.${n ? ` ${n} of 3 witnesses disagree with the PLC.` : ""} Logged finding ${f.id}: ${f.message}.`;
         const what = [flowSays ? "the flow meter reads flow" : null, camSays ? "the camera reads it open" : null].filter(Boolean);
-        if (what.length && !r.rd.plc.startsWith("no ")) say = `${head} ${r.point}: ${what.join(" and ")} while the PLC reads ${r.rd.plc}. ${n} of 3 witnesses disagree.`;
+        if (what.length && !r.rd.plc.startsWith("no ")) say = `${head} ${valveName(r.point)}: ${what.join(" and ")} while the PLC reads ${r.rd.plc}. ${n} of 3 witnesses disagree.`;
       } else if (f) plain = `Logged finding ${f.id}: ${f.message}.`;
       return { stop: true, text: `${head} ${plain}`, say, f, row: r };
     }
